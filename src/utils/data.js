@@ -43,6 +43,19 @@ export const projects = {
   },
   projects: [
     {
+      img: "./ss-memories.png",
+      refMore: "#memories",
+      refSite: "https://github.com/FrederickAurelio/Memories",
+      title: {
+        en: `Memories (Web App) - Nextjs / Expressjs`,
+        ch: `Memories（网页应用）- Nextjs / Expressjs`
+      },
+      desc: {
+        en: "A creative social media web app that lets users design with a canvas editor inspired by Canva and share their creations through personal profiles, making design more social and interactive.",
+        ch: "一个创意型社交媒体网页应用，用户可以使用受 Canva 启发的画布编辑器进行设计，并通过个人主页分享作品，让设计更加社交化和互动化。"
+      }
+    },
+    {
       img: "./fxtrade.png",
       refMore: "#fxtrade",
       refSite: "https://nextjs-fx-trade.vercel.app/",
@@ -135,17 +148,18 @@ export const stacks = [
     path: "./supabase.svg"
   },
   {
-    name: "gsap",
-    path: "./gsap.svg"
+    name: "React Query",
+    path: "./react-router.svg"
+  },
+  {
+    name: "React Router",
+    path: "./query.svg"
   },
   {
     name: "redux",
     path: "./redux.svg"
   },
-  {
-    name: "React Query",
-    path: "./query.svg"
-  },
+
   {
     name: "Axios",
     path: "./axios.svg"
@@ -158,6 +172,26 @@ export const details = {
     ch: "在这个项目中我学到的东西如下："
   },
   details: [
+    {
+      color: "border-neutral-800 bg-neutral-200",
+      spotlight: "rgb(41, 37, 36, 0.3)",
+      logo: "memories",
+      github: "https://github.com/FrederickAurelio/Memories",
+      list: {
+        en: [
+          "Implemented both backend and frontend using ExpressJs and Nextjs",
+          "Learning to use HTML Canva by using modern Library such as React Konva",
+          "Learning how to implement authentication and OAuth (with email verification), both in frontend and backend, with authorization handling for private and public canva design.",
+          "Built a functional canvas design editor, supporting drag-and-drop, layering, and basic editing tools"
+        ],
+        ch: [
+          "使用 ExpressJs 和 Nextjs 实现了前端和后端",
+          "学习通过使用现代库 React Konva 来使用 HTML Canvas",
+          "学习如何在前端和后端实现认证和 OAuth（带邮箱验证），并处理私人和公共画布设计的权限控制",
+          "构建了一个功能性的画布设计编辑器，支持拖放、分层和基本编辑工具"
+        ]
+      }
+    },
     {
       color: "border-emerald-700 bg-emerald-50",
       spotlight: "rgb(4, 120, 87, 0.3)",
