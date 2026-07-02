@@ -1,8 +1,14 @@
-import { useLanguage } from "../context/TextContext";
-import { projects } from "../utils/data";
+"use client";
+
+import { useLanguage } from "@/context/TextContext";
+import { projects, type ProjectItem } from "@/utils/data";
 import { HiChevronDown, HiMiniArrowUpRight } from "react-icons/hi2";
 
-function Project({ project }) {
+type ProjectProps = {
+  project: ProjectItem;
+};
+
+export default function Project({ project }: ProjectProps) {
   const { language } = useLanguage();
 
   return (
@@ -31,7 +37,7 @@ function Project({ project }) {
           rel="noreferrer"
           className="flex cursor-pointer items-center duration-200 hover:scale-105"
         >
-          {projects.link[language][1]} <HiMiniArrowUpRight id="arr" size={24} />
+          {projects.link[language][1]} <HiMiniArrowUpRight size={24} />
         </a>
       </p>
       {project.vpn && (
@@ -42,5 +48,3 @@ function Project({ project }) {
     </div>
   );
 }
-
-export default Project;

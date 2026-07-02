@@ -1,14 +1,18 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme inline {
+  --color-github: #6e5494;
+  --color-weixin: #09b83e;
+  --color-email: #0489c9;
+}
 
 html {
   scroll-behavior: smooth;
 }
 
 @font-face {
-  font-family: 'NotoSansSC';
-  src: url('./assets/NotoSansSC-VariableFont_wght.woff') format('woff');
+  font-family: "NotoSansSC";
+  src: url("/fonts/NotoSansSC-VariableFont_wght.woff") format("woff");
   font-weight: 100 900;
   font-style: normal;
 }
@@ -18,21 +22,18 @@ html {
   height: 3px;
 }
 
-/* Track */
 ::-webkit-scrollbar-track {
   background: #f4f4f5;
 }
 
-/* Handle */
 ::-webkit-scrollbar-thumb {
   background: #a1a1aa;
 }
 
-/* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
   background: #a1a1aa;
 }
 
 body {
-  font-family: 'NotoSansSC', sans-serif;
+  font-family: "NotoSansSC", sans-serif;
 }

@@ -1,10 +1,12 @@
-import GithubRepo from "../components/GithubRepo";
-import Logo from "../components/Logo";
-import SpotlightCard from "../components/SpotlightCard";
-import { useLanguage } from "../context/TextContext";
-import { details } from "../utils/data";
+"use client";
 
-function Details() {
+import GithubRepo from "@/components/GithubRepo";
+import Logo from "@/components/Logo";
+import SpotlightCard from "@/components/SpotlightCard";
+import { useLanguage } from "@/context/TextContext";
+import { details } from "@/utils/data";
+
+export default function Details() {
   const { language } = useLanguage();
 
   return (
@@ -25,8 +27,8 @@ function Details() {
               {details.desc[language]}
             </p>
             <ul className="list-disc pl-5 text-[15px] text-sky-950 md:text-lg">
-              {detail.list[language].map((list, i) => (
-                <li key={i}>{list}</li>
+              {detail.list[language].map((list, j) => (
+                <li key={j}>{list}</li>
               ))}
             </ul>
           </div>
@@ -36,5 +38,3 @@ function Details() {
     </section>
   );
 }
-
-export default Details;
