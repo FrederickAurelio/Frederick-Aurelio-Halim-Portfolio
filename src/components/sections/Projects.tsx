@@ -1,11 +1,14 @@
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
-import { useLanguage } from "../context/TextContext";
-import { projects } from "../utils/data";
-import Project from "../components/Project";
+"use client";
 
-function Projects() {
+import { useGSAP } from "@gsap/react";
+import { gsap } from "@/lib/gsap-client";
+import { useLanguage } from "@/context/TextContext";
+import { projects } from "@/utils/data";
+import Project from "@/components/Project";
+
+export default function Projects() {
   const { language } = useLanguage();
+
   useGSAP(() => {
     gsap.fromTo(
       "#rocket",
@@ -22,6 +25,7 @@ function Projects() {
       },
     );
   }, []);
+
   return (
     <section
       id="projects"
@@ -39,5 +43,3 @@ function Projects() {
     </section>
   );
 }
-
-export default Projects;

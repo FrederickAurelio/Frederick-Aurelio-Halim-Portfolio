@@ -1,23 +1,20 @@
-import { HiMiniArrowUpRight } from "react-icons/hi2";
-import Navbar from "../components/Navbar";
-import { useLanguage } from "../context/TextContext";
-import { hero } from "../utils/data";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
-import { useInView } from "react-intersection-observer";
-import ScrollToTopButton from "../components/ScrollToTopButton";
-import { useEffect } from "react";
-import SplitText from "../components/SplitText";
+"use client";
 
-function Hero() {
+import { HiMiniArrowUpRight } from "react-icons/hi2";
+import Navbar from "@/components/Navbar";
+import { useLanguage } from "@/context/TextContext";
+import { hero } from "@/utils/data";
+import { useGSAP } from "@gsap/react";
+import { gsap } from "@/lib/gsap-client";
+import { useInView } from "react-intersection-observer";
+import ScrollToTopButton from "@/components/ScrollToTopButton";
+import SplitText from "@/components/SplitText";
+
+export default function Hero() {
   const { language } = useLanguage();
   const { ref, inView } = useInView({
     threshold: 0,
   });
-
-  useEffect(() => {
-    console.log("Hero in view:", inView);
-  }, [inView]);
 
   useGSAP(() => {
     gsap.to("#btn", {
@@ -59,7 +56,8 @@ function Hero() {
         <Navbar />
         <img
           className="absolute left-0 top-0 -z-10 h-full w-full object-cover opacity-10"
-          src="./bg.jpg"
+          src="/bg.jpg"
+          alt=""
         />
         <div
           ref={ref}
@@ -104,5 +102,3 @@ function Hero() {
     </>
   );
 }
-
-export default Hero;

@@ -1,9 +1,11 @@
-import { useGSAP } from "@gsap/react";
-import { useLanguage } from "../context/TextContext";
-import { hero } from "../utils/data";
-import gsap from "gsap";
+"use client";
 
-function Navbar() {
+import { useGSAP } from "@gsap/react";
+import { useLanguage } from "@/context/TextContext";
+import { hero } from "@/utils/data";
+import { gsap } from "@/lib/gsap-client";
+
+export default function Navbar() {
   const { language, changeLanguage } = useLanguage();
 
   useGSAP(() => {
@@ -39,5 +41,3 @@ function Navbar() {
     </nav>
   );
 }
-
-export default Navbar;

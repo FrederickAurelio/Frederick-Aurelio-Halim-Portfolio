@@ -1,12 +1,11 @@
+"use client";
+
 import { useGSAP } from "@gsap/react";
-import { stacks } from "../utils/data";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useLanguage } from "../context/TextContext";
+import { stacks } from "@/utils/data";
+import { gsap } from "@/lib/gsap-client";
+import { useLanguage } from "@/context/TextContext";
 
-gsap.registerPlugin(ScrollTrigger);
-
-function TechStack() {
+export default function TechStack() {
   const { language } = useLanguage();
 
   useGSAP(() => {
@@ -56,7 +55,7 @@ function TechStack() {
               className="group relative h-24 w-24 cursor-pointer md:h-36 md:w-36"
             >
               <img
-                className="object-fit z-10 h-full w-full rounded-[25%] bg-white md:p-3 p-2 drop-shadow-lg shadow-lg duration-200 group-hover:-translate-y-4"
+                className="object-fit z-10 h-full w-full rounded-[25%] bg-white p-2 shadow-lg drop-shadow-lg duration-200 group-hover:-translate-y-4 md:p-3"
                 alt={stack.name}
                 src={stack.path}
               />
@@ -70,5 +69,3 @@ function TechStack() {
     </section>
   );
 }
-
-export default TechStack;

@@ -2,7 +2,7 @@ import { HiOutlineMail } from "react-icons/hi";
 import { LiaWeixin } from "react-icons/lia";
 import { LuGithub } from "react-icons/lu";
 
-function Footer() {
+export default function Footer() {
   return (
     <footer
       id="contact"
@@ -31,14 +31,14 @@ function Footer() {
         />
         <img
           className="absolute -right-8 -top-36 hidden h-40 w-40 duration-200 peer-hover:block"
-          src="./wechat.jpg"
+          src="/wechat.jpg"
           alt="QR Code"
         />
       </div>
       <div className="absolute top-12 w-full border-b-2 border-slate-400"></div>
       <img
         className="h-32 w-32 rounded-full object-cover"
-        src="./avatar.jpg"
+        src="/avatar.jpg"
         alt="avatar"
       />
       <p className="mt-4 flex h-full w-full items-end justify-center p-2 text-sm text-slate-400 md:text-base">
@@ -47,5 +47,3 @@ function Footer() {
     </footer>
   );
 }
-
-export default Footer;

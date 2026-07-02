@@ -1,6 +1,6 @@
 import { HiMiniArrowUpCircle } from "react-icons/hi2";
 
-function ScrollToTopButton() {
+export default function ScrollToTopButton() {
   return (
     <a
       href="#hero"
@@ -10,5 +10,3 @@ function ScrollToTopButton() {
     </a>
   );
 }
-
-export default ScrollToTopButton;
