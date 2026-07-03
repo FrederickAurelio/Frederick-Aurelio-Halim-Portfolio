@@ -1,0 +1,51 @@
+# About Me (Frederick Aurelio Halim)
+
+> AI-context document. Factual reference about the person behind the portfolio, meant to be reused for resume writing, cover letters, and other AI-assisted contexts. Mirrors the style of the project docs in this folder. Anything unconfirmed is flagged in §7.
+
+## 1. At a glance
+- **Name:** Frederick Aurelio Halim.
+- **Chinese name:** 林健昌.
+- **Origin:** From Medan, Sumatera Utara, Indonesia. Indonesian nationality.
+- **What I do:** Frontend developer who also works full-stack. Mostly React, Next.js, and Express. Comfortable across the whole stack: building the interface, wiring up the API and auth, then shipping it.
+- **Current status:** Open to frontend / full-stack roles.
+- **Primary stack:** React, Next.js, Express, TypeScript, MongoDB, Supabase.
+
+## 2. Background & story
+- **Self-taught first, then formal.** Started coding on my own in high school, around 2020 to 2021 (second/third year of high school), before studying it properly at university.
+- **What keeps me in it:** the problem-solving. Working out the logic, then watching it click into place.
+- **How I work:** I like taking a feature all the way through, from the UI to the API and auth, then getting it live.
+
+## 3. Education
+- **Degree:** B.Eng. in Computer Science (with Honours).
+- **University:** Zhejiang University of Science and Technology (浙江科技大学), Hangzhou, China.
+- **Graduated:** 2026.
+
+## 4. Languages
+- **Indonesian:** native.
+- **English:** strong working proficiency (roughly 8/10 for internal reference; do not print a score in resumes).
+- **Mandarin Chinese:** working proficiency (roughly 7/10 for internal reference; do not print a score).
+- Can work comfortably in all three languages, including in a Chinese-language workplace (lived and worked in Hangzhou).
+
+## 5. Interests & focus
+- **Currently digging into:** AI agents, and how agent loops and tool-use actually work under the hood.
+- **Outside of code:** games a fair bit.
+- **Looking for:** a team where I can build real products and keep growing as a developer.
+
+## 6. Contact & links
+- **Email:** frederick.ah88@gmail.com
+- **GitHub:** https://github.com/FrederickAurelio
+- **WeChat:** available (QR on the portfolio site).
+- **LinkedIn / others:** to be added by Frederick.
+
+## 7. Open questions / to confirm
+- Current base location and relocation preferences (intentionally left unspecified for now).
+- LinkedIn URL and any other professional links.
+- Exact program/major title as printed on the diploma (recorded here as "Computer Science").
+- Preferred job-target framing (frontend-leaning vs full-stack) for different applications.
+
+## 8. Reference copy (from the live portfolio)
+
+**English:**
+- "I'm a frontend developer who builds and deploys full-stack web apps, mostly with React, Next.js, and Express. I'm comfortable across the whole stack: building the interface, wiring up the API and auth, then shipping it."
+- "I picked up coding on my own before studying it properly. I graduated from Zhejiang University of Science and Technology in 2026 with a B.Eng. with Honours. What keeps me here is the problem-solving: working out the logic, then watching it click into place."
+- "Lately I've been digging into AI agents, and how agent loops and tool-use actually work under the hood. Away from the keyboard, I game a fair bit. Right now I'm looking for a team where I can build real products and keep growing as a developer."

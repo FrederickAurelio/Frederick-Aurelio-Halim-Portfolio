@@ -84,7 +84,7 @@ export default function Hero() {
             className="w-[44ch] text-base text-sky-800 md:w-[55ch] md:text-2xl"
           >
             {hero[language].hero.subTitle[0]}
-            <span className="font-bold text-sky-500"> Nextjs/React </span>
+            <span className="font-bold text-sky-500">React, Next.js, and Express</span>
             {hero[language].hero.subTitle[1]}
           </p>
         </div>
