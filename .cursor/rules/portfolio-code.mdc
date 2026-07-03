@@ -1,0 +1,35 @@
+---
+description: Next.js/React conventions for this portfolio codebase
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Portfolio Code Conventions
+
+## Structure
+- App Router: `src/app/` (layout, page, globals.css)
+- Sections: `src/components/sections/` — one component per scroll section
+- Shared UI: `src/components/`
+- All static content: `src/utils/data.ts` (typed exports, `satisfies`)
+- GSAP client import: `@/lib/gsap-client` (not raw `gsap` in components)
+
+## Components
+- Sections with GSAP or hooks: `"use client"` at top
+- Footer without interactivity: server component OK
+- Language: `useLanguage()` from `@/context/TextContext`
+- Localized strings: `Record<Language, T>` or `LocalizedText` from `data.ts`
+
+## Styling
+- Tailwind only — match existing palette (sky/slate)
+- Responsive: mobile-first, `md:` / `lg:` breakpoints like existing sections
+- Keep animation subtle; respect reduced motion patterns if adding new motion
+
+## Data changes
+- Add new section content to `data.ts` first, then wire component
+- New navbar item: update `hero[language].navbar` + section `id`
+- Project detail anchor: `refMore: "#slug"` matches `id={detail.logo}` in Details
+
+## Don't
+- Move content into components as hardcoded strings — keep `data.ts` as single source
+- Swap tutorial-project framing into case studies without user confirmation
+- Large refactors when user asked for one task ID from the plan

@@ -8,13 +8,15 @@
 
 html {
   scroll-behavior: smooth;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-@font-face {
-  font-family: "NotoSansSC";
-  src: url("/fonts/NotoSansSC-VariableFont_wght.woff") format("woff");
-  font-weight: 100 900;
-  font-style: normal;
+html.lang-ch {
+  --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+html.lang-en {
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 ::-webkit-scrollbar {
@@ -35,5 +37,5 @@ html {
 }
 
 body {
-  font-family: "NotoSansSC", sans-serif;
+  font-family: var(--font-sans);
 }

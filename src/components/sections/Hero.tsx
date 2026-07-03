@@ -58,6 +58,7 @@ export default function Hero() {
           className="absolute left-0 top-0 -z-10 h-full w-full object-cover opacity-10"
           src="/bg.jpg"
           alt=""
+          aria-hidden="true"
         />
         <div
           ref={ref}
@@ -84,7 +85,7 @@ export default function Hero() {
             className="w-[44ch] text-base text-sky-800 md:w-[55ch] md:text-2xl"
           >
             {hero[language].hero.subTitle[0]}
-            <span className="font-bold text-sky-500"> Nextjs/React </span>
+            <span className="font-bold text-sky-500">React, Next.js, and Express</span>
             {hero[language].hero.subTitle[1]}
           </p>
         </div>

@@ -1,0 +1,39 @@
+---
+description: Portfolio project context, workflow, and task tracking
+alwaysApply: true
+---
+
+# Portfolio — Project Context
+
+Personal portfolio for **Frederick Aurelio Halim**. Updating from 2024 → 2026 content.
+
+## Stack
+Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · GSAP · bilingual EN/中文
+
+## Key files
+- `src/utils/data.ts` — **all copy** (hero, projects, details, stacks, navbar)
+- `src/app/page.tsx` — section order
+- `src/context/TextContext.tsx` — language toggle (`en` | `ch`)
+- `public/` — images, fonts, screenshots
+
+## Workflow
+1. User picks a task from `PORTFOLIO_PLAN.md` by ID (e.g. H1, M2, L1)
+2. Apply `portfolio-writing` rules for any copy changes
+3. Check off the task in `PORTFOLIO_PLAN.md` when done
+4. User provides facts first; agent structures and implements — never invent metrics or job history
+
+## Content rules (summary)
+- Show what you built and why — not adjective bios
+- Problem → decision → outcome for projects
+- 3–5 curated projects max on homepage
+- EN and 中文 must match facts (not fluffy machine translation)
+
+## Extended docs
+- `AGENTS.md` — full agent guide
+- `PORTFOLIO_PLAN.md` — task checklist
+- `PORTFOLIO_WRITING_RULES.md` — full writing reference with examples
+
+## Code change scope
+- Minimal diffs; match existing patterns (`"use client"`, `@/` imports, GSAP in sections)
+- Do not commit unless user asks
+- Do not add unrelated features when doing content updates

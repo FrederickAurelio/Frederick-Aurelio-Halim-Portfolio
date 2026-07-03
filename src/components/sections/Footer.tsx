@@ -3,6 +3,8 @@ import { LiaWeixin } from "react-icons/lia";
 import { LuGithub } from "react-icons/lu";
 
 export default function Footer() {
+  const copyrightYear = Math.max(2026, new Date().getFullYear());
+
   return (
     <footer
       id="contact"
@@ -42,7 +44,7 @@ export default function Footer() {
         alt="avatar"
       />
       <p className="mt-4 flex h-full w-full items-end justify-center p-2 text-sm text-slate-400 md:text-base">
-        Copyright &copy; 2024 Frederick Aurelio Halim
+        Copyright &copy; {copyrightYear} Frederick Aurelio Halim
       </p>
     </footer>
   );
