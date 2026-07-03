@@ -51,7 +51,7 @@ export default function Hero() {
     <>
       <section
         id="hero"
-        className="relative z-10 h-dvh w-full max-w-full overflow-x-hidden bg-slate-50 p-5 md:p-10"
+        className="relative z-10 h-dvh w-full max-w-full overflow-x-hidden overflow-y-visible bg-slate-50 p-5 md:p-10"
       >
         <Navbar />
         <img
