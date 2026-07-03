@@ -58,6 +58,7 @@ export default function Hero() {
           className="absolute left-0 top-0 -z-10 h-full w-full object-cover opacity-10"
           src="/bg.jpg"
           alt=""
+          aria-hidden="true"
         />
         <div
           ref={ref}

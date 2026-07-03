@@ -32,9 +32,9 @@ export default function Experience() {
       id="experience"
       className="flex w-full flex-col items-center bg-linear-to-b from-slate-100 to-slate-50 p-5 py-16 md:p-10 md:py-24"
     >
-      <h1 className="mb-10 text-3xl font-semibold text-sky-800 md:text-5xl">
+      <h2 className="mb-10 text-3xl font-semibold text-sky-800 md:text-5xl">
         {experience.heading[language]}
-      </h1>
+      </h2>
 
       <div className="flex w-full max-w-5xl flex-col gap-6">
         {experience.jobs.map((job, i) => (

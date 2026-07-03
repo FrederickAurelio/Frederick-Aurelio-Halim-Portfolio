@@ -43,10 +43,10 @@ export default function TechStack() {
   return (
     <section id="stack" className="flex h-dvh w-full bg-slate-100 p-5 md:p-10">
       <div className="flex h-[90%] w-full flex-col items-center justify-center text-center">
-        <h1 className="mb-10 flex text-4xl font-semibold text-sky-800 md:text-6xl lg:text-7xl">
+        <h2 className="mb-10 flex text-4xl font-semibold text-sky-800 md:text-6xl lg:text-7xl">
           <p id="spin">⚙️</p>
           <p>{language === "en" ? "Tech Stack" : "技术栈"}</p>
-        </h1>
+        </h2>
         <div className="flex w-full flex-wrap justify-center gap-5 md:gap-10 xl:w-[85%]">
           {stacks.map((stack) => (
             <div

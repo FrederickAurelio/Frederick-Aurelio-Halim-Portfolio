@@ -42,12 +42,12 @@ export default function About() {
       id="about"
       className="flex w-full flex-col items-center bg-gradient-to-b from-slate-50 to-slate-100 p-5 py-16 md:p-10 md:py-24"
     >
-      <h1 className="mb-10 flex gap-2 text-3xl font-semibold text-sky-800 md:text-5xl">
+      <h2 className="mb-10 flex gap-2 text-3xl font-semibold text-sky-800 md:text-5xl">
         <span id="wave" className="inline-block">
           👋
         </span>
         {about.heading[language]}
-      </h1>
+      </h2>
 
       <SpotlightCard
         id="about-card"

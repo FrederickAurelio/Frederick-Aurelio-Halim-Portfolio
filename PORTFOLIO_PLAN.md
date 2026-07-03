@@ -145,7 +145,7 @@ Current Details section is close but framed as *"things I learned"* instead of *
   - Update to 2026
   - File: `src/components/sections/Footer.tsx`
 
-- [ ] **M6. Update page metadata**
+- [x] **M6. Update page metadata**
   - Richer description, Open Graph tags
   - File: `src/app/layout.tsx`
 

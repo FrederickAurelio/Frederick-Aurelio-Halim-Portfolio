@@ -31,10 +31,10 @@ export default function Projects() {
       id="projects"
       className="flex w-full flex-col items-center bg-slate-50 p-5 xl:p-20 xl:py-10"
     >
-      <h1 className="my-10 mb-12 flex text-3xl font-semibold text-sky-800 md:text-5xl">
+      <h2 className="my-10 mb-12 flex text-3xl font-semibold text-sky-800 md:text-5xl">
         <p id="rocket">🚀</p>
         {language === "en" ? "Highlight Projects" : "精选项目"}
-      </h1>
+      </h2>
       <div className="grid w-full grid-cols-1 gap-10 md:grid-cols-2">
         {projects.projects.map((project, i) => (
           <Project key={i} project={project} />
