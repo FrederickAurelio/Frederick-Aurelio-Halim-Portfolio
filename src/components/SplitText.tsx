@@ -75,7 +75,7 @@ export default function SplitText({
   return (
     <p
       ref={ref}
-      className={`split-parent inline overflow-hidden ${className}`}
+      className={`split-parent mx-auto block w-full max-w-full ${className}`}
       style={{ textAlign }}
     >
       {springs.map((props, index) => (

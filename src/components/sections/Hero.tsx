@@ -24,12 +24,12 @@ export default function Hero() {
       opacity: 1,
     });
     gsap.fromTo(
-      "#title",
+      "#hero-name",
       {
-        x: -400,
+        x: -40,
         opacity: 0,
       },
-      { x: 0, opacity: 1, delay: 1.5, duration: 0.4, stagger: 0.1 },
+      { x: 0, opacity: 1, delay: 1.5, duration: 0.4 },
     );
     gsap.fromTo(
       "#arr",
@@ -51,7 +51,7 @@ export default function Hero() {
     <>
       <section
         id="hero"
-        className="relative z-10 h-dvh w-full bg-slate-50 p-5 md:p-10"
+        className="relative z-10 h-dvh w-full max-w-full overflow-x-hidden bg-slate-50 p-5 md:p-10"
       >
         <Navbar />
         <img
@@ -62,17 +62,17 @@ export default function Hero() {
         />
         <div
           ref={ref}
-          className="flex h-[90%] w-full flex-col items-center justify-center text-center"
+          className="flex h-[90%] w-full min-w-0 max-w-full flex-col items-center justify-center px-1 text-center sm:px-2"
         >
           <h1
-            id="title"
-            className="text-base font-bold uppercase text-sky-800 md:text-2xl"
+            id="hero-name"
+            className="max-w-full text-base font-bold uppercase text-sky-800 md:text-2xl"
           >
             {hero[language].hero.name}
           </h1>
           <SplitText
             text={hero[language].hero.title}
-            className="pb-1 text-5xl font-bold text-sky-600 md:pb-3 md:text-6xl lg:text-7xl"
+            className="max-w-full pb-1 text-[clamp(1.75rem,9vw,3.75rem)] font-bold leading-tight text-sky-600 md:pb-3 md:text-6xl lg:text-7xl"
             delay={language === "en" ? 50 : 200}
             animationFrom={{ opacity: 0, transform: "translate3d(0,50px,0)" }}
             animationTo={{ opacity: 1, transform: "translate3d(0,0,0)" }}
@@ -80,10 +80,7 @@ export default function Hero() {
             threshold={0.2}
             rootMargin="-50px"
           />
-          <p
-            id="title"
-            className="w-[44ch] text-base text-sky-800 md:w-[55ch] md:text-2xl"
-          >
+          <p className="w-full max-w-[44ch] px-1 text-base text-sky-800 sm:max-w-[55ch] md:text-2xl">
             {hero[language].hero.subTitle[0]}
             <span className="font-bold text-sky-500">React, Next.js, and Express</span>
             {hero[language].hero.subTitle[1]}
