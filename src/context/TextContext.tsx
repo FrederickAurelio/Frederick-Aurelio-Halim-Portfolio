@@ -1,8 +1,8 @@
 "use client";
 
-import { createContext, useContext, useEffect } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { NOTO_SANS_SC_STYLESHEET } from "@/lib/fonts";
-import { useLocalStorageState } from "@/hooks/useLocalStorageState";
+import { persistLanguage } from "@/lib/language";
 import type { Language } from "@/utils/data";
 
 type TextContextValue = {
@@ -30,17 +30,27 @@ function ensureChineseFontLoaded() {
   document.head.appendChild(link);
 }
 
-export function TextLanguage({ children }: { children: React.ReactNode }) {
-  const [language, setLanguage] = useLocalStorageState<Language>("ch", "language");
-  const changeLanguage = () =>
-    setLanguage((lg) => (lg === "en" ? "ch" : "en"));
+type TextLanguageProps = {
+  children: React.ReactNode;
+  initialLanguage: Language;
+};
+
+export function TextLanguage({
+  children,
+  initialLanguage,
+}: TextLanguageProps) {
+  const [language, setLanguage] = useState<Language>(initialLanguage);
 
   useEffect(() => {
     syncDocumentLanguage(language);
+    persistLanguage(language);
     if (language === "ch") {
       ensureChineseFontLoaded();
     }
   }, [language]);
+
+  const changeLanguage = () =>
+    setLanguage((lg) => (lg === "en" ? "ch" : "en"));
 
   return (
     <TextContext.Provider value={{ language, changeLanguage }}>
