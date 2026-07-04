@@ -27,7 +27,7 @@
 - Can work comfortably in all three languages, including in a Chinese-language workplace (lived and worked in Hangzhou).
 
 ## 5. Interests & focus
-- **Currently digging into:** AI agents, and how agent loops and tool-use actually work under the hood.
+- **Recently exploring:** AI agents, learning how tool calling and agent loops work.
 - **Outside of code:** games a fair bit.
 - **Looking for:** a team where I can build real products and keep growing as a developer.
 
@@ -46,6 +46,6 @@
 ## 8. Reference copy (from the live portfolio)
 
 **English:**
-- "I'm a frontend developer who builds and deploys full-stack web apps, mostly with React, Next.js, and Express. I'm comfortable across the whole stack: building the interface, wiring up the API and auth, then shipping it."
-- "I picked up coding on my own before studying it properly. I graduated from Zhejiang University of Science and Technology in 2026 with a B.Eng. with Honours. What keeps me here is the problem-solving: working out the logic, then watching it click into place."
-- "Lately I've been digging into AI agents, and how agent loops and tool-use actually work under the hood. Away from the keyboard, I game a fair bit. Right now I'm looking for a team where I can build real products and keep growing as a developer."
+  "I'm a frontend developer who builds and deploys full-stack web apps, mostly with React, Next.js, and Express. I'm comfortable across the whole stack. I build the interface, wire up the API and auth, then ship it.",
+- "I picked up coding on my own before studying it properly. I graduated from Zhejiang University of Science and Technology in 2026 with a B.Eng. with Honours. What I enjoy most is solving problems. I work out the logic, then watch it click into place."
+- "Recently, I've been exploring AI agents and learning how tool calling and agent loops work. Away from the keyboard, I game a fair bit. Right now I'm looking for a team where I can build real products and keep growing as a developer."

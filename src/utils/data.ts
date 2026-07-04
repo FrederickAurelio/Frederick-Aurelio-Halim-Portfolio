@@ -98,14 +98,14 @@ export const about: AboutContent = {
   },
   paragraphs: {
     en: [
-      "I'm a frontend developer who builds and deploys full-stack web apps, mostly with React, Next.js, and Express. I'm comfortable across the whole stack: building the interface, wiring up the API and auth, then shipping it.",
-      "I picked up coding on my own before studying it properly. I graduated from Zhejiang University of Science and Technology in 2026 with a B.Eng. with Honours. What keeps me here is the problem-solving: working out the logic, then watching it click into place.",
-      "Lately I've been digging into AI agents, and how agent loops and tool-use actually work under the hood. Away from the keyboard, I game a fair bit. Right now I'm looking for a team where I can build real products and keep growing as a developer.",
+      "I'm a frontend developer who builds and deploys full-stack web apps, mostly with React, Next.js, and Express. I'm comfortable across the whole stack. I build the interface, wire up the API and auth, then ship it.",
+      "I picked up coding on my own before studying it properly. I graduated from Zhejiang University of Science and Technology in 2026 with a B.Eng. with Honours. What I enjoy most is solving problems. I work out the logic, then watch it click into place.",
+      "Recently, I've been exploring AI agents and learning how tool calling and agent loops work. Away from the keyboard, I game a fair bit. Right now I'm looking for a team where I can build real products and keep growing as a developer.",
     ],
     ch: [
-      "我是一名前端开发者，也做全栈，主要用 React、Next.js 和 Express。整条链路我都能上手：写界面、接口和认证，然后部署上线。",
-      "我一开始是自学写代码，后来才正经学了这一行。2026 年我从浙江科技大学毕业，拿到工学荣誉学士学位。真正让我留下来的是解决问题的过程：把逻辑想清楚，然后看着它跑起来。",
-      "最近我在研究 AI agent，想搞明白 agent loop 和工具调用在底层到底是怎么跑起来的。不写代码的时候，我挺爱打游戏。现在我想找一个团队，能一起做真实的产品，也让我不断成长。",
+      "我是一名前端开发者，也做全栈，主要用 React、Next.js 和 Express。整条链路我都能上手。写界面、接口和认证，然后部署上线。",
+      "我一开始是自学写代码，后来才正经学了这一行。2026 年我从浙江科技大学毕业，拿到工学荣誉学士学位。我最喜欢的就是解决问题。把逻辑想清楚，然后看着它跑起来。",
+      "最近我在探索 AI agent，学习工具调用和 agent loop 是怎么运作的。不写代码的时候，我挺爱打游戏。现在我想找一个团队，能一起做真实的产品，也让我不断成长。",
     ],
   },
   focus: ["React", "Next.js", "Express", "TypeScript", "MongoDB", "Supabase"],
