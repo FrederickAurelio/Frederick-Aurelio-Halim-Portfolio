@@ -266,16 +266,16 @@ export const details = {
       github: "https://github.com/FrederickAurelio/QuizConnect",
       list: {
         en: [
-          "A Kahoot style quiz game you play live with friends. One person hosts, everyone joins with a code, and you answer in real time on a shared leaderboard.",
-          "The tricky part was keeping everyone's screen in sync and not losing a game if the server hiccups mid game. I moved the round timers out of memory so they survive restarts, and let the server decide when each question ends instead of the browser.",
-          "I set it up to deploy itself. The whole app is containerized with Docker (server, database, cache, and web server), and every push to main runs a GitHub Actions pipeline that builds the images and ships them to the server.",
-          "It can also turn a PDF into a draft quiz. That started as a way to stop typing out test questions by hand and ended up being my favourite part.",
+          "Built a real time multiplayer quiz game (React, Express, Socket.IO) where a host opens a room, players join with a code, and everyone answers in sync on a shared leaderboard.",
+          "Made the server authoritative over each round and ran the question timers as Redis backed BullMQ jobs, so a live game keeps going even if the server restarts mid match.",
+          "Added AI features through the OpenRouter API: draft a quiz from an uploaded PDF, explain any answer, and generate a session summary.",
+          "Containerized the whole stack with Docker (server, MongoDB, Redis, Nginx) and set up GitHub Actions to build and deploy to a VPS on every push to main.",
         ],
         ch: [
-          "一个类似 Kahoot 的实时答题游戏。一个人开房，大家用房间码加入，实时抢答，共用一个排行榜。",
-          "比较难的是让所有人的画面保持同步，而且服务器中途出问题也不能把这一局弄丢。我把每题的计时从内存里挪了出来，重启也不会丢，并且由服务端来决定每道题什么时候结束，而不是浏览器。",
-          "我还让它能自动部署。整个应用用 Docker 容器化（服务端、数据库、缓存和 Web 服务器），每次推到 main 都会触发 GitHub Actions 流水线，自动构建镜像并发布到服务器。",
-          "它还能把一份 PDF 变成一份草稿题库。本来只是想省去手动出测试题的麻烦，结果成了我最喜欢的部分。",
+          "做了一个实时多人答题游戏（React、Express、Socket.IO）：主持人开房，玩家用房间码加入，所有人同步答题，共用一个实时排行榜。",
+          "让服务端主导每一局，并把每题的计时放到基于 Redis 的 BullMQ 任务里，这样即使服务器中途重启，正在进行的对局也不会中断。",
+          "通过 OpenRouter API 加了几个 AI 功能：根据上传的 PDF 生成草稿题库、解释任意一道题，以及生成整局的分析总结。",
+          "用 Docker 把整套服务容器化（服务端、MongoDB、Redis、Nginx），并用 GitHub Actions 做到每次推送到 main 就自动构建并部署到服务器。",
         ],
       },
       tags: [
@@ -297,14 +297,16 @@ export const details = {
       github: "https://github.com/FrederickAurelio/Memories",
       list: {
         en: [
-          "A digital scrapbook. You drop photos onto a canvas, decorate them with text, shapes and doodles, then share the page with friends.",
-          "The editor is all custom (drag, resize, layers, undo and redo), which was the fun part to build. The fiddly bit was privacy: keeping a private photo actually private meant serving every image through a check so only the owner and their friends can see it.",
-          "It's not fully finished. Friend requests and a couple of screens are still stubbed out, but it got me most of the way to something real.",
+          "Built a digital scrapbook web app (Next.js, Express, MongoDB) where you arrange photos, text, shapes, and drawings on a canvas, then share the page with friends.",
+          "Wrote the canvas editor from scratch with React Konva, including drag, resize, layers, and undo and redo.",
+          "Kept private photos private by serving every image through an ownership check, so only the owner and their friends can load it.",
+          "Set up accounts with GitHub OAuth and server side sessions; friend requests and a couple of screens are still in progress.",
         ],
         ch: [
-          "一个数字剪贴簿。把照片摆到画布上，用文字、形状和涂鸦装饰，然后分享给朋友。",
-          "编辑器完全是自己写的（拖动、缩放、图层、撤销和重做），这部分做起来最有意思。麻烦的是隐私：要让私密照片真的私密，得让每张图片都走一道校验，只有作者和好友能看到。",
-          "它还没完全做完，好友申请和几个页面还是半成品，但已经很接近一个真正能用的东西了。",
+          "做了一个数字剪贴簿应用（Next.js、Express、MongoDB）：在画布上摆放照片、文字、形状和涂鸦，然后把作品分享给好友。",
+          "用 React Konva 从零写了整个画布编辑器，包括拖动、缩放、图层，以及撤销和重做。",
+          "为了保护隐私，每张图片都要先过一遍归属校验，私密照片只有作者和好友才能加载。",
+          "用 GitHub OAuth 和服务端会话做了账号系统；好友申请和几个页面还在做。",
         ],
       },
       tags: [
@@ -323,14 +325,16 @@ export const details = {
       github: "https://github.com/FrederickAurelio/Nextjs-FXTrade",
       list: {
         en: [
-          "A pretend forex trading app. You sign up, get ¥100,000 of fake money, and practice buying and selling currencies on real exchange rates.",
-          "Since it's a money app, the interesting problem was making sure nobody could cheat from the browser. Every trade is priced and checked on the server, and the database only lets the server write to it, so you can't just edit your balance in dev tools.",
-          "It's a rebuild of an older React project of mine. I moved it over to Next.js and swapped the backend to Supabase along the way.",
+          "Built a forex trading simulator (Next.js, Supabase) where users get ¥100,000 of virtual money and trade currencies against live and historical rates.",
+          "Priced and validated every trade on the server and locked writes down with Supabase row level security, so a user can't edit their own balance from the browser.",
+          "Polled live exchange rates on an interval with React Query and cached historical rates to cut repeat API calls.",
+          "Rebuilt an older React project of mine on Next.js and moved the backend from LeanCloud to Supabase.",
         ],
         ch: [
-          "一个模拟外汇交易的应用。注册后拿到 ¥100,000 的虚拟资金，用真实汇率练习买卖货币。",
-          "因为是跟钱有关的应用，有意思的问题是不能让人从浏览器作弊。每笔交易都在服务端定价和校验，数据库也只允许服务端写入，所以你没法在开发者工具里改自己的余额。",
-          "这是我之前一个 React 项目的重制版，顺手迁到了 Next.js，后端也换成了 Supabase。",
+          "做了一个外汇交易模拟器（Next.js、Supabase）：用户拿到 ¥100,000 虚拟资金，用真实的实时和历史汇率买卖货币。",
+          "每一笔交易都在服务端定价和校验，并用 Supabase 行级安全锁住写入权限，用户没法在浏览器里改自己的余额。",
+          "用 React Query 定时轮询实时汇率，并缓存历史汇率，减少重复的 API 请求。",
+          "把我之前一个 React 项目在 Next.js 上重做，并把后端从 LeanCloud 换成了 Supabase。",
         ],
       },
       tags: [
@@ -349,14 +353,14 @@ export const details = {
       github: "https://github.com/FrederickAurelio/promis-web",
       list: {
         en: [
-          "The main frontend work on a marketing site for an Indonesian company that sells conveyor chains to palm oil mills. Think product pages, spec tables, and galleries.",
-          "There's no backend on purpose. Instead of a contact form nobody checks, every 'request a quote' button opens WhatsApp, which is how their customers actually reach them. Less to maintain, and enquiries come in straight away.",
-          "Most of my effort went into helping it show up on Google, with proper page metadata, structured data, and a sitemap, since that's how the company gets found.",
+          "Built the frontend of a marketing site for an Indonesian conveyor chain supplier (Next.js, Tailwind, Framer Motion), including the product catalog, spec tables, galleries, and animated sections.",
+          "Skipped a backend on purpose and wired every quote button to WhatsApp, which is how the company's customers actually reach them, so there's less to maintain and enquiries arrive instantly.",
+          "Set up full SEO with page metadata, Open Graph, JSON-LD structured data, a dynamic sitemap, and robots.txt, since search is how the company gets found.",
         ],
         ch: [
-          "给一家印尼卖输送链（给棕榈油厂）的公司做官网时的主要前端工作，包括产品页、规格表和图库。",
-          "刻意没做后端。与其放一个没人看的联系表单，不如让每个“询价”按钮直接打开 WhatsApp，这才是他们客户真正联系的方式。维护更少，咨询也是即时到。",
-          "我大部分精力花在帮它在 Google 上有好的展示，包括完整的页面 metadata、结构化数据和站点地图，因为公司主要就是靠这个被找到的。",
+          "负责一家印尼输送链供应商官网的前端（Next.js、Tailwind、Framer Motion），包括产品目录、规格表、图库和带动效的板块。",
+          "刻意不做后端，把每个询价按钮都接到 WhatsApp，这才是他们客户真正联系的方式，维护更少，咨询也即时到达。",
+          "做了完整的 SEO：页面 metadata、Open Graph、JSON-LD 结构化数据、动态站点地图和 robots.txt，因为公司主要靠搜索被找到。",
         ],
       },
       tags: [

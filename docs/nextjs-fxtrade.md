@@ -7,8 +7,8 @@
 - **My role (this developer):** Sole developer — built the entire app end to end (auth, Supabase backend, server actions, API routes, trading logic, charts, landing page, responsive UI). Inferred from 100% single-author commit history.
 - **Status:** Demo / portfolio project (README calls it a "Forex Trade Demo App"). Last commit 2024-08-16; no commits since, so appears inactive/complete (inferred). No evidence of production traffic in the repo.
 - **First commit / last commit / total commits:** 2024-08-08 / 2024-08-16 / 43 commits.
-- **Repo URL:** `git@github.com:FrederickAurelio/Nextjs-FXTrade.git` (GitHub: `FrederickAurelio/Nextjs-FXTrade`).
-- **Live/demo URL:** None found in README or configs. `NEXT_PUBLIC_BASE_URL` in the local `.env.local` is `http://localhost:3000/` (no deployed URL committed). (unverified whether a live deployment exists)
+- **Repo URL:** https://github.com/FrederickAurelio/Nextjs-FXTrade (portfolio link; git remote: `git@github.com:FrederickAurelio/Nextjs-FXTrade.git`).
+- **Live/demo URL:** https://nextjs-fx-trade.vercel.app/ (portfolio link; not committed in repo README or configs).
 
 ## 2. Problem & purpose
 - **Who it's for:** People who want to learn/practice forex trading without risking real money (README: "users can learn to trade foreign exchange currency in real-time").
@@ -108,7 +108,7 @@
 ## 11. Deployment & running it
 - **Scripts (`package.json`):** `dev` = `next dev`, `build` = `next build`, `start` = `next start`, `lint` = `next lint`, `prod` = `next build && next start`.
 - **Run locally (inferred, no explicit README instructions):** `npm install`, create a `.env.local` with the 5 env vars above (Supabase project, GitHub OAuth app, CurrencyBeacon key), set up Supabase `userBalance`/`transactions` tables with RLS, then `npm run dev` (default `http://localhost:3000`).
-- **Deployment:** No deploy config committed. `.gitignore` referencing `.vercel` suggests Vercel was intended (inferred). No live URL found. (unverified)
+- **Deployment:** Live on Vercel at https://nextjs-fx-trade.vercel.app/ (portfolio link). No deploy config committed in repo; `.gitignore` referencing `.vercel` suggests Vercel was the intended host.
 - **Env/config requirements:** See §8. Note `NEXT_PUBLIC_BASE_URL` is used to build absolute fetch/redirect URLs, so it must be set correctly per environment.
 
 ## 12. Testing & quality
@@ -157,7 +157,7 @@
 - `reactStrictMode` is disabled, likely to avoid double-invocation side effects during development (inferred).
 
 ## 18. Open questions for the human
-- Is there a live/deployed version (Vercel or otherwise)? What is the URL and is it still up?
+- Is the Vercel deployment at https://nextjs-fx-trade.vercel.app/ still up and maintained?
 - Was this ever used by real users? Any user counts, sessions, or feedback? (repo shows none)
 - Is `NEXT_PUBLIC_SUPABASE_SECRET_KEY` (service-role) being kept server-only in the deployed build, and have those keys been rotated since the local `.env.local` was created?
 - Was the `/api/transactions` endpoint intended to be auth-protected? (currently trusts a `user_id` query param)

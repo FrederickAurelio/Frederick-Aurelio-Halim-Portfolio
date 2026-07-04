@@ -9,8 +9,8 @@
 - **First commit date:** 2025-02-24
 - **Last commit date:** 2025-05-13
 - **Total commits:** 104 (`git rev-list --count HEAD`)
-- **Repo URL:** https://github.com/FrederickAurelio/Memories.git (from `git remote -v`)
-- **Live/demo URL:** None found. All URLs are `http://localhost:3000` (frontend) and `http://localhost:2000` (backend).
+- **Repo URL:** https://github.com/FrederickAurelio/Memories (portfolio link; git remote: `git@github.com:FrederickAurelio/Memories.git`).
+- **Live/demo URL:** No public live deployment. Portfolio links to the GitHub repo above. App URLs in code are still `http://localhost:3000` (frontend) and `http://localhost:2000` (backend).
 
 ## 2. Problem & purpose
 - **Who it's for:** Individuals who want to arrange personal photos ("memories") into decorated digital collages/scrapbook pages and optionally share them with friends. (inferred from the name "Memories", the photo + caption model, and the friend/privacy features)

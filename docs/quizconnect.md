@@ -5,10 +5,10 @@
 - **Category:** Full-stack web application (real-time multiplayer game + REST API + AI features). Frontend is a React single-page app; backend is an Express API with Socket.IO and a BullMQ worker.
 - **Solo or team:** Solo. Git shows a single contributor across all 125 commits: Frederick Aurelio Halim (`frederick.ah88@gmail.com`).
 - **My role:** Sole author of the entire codebase — frontend, backend, real-time layer, data models, AI integration, Docker/CI, and accompanying thesis/slide documentation (inferred from being the only committer).
-- **Status:** Actively developed prototype. Last commit `2026-07-02`, ongoing for ~7 months. Deployment tooling exists (GitHub Actions → VPS). Whether a public production instance is currently live: No evidence in repo (unverified). The associated thesis explicitly calls it a "prototype, not a commercial-scale platform."
+- **Status:** Actively developed prototype. Last commit `2026-07-02`, ongoing for ~7 months. Deployment tooling exists (GitHub Actions → VPS). Live demo hosted at `http://120.26.45.50:3221/` (portfolio link). The associated thesis explicitly calls it a "prototype, not a commercial-scale platform."
 - **First commit / last commit / total commits:** First `2025-11-28`, last `2026-07-02`, `125` commits total.
-- **Repo URL:** `git@github.com:FrederickAurelio/QuizConnect.git` (from `git remote -v`).
-- **Live/demo URL:** None found in `README.md` or configs. The `slides/` deck has a `netlify.toml` and `vercel.json` (slides hosting config), but no concrete deployed app URL is present in the repo (unverified).
+- **Repo URL:** https://github.com/FrederickAurelio/QuizConnect (portfolio link; git remote: `git@github.com:FrederickAurelio/QuizConnect.git`).
+- **Live/demo URL:** http://120.26.45.50:3221/ (portfolio link; VPS deployment, not committed in repo README).
 
 ## 2. Problem & purpose
 - **Who it's for:** Learners, teachers/hosts, and quiz participants in classroom, training, or informal learning settings. It is an academic thesis project (inferred from `zthesis/` chapters and `slides/` defense deck), so the primary audience also includes the author's thesis supervisors.
@@ -200,7 +200,7 @@ Base path `/api` (Express, `app.ts`). All list/detail unless noted require `isAu
 - **Cursor rule present:** `.cursor/rules/thesis-writing-style.mdc` encodes the author's preferred thesis writing tone.
 
 ## 18. Open questions for the human
-- Is there a currently live/public deployment URL (VPS domain), and is it still running? None is committed to the repo.
+- Is the live deployment at `http://120.26.45.50:3221/` still running and intended to stay public?
 - Confirm this is a solo bachelor's/master's thesis project (the git history shows one author; the thesis chapters imply an academic context but the degree/institution isn't stated in tracked files).
 - Institution, supervisor, course, and submission date (referenced in `slides/slides.md` cover per README of slides, but should be confirmed).
 - Any real usage numbers — number of games hosted, users, or a demo/user-testing cohort? The thesis Chapter 6 (Evaluation) may contain these; confirm what evaluation was actually performed.
@@ -212,5 +212,5 @@ Base path `/api` (Express, `app.ts`). All list/detail unless noted require `isAu
 ## 19. Evidence & confidence notes
 - **Strongest, code-grounded claims** (high confidence): tech stack and versions (`package.json` files), data models (`models/*.ts`), REST endpoints (`router.ts` files), socket events and game logic (`sockets/lobby-socket.ts`, `redis/lobby.ts`), AI pipeline (`ai-quiz-generations/orchestrator.ts`, `ai-quiz-materials/material-text.ts`), auth/security (`auth/controller.ts`, `app.ts`), Docker/CI (`docker-compose.yml`, `.github/workflows/deploy.yml`), git stats (`git log`/`shortlog`).
 - **Medium confidence:** purpose/audience and design rationale, which come from `zthesis/` and `zdoc/` — these are git-ignored working docs, not committed source, so treat them as authored context rather than shipped artifacts. README is partially outdated (omits AI features; describes an older GHCR deploy flow), so code was preferred over README where they conflicted.
-- **Low confidence / unverified:** live deployment status and URL, real-world usage/evaluation numbers, individual commit-dated milestones, and academic metadata (institution/supervisor/date). These are flagged in §18.
+- **Low confidence / unverified:** real-world usage/evaluation numbers, individual commit-dated milestones, and academic metadata (institution/supervisor/date). Live URL is from the portfolio (`src/utils/data.ts`), not from repo README. These are flagged in §18.
 - **Overall confidence in this document:** High for "what the code is and does"; Medium for "why/context"; Low for "real-world outcomes and current live status." No performance, user-count, or scale numbers are asserted because none are evidenced in the repo.

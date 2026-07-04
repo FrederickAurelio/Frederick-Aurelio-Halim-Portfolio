@@ -7,12 +7,12 @@
 - **Category:** Marketing / company profile website (static content, no backend). Brochure-style corporate site.
 - **Solo or team:** Team (git shows multiple contributors, see below). Primary author dominant.
 - **My role:** Cannot be confirmed from repo alone. Git shows "Frederick Aurelio Halim" as the primary committer (47 of 58 commits) covering nearly all feature/UI work; the two other contributors made mostly copy/text/image edits. If THIS developer is Frederick, the role is effectively lead/sole front-end developer (inferred). Flag: confirm which contributor is the resume owner.
-- **Status:** Active development as of last commit; no evidence it is live in production. Live domain `https://promischain.com` is hardcoded as the canonical/site URL, but no deployment config or proof of a live site is in the repo. (unverified whether currently deployed)
+- **Status:** Active development as of last commit. Live demo at https://promis-web.vercel.app/ (portfolio link).
 - **First commit date:** 2026-03-02 (`Initial commit from Create Next App`)
 - **Last commit date:** 2026-03-20
 - **Total commits:** 58
-- **Repo URL:** `git@github.com:FrederickAurelio/promis-web.git` (GitHub, from `git remote -v`)
-- **Live/demo URL:** `https://promischain.com` referenced in code as the site URL (`src/constant/index.ts`, `WEBSITE_URL`). Note: `src/app/products/page.tsx` metadata uses a different domain `https://promis.co.id` in `canonical`/OG URLs (inconsistency in repo). No confirmation either is live. (unverified)
+- **Repo URL:** https://github.com/FrederickAurelio/promis-web (portfolio link; git remote: `git@github.com:FrederickAurelio/promis-web.git`).
+- **Live/demo URL:** https://promis-web.vercel.app/ (portfolio link).
 
 ## 2. Problem & purpose
 - **Who it's for:** Palm oil mill operators / industrial buyers in Indonesia who need conveyor chains, roller/transmission chains, sprockets, and connecting links. Also serves SEO/lead-generation purposes for the seller company.
@@ -34,7 +34,6 @@
   - Root-level `text` file contains Indonesian to-do notes ("footer ... grid ... ALL MUST RESPONSIVE...") — a scratch dev note, still committed.
   - Root-level `Untitled` file contains `docker compose -f docker-compose.yml -f docker-compose.dev-db.yml up -d mongodb redis` — references MongoDB/Redis and compose files that DO NOT exist in this repo; appears to be an unrelated stray snippet. (inferred stray/unused)
   - Testimonials in `src/app/page.tsx` reference the brand name "IndoChain" in their text, not "Promis" — likely placeholder/copy-paste content. (inferred)
-  - Domain inconsistency between `promischain.com` (constant) and `promis.co.id` (products page metadata).
   - Several visible typos in UI copy (e.g. "Lihat Lokasi Kmai", "Infomasi Kontak", "Geleri Dokumentasi", "terbak").
 
 ## 4. Tech stack
@@ -170,14 +169,13 @@ Note: These are UI/front-end engineering challenges. No algorithmically complex/
 - Legal/company entity referenced in content: "PT Inti Perkasa Panca Surya" (About timeline; also `logo-ipp.png`). Brand "Promis" said (in copy) to have formed in 2021.
 - Testimonials in code still say "IndoChain" — a placeholder brand name inconsistent with "Promis" (likely template content). (inferred)
 - Two stray committed files: `text` (Indonesian to-do notes) and `Untitled` (an unrelated `docker compose ... mongodb redis` command not backed by any file here).
-- Domain mismatch: `promischain.com` (constants/site URL) vs. `promis.co.id` (products page metadata canonical/OG).
 - Some UI copy typos remain (e.g. "Lihat Lokasi Kmai", "Infomasi Kontak", "Geleri Dokumentasi", "penawaran harga terbak").
 - `.next/` build cache is present locally but git-ignored.
 - Branch names hint at workflow: `copy` (text edits), `fixing-update`, `codex/improve-seo-for-codebase` (an AI-assisted SEO pass), merged via PRs #1–#5.
 
 ## 18. Open questions for the human
 - Which git contributor is the resume owner? (Frederick Aurelio Halim = 47 commits and nearly all feature work; stevanielim123 / Stevanie = ~11 commits, mostly copy/image edits.) Solo or team, and what was your specific role?
-- Is the site actually live/deployed, and on what host (Vercel? other)? What is the real production domain — `promischain.com` or `promis.co.id`?
+- Is https://promis-web.vercel.app/ still the intended public showcase?
 - Any real outcomes to cite: traffic, search impressions/rankings, leads/inquiries generated, conversion, client satisfaction?
 - Was this built for a paying client / employer, or is it a personal/spec project? Client/company relationship?
 - Were the SEO changes (branch `codex/improve-seo-for-codebase`) AI-generated, and how much did the owner author vs. review?
@@ -187,5 +185,5 @@ Note: These are UI/front-end engineering challenges. No algorithmically complex/
 ## 19. Evidence & confidence notes
 - **Strongest, highest-confidence claims** (directly from files): tech stack and versions (`package.json`), routes/features (`src/app/**`), SEO setup (`layout.tsx`, `SEO.md`, `sitemap.ts`, `robots.ts`, `manifest.ts`), constants/integrations (`src/constant/index.ts`), no-backend/no-auth/no-tests (absence across repo), git timeline/contributors (`git log`, `git shortlog`), remote URL (`git remote -v`).
 - **Medium confidence (inferred):** developer role, deployment target (Vercel suggested by README, not configured), rationale behind decisions, "IndoChain" and stray files being placeholders/leftovers.
-- **Low confidence / unverified:** whether the site is live, which domain is production, any real-world usage/outcomes — none evidenced in repo.
+- **Low confidence / unverified:** any real-world usage/outcomes — none evidenced in repo.
 - **Overall confidence in this document: High** for what the code contains and does; **Low** for real-world deployment status and business outcomes (explicitly marked). No numbers were invented; company marketing claims are flagged as content, not metrics.
