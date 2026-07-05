@@ -386,6 +386,14 @@ export type ChatContent = {
   sendLabel: LocalizedText;
   stopLabel: LocalizedText;
   closeLabel: LocalizedText;
+  thinkingLabel: LocalizedText;
+  thinkingDoneLabel: LocalizedText;
+  showThinkingLabel: LocalizedText;
+  hideThinkingLabel: LocalizedText;
+  chatErrorNotConfigured: LocalizedText;
+  chatErrorGeneric: LocalizedText;
+  chatErrorGenerating: LocalizedText;
+  historyRetention: LocalizedText;
   suggestions: LocalizedText<string[]>;
 };
 
@@ -429,6 +437,38 @@ export const chat: ChatContent = {
   closeLabel: {
     en: "Close chat",
     ch: "关闭聊天",
+  },
+  thinkingLabel: {
+    en: "Thinking…",
+    ch: "思考中…",
+  },
+  thinkingDoneLabel: {
+    en: "Thought process",
+    ch: "思考过程",
+  },
+  showThinkingLabel: {
+    en: "Show thinking",
+    ch: "展开思考",
+  },
+  hideThinkingLabel: {
+    en: "Hide thinking",
+    ch: "收起思考",
+  },
+  chatErrorNotConfigured: {
+    en: "Chat is not set up yet. Add an OpenRouter API key to enable it.",
+    ch: "聊天功能尚未配置，需要添加 OpenRouter API 密钥。",
+  },
+  chatErrorGeneric: {
+    en: "Something went wrong. Try again.",
+    ch: "出错了，请重试。",
+  },
+  chatErrorGenerating: {
+    en: "A reply is still generating. Wait for it to finish or stop it first.",
+    ch: "上一条回复还在生成中，请等待完成或先停止。",
+  },
+  historyRetention: {
+    en: "Chat history is kept for {hours} hours. Sending a message extends this.",
+    ch: "聊天记录保留 {hours} 小时，发送消息会延长保留时间。",
   },
   suggestions: {
     en: [

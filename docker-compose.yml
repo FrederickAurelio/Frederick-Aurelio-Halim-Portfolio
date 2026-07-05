@@ -9,8 +9,14 @@ services:
       NODE_ENV: production
       PORT: 3000
       HOSTNAME: 0.0.0.0
+      CHAT_STORE_PROVIDER: redis
+      REDIS_URL: redis://redis:6379
+      CHAT_MESSAGE_TTL_SECONDS: 21600
     expose:
       - "3000"
+    depends_on:
+      redis:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -23,6 +29,18 @@ services:
       timeout: 5s
       retries: 3
       start_period: 40s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   web:
     image: nginx:alpine

@@ -19,30 +19,48 @@ import type { ChatMessage } from "@/lib/chat/types";
 const launcherAnchorClass =
   "fixed right-4 z-50 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))]";
 
+/** Desktop popover: prefer 536px, shrink on short viewports above the launcher. */
+const desktopPopoverClass =
+  "flex h-[min(536px,calc(100dvh-6.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px)))] max-h-[calc(100dvh-6.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] w-[min(392px,calc(100vw-2rem))] flex-col overflow-hidden overscroll-y-contain rounded-2xl border-slate-200 p-0 shadow-xl";
+
 type ChatResponsiveShellProps = {
   open: boolean;
   messages: ChatMessage[];
   isLoading: boolean;
+  isLoadingHistory: boolean;
   showSuggestions: boolean;
+  retentionHours: number | null;
+  retentionLabel: string;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  onLoadOlder: () => void;
   onDesktopOpenChange: (open: boolean) => void;
   onMobileOpenChange: (open: boolean) => void;
   onClose: () => void;
   onToggle: () => void;
   onSend: (text: string) => void;
   onAbort: () => void;
+  onToggleReasoning: (messageId: string) => void;
 };
 
 export default function ChatResponsiveShell({
   open,
   messages,
   isLoading,
+  isLoadingHistory,
   showSuggestions,
+  retentionHours,
+  retentionLabel,
+  hasNextPage,
+  isFetchingNextPage,
+  onLoadOlder,
   onDesktopOpenChange,
   onMobileOpenChange,
   onClose,
   onToggle,
   onSend,
   onAbort,
+  onToggleReasoning,
 }: ChatResponsiveShellProps) {
   const { language } = useLanguage();
   const { matches: isDesktop, mounted } = useMediaQuery("(min-width: 768px)");
@@ -51,10 +69,17 @@ export default function ChatResponsiveShell({
   const panelProps = {
     messages,
     isLoading,
+    isLoadingHistory,
     showSuggestions,
+    retentionHours,
+    retentionLabel,
+    hasNextPage,
+    isFetchingNextPage,
+    onLoadOlder,
     onClose,
     onSend,
     onAbort,
+    onToggleReasoning,
     autoFocusInput: open,
   };
 
@@ -83,7 +108,7 @@ export default function ChatResponsiveShell({
           onPointerDownOutside={(event) => event.preventDefault()}
           onFocusOutside={(event) => event.preventDefault()}
           onEscapeKeyDown={(event) => event.preventDefault()}
-          className="flex h-[536px] w-[392px] flex-col overflow-hidden overscroll-y-contain rounded-2xl border-slate-200 p-0 shadow-xl"
+          className={desktopPopoverClass}
           onWheel={(event) => event.stopPropagation()}
         >
           <ChatPanel {...panelProps} />

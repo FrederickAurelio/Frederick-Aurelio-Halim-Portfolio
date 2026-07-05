@@ -6,16 +6,24 @@ import { chat } from "@/utils/data";
 import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
 import ChatMessageList from "./ChatMessageList";
+import ChatRetentionNotice from "./ChatRetentionNotice";
 import ChatSuggestions from "./ChatSuggestions";
 import type { ChatMessage } from "@/lib/chat/types";
 
 type ChatPanelProps = {
   messages: ChatMessage[];
   isLoading: boolean;
+  isLoadingHistory: boolean;
   showSuggestions: boolean;
+  retentionHours: number | null;
+  retentionLabel: string;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  onLoadOlder: () => void;
   onClose: () => void;
   onSend: (text: string) => void;
   onAbort: () => void;
+  onToggleReasoning: (messageId: string) => void;
   showHandle?: boolean;
   autoFocusInput?: boolean;
 };
@@ -23,10 +31,17 @@ type ChatPanelProps = {
 export default function ChatPanel({
   messages,
   isLoading,
+  isLoadingHistory,
   showSuggestions,
+  retentionHours,
+  retentionLabel,
+  hasNextPage,
+  isFetchingNextPage,
+  onLoadOlder,
   onClose,
   onSend,
   onAbort,
+  onToggleReasoning,
   showHandle = false,
   autoFocusInput = false,
 }: ChatPanelProps) {
@@ -41,6 +56,10 @@ export default function ChatPanel({
   const placeholder = chat.placeholder[language];
   const sendLabel = chat.sendLabel[language];
   const stopLabel = chat.stopLabel[language];
+  const thinkingLabel = chat.thinkingLabel[language];
+  const thinkingDoneLabel = chat.thinkingDoneLabel[language];
+  const showThinkingLabel = chat.showThinkingLabel[language];
+  const hideThinkingLabel = chat.hideThinkingLabel[language];
   const suggestions = chat.suggestions[language];
 
   useEffect(() => {
@@ -75,7 +94,16 @@ export default function ChatPanel({
         emptyDescription={emptyDescription}
         copyLabel={copyLabel}
         copiedLabel={copiedLabel}
+        thinkingLabel={thinkingLabel}
+        thinkingDoneLabel={thinkingDoneLabel}
+        showThinkingLabel={showThinkingLabel}
+        hideThinkingLabel={hideThinkingLabel}
         isLoading={isLoading}
+        isLoadingHistory={isLoadingHistory}
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        onLoadOlder={onLoadOlder}
+        onToggleReasoning={onToggleReasoning}
       />
 
       {showSuggestions && (
@@ -93,6 +121,10 @@ export default function ChatPanel({
           autoFocus={autoFocusInput}
         />
       </div>
+
+      {retentionHours !== null && (
+        <ChatRetentionNotice hours={retentionHours} labelTemplate={retentionLabel} />
+      )}
     </div>
   );
 }

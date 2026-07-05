@@ -1,11 +1,28 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import type {
-  ChatApiMessage,
-  ChatMessage,
-  ChatStatus,
+import { useCallback, useState } from "react";
+import { useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { consumeChatStream } from "@/lib/chat/consumeChatStream";
+import { createStreamBatcher } from "@/lib/chat/batch-stream-updates";
+import { appendMessagesToChatCache, CHAT_MESSAGES_QUERY_KEY } from "@/lib/chat/fetch-messages";
+import { stopChatGeneration } from "@/lib/chat/stop-generation";
+import {
+  GENERATION_IN_PROGRESS_CODE,
+  type ChatMessage,
+  type ChatStatus,
+  type StoredChatMessage,
 } from "@/lib/chat/types";
+
+function toStoredMessage(message: ChatMessage): StoredChatMessage | null {
+  if (message.role !== "user" && message.role !== "assistant") return null;
+  return {
+    id: message.id,
+    role: message.role,
+    content: message.content,
+    reasoning: message.reasoning,
+    createdAt: message.createdAt,
+  };
+}
 
 function createMessage(
   role: ChatMessage["role"],
@@ -21,113 +38,242 @@ function createMessage(
   };
 }
 
-export function useChat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [status, setStatus] = useState<ChatStatus>("idle");
-  const abortRef = useRef<AbortController | null>(null);
+function hasPersistableAssistantContent(message: ChatMessage): boolean {
+  return Boolean(message.content) || Boolean(message.reasoning);
+}
 
-  const showSuggestions = messages.length === 0 && status === "idle";
+function finalizeOptimisticToCache(
+  queryClient: QueryClient,
+  messages: ChatMessage[],
+  ids: Set<string>,
+) {
+  const stored = messages
+    .filter((message) => ids.has(message.id))
+    .filter(
+      (message) =>
+        message.role !== "assistant" || hasPersistableAssistantContent(message),
+    )
+    .map(toStoredMessage)
+    .filter((message): message is StoredChatMessage => message !== null);
+
+  appendMessagesToChatCache(queryClient, stored);
+}
+
+export function useChat(errorMessages: {
+  notConfigured: string;
+  generic: string;
+  generating: string;
+}) {
+  const queryClient = useQueryClient();
+  const [optimisticMessages, setOptimisticMessages] = useState<ChatMessage[]>([]);
+  const [status, setStatus] = useState<ChatStatus>("idle");
+
+  const showSuggestions = optimisticMessages.length === 0 && status === "idle";
 
   const abort = useCallback(() => {
-    abortRef.current?.abort();
-    abortRef.current = null;
     setStatus("idle");
-    setMessages((prev) =>
-      prev.map((message) =>
-        message.status === "streaming"
-          ? { ...message, status: "complete" as const }
-          : message,
-      ),
-    );
-  }, []);
+    setOptimisticMessages([]);
+
+    void stopChatGeneration().then(() => {
+      void queryClient.invalidateQueries({ queryKey: CHAT_MESSAGES_QUERY_KEY });
+    });
+  }, [queryClient]);
 
   const sendMessage = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
       if (!trimmed || status !== "idle") return;
 
-      const userMessage = createMessage("user", trimmed);
-      const assistantId = crypto.randomUUID();
+      const tempUserId = crypto.randomUUID();
+      const tempAssistantId = crypto.randomUUID();
+
+      const userMessage: ChatMessage = {
+        ...createMessage("user", trimmed),
+        id: tempUserId,
+      };
       const assistantPlaceholder: ChatMessage = {
-        id: assistantId,
+        id: tempAssistantId,
         role: "assistant",
         content: "",
         status: "streaming",
         createdAt: Date.now(),
       };
 
-      const historyForApi: ChatApiMessage[] = [
-        ...messages
-          .filter((m) => m.role === "user" || m.role === "assistant")
-          .map((m) => ({
-            role: m.role as "user" | "assistant",
-            content: m.content,
-          })),
-        { role: "user", content: trimmed },
-      ];
-
-      setMessages((prev) => [...prev, userMessage, assistantPlaceholder]);
+      setOptimisticMessages((prev) => [...prev, userMessage, assistantPlaceholder]);
       setStatus("submitting");
 
-      const controller = new AbortController();
-      abortRef.current = controller;
+      let hasReceivedChunk = false;
+      let serverUserId = tempUserId;
+      let serverAssistantId = tempAssistantId;
+
+      const updateAssistant = (
+        updater: (message: ChatMessage) => ChatMessage,
+      ) => {
+        setOptimisticMessages((prev) =>
+          prev.map((message) =>
+            message.id === serverAssistantId ||
+            message.id === tempAssistantId
+              ? updater(message)
+              : message,
+          ),
+        );
+      };
+
+      const streamBatcher = createStreamBatcher(({ reasoning, content }) => {
+        updateAssistant((message) => ({
+          ...message,
+          reasoning: reasoning
+            ? (message.reasoning ?? "") + reasoning
+            : message.reasoning,
+          content: content ? message.content + content : message.content,
+        }));
+      });
+
+      const reconcileIds = (userMessageId: string, assistantMessageId: string) => {
+        serverUserId = userMessageId;
+        serverAssistantId = assistantMessageId;
+        setOptimisticMessages((prev) =>
+          prev.map((message) => {
+            if (message.id === tempUserId) {
+              return { ...message, id: userMessageId };
+            }
+            if (message.id === tempAssistantId) {
+              return { ...message, id: assistantMessageId };
+            }
+            return message;
+          }),
+        );
+      };
 
       try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: historyForApi }),
-          signal: controller.signal,
-        });
+        await consumeChatStream(
+          "/api/chat",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: trimmed }),
+          },
+          {
+            onSaved: ({ userMessageId, assistantMessageId }) => {
+              reconcileIds(userMessageId, assistantMessageId);
+            },
+            onThinking: (delta) => {
+              if (!hasReceivedChunk) {
+                hasReceivedChunk = true;
+                setStatus("streaming");
+              }
 
-        if (!response.ok) {
-          if (response.status === 499) return;
-          throw new Error("Request failed");
-        }
+              streamBatcher.pushThinking(delta);
+            },
+            onContent: (delta) => {
+              if (!hasReceivedChunk) {
+                hasReceivedChunk = true;
+                setStatus("streaming");
+              }
 
-        setStatus("streaming");
-        const data = (await response.json()) as { content: string };
+              streamBatcher.pushContent(delta);
+            },
+            onDone: () => {
+              streamBatcher.flushNow();
+              setOptimisticMessages((prev) => {
+                const finalized = prev.map((message) =>
+                  message.id === serverAssistantId ||
+                  message.id === tempAssistantId
+                    ? {
+                        ...message,
+                        status: "complete" as const,
+                      }
+                    : message,
+                );
 
-        setMessages((prev) =>
-          prev.map((message) =>
-            message.id === assistantId
-              ? {
-                  ...message,
-                  content: data.content,
-                  status: "complete" as const,
+                finalizeOptimisticToCache(
+                  queryClient,
+                  finalized,
+                  new Set([
+                    serverUserId,
+                    serverAssistantId,
+                    tempUserId,
+                    tempAssistantId,
+                  ]),
+                );
+                return [];
+              });
+            },
+            onError: (message, httpStatus) => {
+              streamBatcher.flushNow();
+              const isGenerating =
+                httpStatus === 409 || message === GENERATION_IN_PROGRESS_CODE;
+
+              if (isGenerating) {
+                setOptimisticMessages((prev) => {
+                  const withoutPair = prev.filter(
+                    (item) =>
+                      item.id !== tempUserId &&
+                      item.id !== tempAssistantId &&
+                      item.id !== serverUserId &&
+                      item.id !== serverAssistantId,
+                  );
+
+                  return [
+                    ...withoutPair,
+                    {
+                      id: crypto.randomUUID(),
+                      role: "error" as const,
+                      content: errorMessages.generating,
+                      status: "error" as const,
+                      createdAt: Date.now(),
+                    },
+                  ];
+                });
+                return;
+              }
+
+              const isNotConfigured = message
+                .toLowerCase()
+                .includes("not configured");
+
+              updateAssistant((messageState) => {
+                const hasPartial =
+                  Boolean(messageState.content) || Boolean(messageState.reasoning);
+
+                if (hasPartial) {
+                  return {
+                    ...messageState,
+                    status: "complete" as const,
+                  };
                 }
-              : message,
-          ),
-        );
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
-          return;
-        }
 
-        setMessages((prev) =>
-          prev.map((message) =>
-            message.id === assistantId
-              ? {
-                  ...message,
+                return {
+                  ...messageState,
                   role: "error" as const,
-                  content: "Something went wrong. Try again.",
+                  content: isNotConfigured
+                    ? errorMessages.notConfigured
+                    : errorMessages.generic,
                   status: "error" as const,
-                }
-              : message,
-          ),
+                };
+              });
+            },
+          },
         );
+      } catch {
+        streamBatcher.flushNow();
+        updateAssistant((message) => ({
+          ...message,
+          role: "error" as const,
+          content: errorMessages.generic,
+          status: "error" as const,
+        }));
       } finally {
-        abortRef.current = null;
         setStatus("idle");
       }
     },
-    [messages, status],
+    [status, errorMessages, queryClient],
   );
 
   const isLoading = status === "submitting" || status === "streaming";
 
   return {
-    messages,
+    optimisticMessages,
     status,
     isLoading,
     showSuggestions,

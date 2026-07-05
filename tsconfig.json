@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@upstash/redis": ["./node_modules/@upstash/redis/nodejs.d.ts"],
+      "@upstash/redis/node": ["./node_modules/@upstash/redis/nodejs.d.ts"]
     }
   },
   "include": [

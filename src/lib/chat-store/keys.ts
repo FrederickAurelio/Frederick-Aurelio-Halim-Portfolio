@@ -1,0 +1,80 @@
+import type { StoredChatMessage } from "./types";
+
+const DEFAULT_MESSAGE_TTL_SECONDS = 60 * 60 * 6; // 6 hours
+/** Safety TTL if generation never finishes (stop/crash). */
+export const GENERATION_LOCK_TTL_SECONDS = 60 * 10; // 10 minutes
+
+export function getMessageRetentionSeconds(): number {
+  const raw = process.env.CHAT_MESSAGE_TTL_SECONDS;
+  if (!raw) return DEFAULT_MESSAGE_TTL_SECONDS;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_MESSAGE_TTL_SECONDS;
+  return parsed;
+}
+
+export function timelineKey(sessionId: string): string {
+  return `chat:${sessionId}:timeline`;
+}
+
+export function messageKey(sessionId: string, messageId: string): string {
+  return `chat:${sessionId}:msg:${messageId}`;
+}
+
+export function generationLockKey(sessionId: string): string {
+  return `chat:${sessionId}:gen:lock`;
+}
+
+export function generationStopKey(sessionId: string): string {
+  return `chat:${sessionId}:gen:stop`;
+}
+
+export function parseStoredMessage(raw: string | null): StoredChatMessage | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as StoredChatMessage;
+    if (
+      typeof parsed.id === "string" &&
+      (parsed.role === "user" || parsed.role === "assistant") &&
+      typeof parsed.content === "string" &&
+      typeof parsed.createdAt === "number"
+    ) {
+      return parsed;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+export function serializeStoredMessage(message: StoredChatMessage): string {
+  return JSON.stringify(message);
+}
+
+export async function loadMessagesByIds(
+  getMessage: (messageId: string) => Promise<string | null>,
+  ids: string[],
+): Promise<StoredChatMessage[]> {
+  const messages: StoredChatMessage[] = [];
+  for (const id of ids) {
+    const raw = await getMessage(id);
+    const message = parseStoredMessage(raw);
+    if (message) messages.push(message);
+  }
+  return messages;
+}
+
+export function sortNewestFirst(messages: StoredChatMessage[]): StoredChatMessage[] {
+  return [...messages].sort((a, b) => b.createdAt - a.createdAt);
+}
+
+/** API pages: index 0 = newest. Cursor points at the oldest item in the page. */
+export function buildPaginatedResult(
+  messages: StoredChatMessage[],
+  hasMore: boolean,
+): { messages: StoredChatMessage[]; nextCursor: number | null } {
+  const sorted = sortNewestFirst(messages);
+  const oldestInBatch = sorted.at(-1);
+  const nextCursor =
+    hasMore && oldestInBatch ? oldestInBatch.createdAt : null;
+  return { messages: sorted, nextCursor };
+}
