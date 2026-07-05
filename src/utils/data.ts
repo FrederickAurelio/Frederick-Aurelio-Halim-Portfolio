@@ -374,3 +374,68 @@ export const details = {
     },
   ] satisfies DetailItem[],
 };
+
+export type ChatContent = {
+  title: LocalizedText;
+  launcherLabel: LocalizedText;
+  placeholder: LocalizedText;
+  emptyTitle: LocalizedText;
+  emptyDescription: LocalizedText;
+  copyLabel: LocalizedText;
+  copiedLabel: LocalizedText;
+  sendLabel: LocalizedText;
+  stopLabel: LocalizedText;
+  closeLabel: LocalizedText;
+  suggestions: LocalizedText<string[]>;
+};
+
+export const chat: ChatContent = {
+  title: {
+    en: "Ask me anything",
+    ch: "问我任何问题",
+  },
+  launcherLabel: {
+    en: "Open chat — ask me anything",
+    ch: "打开聊天，问我任何问题",
+  },
+  placeholder: {
+    en: "Ask me anything about me…",
+    ch: "随便问我关于我的问题…",
+  },
+  emptyTitle: {
+    en: "Hi, I'm Frederick",
+    ch: "嗨，我是 Frederick",
+  },
+  emptyDescription: {
+    en: "Ask about my experience, projects, or tech stack.",
+    ch: "可以问我工作经历、项目或技术栈。",
+  },
+  copyLabel: {
+    en: "Copy message",
+    ch: "复制消息",
+  },
+  copiedLabel: {
+    en: "Copied",
+    ch: "已复制",
+  },
+  sendLabel: {
+    en: "Send message",
+    ch: "发送消息",
+  },
+  stopLabel: {
+    en: "Stop generating",
+    ch: "停止生成",
+  },
+  closeLabel: {
+    en: "Close chat",
+    ch: "关闭聊天",
+  },
+  suggestions: {
+    en: [
+      "Who are you?",
+      "What's your tech stack?",
+      "Tell me about QuizConnect",
+    ],
+    ch: ["你是谁？", "你的技术栈是什么？", "介绍一下 QuizConnect"],
+  },
+};

@@ -1,9 +1,50 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @theme inline {
   --color-github: #6e5494;
   --color-weixin: #09b83e;
   --color-email: #0489c9;
+  --animate-chat-launcher-pulse: chat-launcher-pulse 2.5s ease-in-out infinite;
+  --animate-chat-launcher-ring: chat-launcher-ring 2.5s ease-out infinite;
+}
+
+@keyframes chat-launcher-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 10px 15px -3px rgb(14 165 233 / 0.35),
+      0 4px 6px -4px rgb(14 165 233 / 0.25);
+  }
+
+  50% {
+    transform: scale(1.04);
+    box-shadow:
+      0 12px 22px -4px rgb(14 165 233 / 0.45),
+      0 6px 10px -4px rgb(14 165 233 / 0.3);
+  }
+}
+
+@keyframes chat-launcher-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.45;
+  }
+
+  70%,
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-launcher-button,
+  .chat-launcher-ring,
+  [data-slot="popover-content"] {
+    animation: none !important;
+  }
 }
 
 html {
@@ -34,6 +75,24 @@ html.lang-en {
 }
 
 ::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa;
+}
+
+.chat-textarea {
+  overflow-y: hidden;
+  box-sizing: border-box;
+}
+
+.chat-textarea::-webkit-scrollbar {
+  width: 4px;
+}
+
+.chat-textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-textarea::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
   background: #a1a1aa;
 }
 
