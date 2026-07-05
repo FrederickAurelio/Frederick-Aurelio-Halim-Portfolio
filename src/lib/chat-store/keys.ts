@@ -28,6 +28,26 @@ export function generationStopKey(sessionId: string): string {
   return `chat:${sessionId}:gen:stop`;
 }
 
+export function generationBufferKey(sessionId: string): string {
+  return `chat:${sessionId}:gen:buffer`;
+}
+
+export function getGenerationBufferFlushMs(): number {
+  const raw = process.env.CHAT_GEN_BUFFER_FLUSH_MS;
+  if (!raw) return 200;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 200;
+  return parsed;
+}
+
+export function getGenerationBufferPollMs(): number {
+  const raw = process.env.CHAT_GEN_BUFFER_POLL_MS;
+  if (!raw) return 200;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 200;
+  return parsed;
+}
+
 export function parseStoredMessage(raw: string | null): StoredChatMessage | null {
   if (!raw) return null;
   try {

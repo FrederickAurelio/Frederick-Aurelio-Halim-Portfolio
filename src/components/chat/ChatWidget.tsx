@@ -29,6 +29,7 @@ export default function ChatWidget() {
     isLoading,
     showSuggestions: showSuggestionsIdle,
     sendMessage,
+    resumeGeneration,
     abort,
   } = useChat({
     notConfigured: chat.chatErrorNotConfigured[language],
@@ -40,6 +41,7 @@ export default function ChatWidget() {
     () => new Set(),
   );
   const prevStreamingAssistantIdRef = useRef<string | null>(null);
+  const resumeStartedRef = useRef(false);
 
   const toggleReasoningExpanded = useCallback((messageId: string) => {
     setExpandedReasoningIds((prev) => {
@@ -77,6 +79,33 @@ export default function ChatWidget() {
       reasoningExpanded: isReasoningExpanded(message, expandedReasoningIds),
     }));
   }, [storedPages, optimisticMessages, expandedReasoningIds]);
+
+  useEffect(() => {
+    if (isLoadingHistory || isLoading) return;
+
+    const generating = messages.find(
+      (message) => message.role === "assistant" && message.status === "streaming",
+    );
+
+    if (!generating) {
+      resumeStartedRef.current = false;
+      return;
+    }
+
+    if (resumeStartedRef.current) return;
+
+    const hasError = optimisticMessages.some((message) => message.role === "error");
+    if (hasError) return;
+
+    resumeStartedRef.current = true;
+    void resumeGeneration(generating);
+  }, [
+    isLoadingHistory,
+    isLoading,
+    messages,
+    optimisticMessages,
+    resumeGeneration,
+  ]);
 
   const showSuggestions =
     showSuggestionsIdle &&

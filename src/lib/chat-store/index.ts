@@ -24,6 +24,7 @@ export function getChatStore(): ChatStore {
 
 export type {
   ChatStore,
+  GenerationBuffer,
   PaginatedMessages,
   StoredChatMessage,
 } from "./types";

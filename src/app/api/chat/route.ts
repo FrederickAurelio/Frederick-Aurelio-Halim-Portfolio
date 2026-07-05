@@ -3,6 +3,7 @@ import {
   releaseGeneration,
   tryAcquireGeneration,
 } from "@/lib/chat/generation-registry";
+import { GenerationBufferWriter } from "@/lib/chat/generation-buffer-writer";
 import { SessionError, requireSessionId } from "@/lib/chat/session";
 import { getChatStore } from "@/lib/chat-store";
 import { GENERATION_IN_PROGRESS_CODE } from "@/lib/chat/types";
@@ -17,6 +18,7 @@ import type { ChatApiRequest } from "@/lib/chat/types";
 export async function POST(request: Request) {
   let sessionId: string | null = null;
   let lockHeld = false;
+  let bufferWriter: GenerationBufferWriter | null = null;
 
   try {
     if (!getOpenRouterConfig()) {
@@ -55,6 +57,12 @@ export async function POST(request: Request) {
 
     lockHeld = true;
 
+    bufferWriter = new GenerationBufferWriter(activeSessionId, {
+      userMessageId,
+      assistantMessageId,
+    }, store);
+    await bufferWriter.init();
+
     const history = await store.getOpenRouterHistory(activeSessionId);
 
     await store.appendMessage(activeSessionId, {
@@ -70,8 +78,10 @@ export async function POST(request: Request) {
     });
 
     if (!upstream.ok) {
+      await bufferWriter.clear();
       await releaseGeneration(activeSessionId);
       lockHeld = false;
+      bufferWriter = null;
 
       let errorMessage = "Upstream request failed";
       try {
@@ -89,11 +99,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: errorMessage }, { status });
     }
 
-    let reasoning = "";
-    let assistantContent = "";
+    const writer = bufferWriter;
 
     const onGenerationEnd = async () => {
       try {
+        await writer.flushNow();
+        const assistantContent = writer.getContent();
+        const reasoning = writer.getReasoning();
+
         if (assistantContent || reasoning) {
           await store.appendMessage(activeSessionId, {
             id: assistantMessageId,
@@ -106,6 +119,7 @@ export async function POST(request: Request) {
       } finally {
         await releaseGeneration(activeSessionId);
         lockHeld = false;
+        await writer.clear();
       }
     };
 
@@ -114,10 +128,10 @@ export async function POST(request: Request) {
         savedPayload: { userMessageId, assistantMessageId },
         shouldStop: () => store.isGenerationStopRequested(activeSessionId),
         onThinkingDelta: (delta) => {
-          reasoning += delta;
+          writer.appendThinking(delta);
         },
         onContentDelta: (delta) => {
-          assistantContent += delta;
+          writer.appendContent(delta);
         },
         onGenerationEnd: async () => {
           await onGenerationEnd();
@@ -126,6 +140,9 @@ export async function POST(request: Request) {
       { headers: CHAT_SSE_HEADERS },
     );
   } catch (error) {
+    if (bufferWriter) {
+      await bufferWriter.clear().catch(() => {});
+    }
     if (sessionId && lockHeld) {
       await releaseGeneration(sessionId);
     }

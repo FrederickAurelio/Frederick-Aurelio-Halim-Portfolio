@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { injectGeneratingAssistant } from "@/lib/chat/inject-generating-message";
 import { SessionError, requireSessionId } from "@/lib/chat/session";
 import { getChatStore } from "@/lib/chat-store";
 
@@ -15,6 +16,7 @@ export async function GET(request: Request) {
     );
     const beforeRaw = searchParams.get("before");
     const before = beforeRaw ? Number.parseInt(beforeRaw, 10) : null;
+    const isLatestPage = before === null || !Number.isFinite(before);
 
     const store = getChatStore();
 
@@ -23,7 +25,14 @@ export async function GET(request: Request) {
         ? await store.getMessagesBefore(sessionId, before, limit)
         : await store.getLatestMessages(sessionId, limit);
 
-    return NextResponse.json(result);
+    const withGenerating = await injectGeneratingAssistant(
+      sessionId,
+      store,
+      result,
+      isLatestPage,
+    );
+
+    return NextResponse.json(withGenerating);
   } catch (error) {
     if (error instanceof SessionError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

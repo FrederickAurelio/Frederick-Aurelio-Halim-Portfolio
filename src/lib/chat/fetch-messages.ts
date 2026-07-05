@@ -17,14 +17,8 @@ export function appendMessagesToChatCache(
   queryClient.setQueryData<InfiniteData<ChatMessagesPage>>(
     CHAT_MESSAGES_QUERY_KEY,
     (old) => {
-      const existingIds = old
-        ? new Set(old.pages.flatMap((page) => page.messages.map((m) => m.id)))
-        : new Set<string>();
-
-      const toAdd = newMessages.filter((message) => !existingIds.has(message.id));
-      if (toAdd.length === 0) return old;
-
-      const sortedNew = sortNewestFirst(toAdd);
+      const upsertIds = new Set(newMessages.map((message) => message.id));
+      const sortedNew = sortNewestFirst(newMessages);
 
       if (!old) {
         return {
@@ -40,10 +34,10 @@ export function appendMessagesToChatCache(
       }
 
       const firstPage = old.pages[0];
-      const mergedMessages = sortNewestFirst([
-        ...sortedNew,
-        ...firstPage.messages,
-      ]);
+      const withoutUpserted = firstPage.messages.filter(
+        (message) => !upsertIds.has(message.id),
+      );
+      const mergedMessages = sortNewestFirst([...sortedNew, ...withoutUpserted]);
 
       return {
         ...old,
@@ -67,6 +61,18 @@ export async function fetchChatMessagesPage(
     throw new Error(`Failed to load messages (${response.status})`);
   }
   return response.json() as Promise<ChatMessagesPage>;
+}
+
+export function hasStoredGeneratingAssistant(queryClient: QueryClient): boolean {
+  const data = queryClient.getQueryData<InfiniteData<ChatMessagesPage>>(
+    CHAT_MESSAGES_QUERY_KEY,
+  );
+  const latestPage = data?.pages[0];
+  if (!latestPage) return false;
+
+  return latestPage.messages.some(
+    (message) => message.role === "assistant" && message.status === "generating",
+  );
 }
 
 export const CHAT_MESSAGES_QUERY_KEY = ["chat-messages"] as const;

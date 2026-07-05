@@ -9,6 +9,7 @@ import {
   timelineKey,
 } from "./keys";
 import { createUpstashGenerationLockOps } from "./generation-lock";
+import { createUpstashGenerationBufferOps } from "./generation-buffer";
 import type { ChatStore, PaginatedMessages } from "./types";
 
 let client: Redis | null = null;
@@ -45,10 +46,12 @@ function withRetention(
 export function createUpstashChatStore(): ChatStore {
   const redis = getUpstashClient();
   const generationLock = createUpstashGenerationLockOps(redis);
+  const generationBuffer = createUpstashGenerationBufferOps(redis);
 
   return {
     getMessageRetentionSeconds,
     ...generationLock,
+    ...generationBuffer,
 
     async appendMessage(sessionId, message) {
       const ttl = getMessageRetentionSeconds();

@@ -1,7 +1,11 @@
 import type { OpenRouterMessage } from "@/lib/openrouter/types";
-import type { PaginatedMessages, StoredChatMessage } from "@/lib/chat/types";
+import type {
+  GenerationBuffer,
+  PaginatedMessages,
+  StoredChatMessage,
+} from "@/lib/chat/types";
 
-export type { PaginatedMessages, StoredChatMessage };
+export type { GenerationBuffer, PaginatedMessages, StoredChatMessage };
 
 export type GenerationLockOps = {
   tryAcquireGenerationLock(
@@ -15,7 +19,18 @@ export type GenerationLockOps = {
   clearGenerationStopRequest(sessionId: string): Promise<void>;
 };
 
-export interface ChatStore extends GenerationLockOps {
+export type GenerationBufferOps = {
+  initGenerationBuffer(
+    sessionId: string,
+    data: Pick<GenerationBuffer, "userMessageId" | "assistantMessageId">,
+  ): Promise<void>;
+  setGenerationBuffer(sessionId: string, buffer: GenerationBuffer): Promise<void>;
+  getGenerationBuffer(sessionId: string): Promise<GenerationBuffer | null>;
+  clearGenerationBuffer(sessionId: string): Promise<void>;
+  getGenerationLockAssistantId(sessionId: string): Promise<string | null>;
+};
+
+export interface ChatStore extends GenerationLockOps, GenerationBufferOps {
   appendMessage(sessionId: string, message: StoredChatMessage): Promise<void>;
   getLatestMessages(sessionId: string, limit: number): Promise<PaginatedMessages>;
   getMessagesBefore(

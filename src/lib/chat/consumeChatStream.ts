@@ -1,11 +1,12 @@
 import { createParser } from "eventsource-parser";
 
-import type { ChatSavedEvent } from "@/lib/chat/types";
+import type { ChatSavedEvent, ChatSyncEvent } from "@/lib/chat/types";
 
 export type ChatStreamCallbacks = {
   onThinking?: (delta: string) => void;
   onContent?: (delta: string) => void;
   onSaved?: (payload: ChatSavedEvent) => void;
+  onSync?: (payload: ChatSyncEvent) => void;
   onDone?: () => void;
   onError?: (message: string, status?: number) => void;
 };
@@ -15,6 +16,9 @@ type StreamPayload = {
   message?: string;
   userMessageId?: string;
   assistantMessageId?: string;
+  content?: string;
+  reasoning?: string;
+  seq?: number;
 };
 
 async function readErrorMessage(response: Response): Promise<string> {
@@ -89,6 +93,19 @@ export async function consumeChatStream(
             callbacks.onSaved?.({
               userMessageId: payload.userMessageId,
               assistantMessageId: payload.assistantMessageId,
+            });
+          }
+          break;
+        case "sync":
+          if (
+            typeof payload.content === "string" &&
+            typeof payload.reasoning === "string" &&
+            typeof payload.seq === "number"
+          ) {
+            callbacks.onSync?.({
+              content: payload.content,
+              reasoning: payload.reasoning,
+              seq: payload.seq,
             });
           }
           break;

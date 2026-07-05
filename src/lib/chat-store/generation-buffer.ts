@@ -1,0 +1,117 @@
+import type Redis from "ioredis";
+import type { Redis as UpstashRedis } from "@upstash/redis/node";
+import type { GenerationBuffer } from "@/lib/chat/types";
+import {
+  GENERATION_LOCK_TTL_SECONDS,
+  generationBufferKey,
+  generationLockKey,
+} from "./keys";
+import type { GenerationBufferOps } from "./types";
+
+function parseGenerationBuffer(raw: string | null): GenerationBuffer | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as GenerationBuffer;
+    if (
+      typeof parsed.userMessageId === "string" &&
+      typeof parsed.assistantMessageId === "string" &&
+      typeof parsed.content === "string" &&
+      typeof parsed.reasoning === "string" &&
+      typeof parsed.seq === "number" &&
+      typeof parsed.updatedAt === "number"
+    ) {
+      return parsed;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function serializeGenerationBuffer(buffer: GenerationBuffer): string {
+  return JSON.stringify(buffer);
+}
+
+export function createIoredisGenerationBufferOps(redis: Redis): GenerationBufferOps {
+  return {
+    async initGenerationBuffer(sessionId, data) {
+      const buffer: GenerationBuffer = {
+        userMessageId: data.userMessageId,
+        assistantMessageId: data.assistantMessageId,
+        content: "",
+        reasoning: "",
+        seq: 0,
+        updatedAt: Date.now(),
+      };
+      await redis.set(
+        generationBufferKey(sessionId),
+        serializeGenerationBuffer(buffer),
+        "EX",
+        GENERATION_LOCK_TTL_SECONDS,
+      );
+    },
+
+    async setGenerationBuffer(sessionId, buffer) {
+      await redis.set(
+        generationBufferKey(sessionId),
+        serializeGenerationBuffer(buffer),
+        "EX",
+        GENERATION_LOCK_TTL_SECONDS,
+      );
+    },
+
+    async getGenerationBuffer(sessionId) {
+      const raw = await redis.get(generationBufferKey(sessionId));
+      return parseGenerationBuffer(raw);
+    },
+
+    async clearGenerationBuffer(sessionId) {
+      await redis.del(generationBufferKey(sessionId));
+    },
+
+    async getGenerationLockAssistantId(sessionId) {
+      const value = await redis.get(generationLockKey(sessionId));
+      return typeof value === "string" ? value : null;
+    },
+  };
+}
+
+export function createUpstashGenerationBufferOps(
+  redis: UpstashRedis,
+): GenerationBufferOps {
+  return {
+    async initGenerationBuffer(sessionId, data) {
+      const buffer: GenerationBuffer = {
+        userMessageId: data.userMessageId,
+        assistantMessageId: data.assistantMessageId,
+        content: "",
+        reasoning: "",
+        seq: 0,
+        updatedAt: Date.now(),
+      };
+      await redis.set(generationBufferKey(sessionId), serializeGenerationBuffer(buffer), {
+        ex: GENERATION_LOCK_TTL_SECONDS,
+      });
+    },
+
+    async setGenerationBuffer(sessionId, buffer) {
+      await redis.set(generationBufferKey(sessionId), serializeGenerationBuffer(buffer), {
+        ex: GENERATION_LOCK_TTL_SECONDS,
+      });
+    },
+
+    async getGenerationBuffer(sessionId) {
+      const raw = await redis.get<string>(generationBufferKey(sessionId));
+      return parseGenerationBuffer(raw);
+    },
+
+    async clearGenerationBuffer(sessionId) {
+      await redis.del(generationBufferKey(sessionId));
+    },
+
+    async getGenerationLockAssistantId(sessionId) {
+      const value = await redis.get<string>(generationLockKey(sessionId));
+      return typeof value === "string" ? value : null;
+    },
+  };
+}
