@@ -20,7 +20,7 @@ import { CHAT_SSE_HEADERS } from "@/lib/openrouter/stream-transform";
 import { GENERATION_IN_PROGRESS_CODE, type ChatApiRequest } from "@/lib/chat/types";
 
 /** RAG needs navigator + embeddings + answer stream — above Vercel Hobby's 10s default. */
-export const maxDuration = 120;
+export const maxDuration = 180;
 
 export async function POST(request: NextRequest) {
   let sessionId: string | null = null;

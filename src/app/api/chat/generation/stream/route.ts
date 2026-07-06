@@ -11,7 +11,7 @@ import { appendUpstashSyncCookieHeader } from "@/lib/chat-store/upstash-sync.ser
 import { isUpstashProvider } from "@/lib/chat-store";
 import { NO_ACTIVE_GENERATION_CODE } from "@/lib/chat/types";
 
-export const maxDuration = 120;
+export const maxDuration = 180;
 
 export async function GET(request: NextRequest) {
   try {

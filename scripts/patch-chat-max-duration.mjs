@@ -1,10 +1,10 @@
 /**
  * Vercel Hobby rejects maxDuration > 60 from route segment exports.
- * Run before `next build` on Vercel only; Docker/VPS builds use `npm run build` (120s).
+ * Run before `next build` on Vercel only; Docker/VPS builds use `npm run build` (180s).
  */
 import { readFileSync, writeFileSync } from "node:fs";
 
-const VPS_MAX = 120;
+const VPS_MAX = 180;
 const VERCEL_MAX = 60;
 
 const routes = [

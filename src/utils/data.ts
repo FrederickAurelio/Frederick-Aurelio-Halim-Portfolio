@@ -494,8 +494,8 @@ export const chat: ChatContent = {
     ch: "上一条回复还在生成中，请等待完成或先停止。",
   },
   chatErrorVercelTimeout: {
-    en: "This reply hit Vercel's 60-second limit (Hobby plan). Any partial answer was saved — try a shorter question, or use the China site for longer chats.",
-    ch: "回复超过了 Vercel Hobby 计划的 60 秒限制。已保存的部分内容仍可见——请尝试更短的问题，或使用国内站点进行长对话。",
+    en: "This reply hit Vercel's 60-second limit (Hobby plan). Any partial answer was saved — try a shorter question, or use this site for longer chats: http://120.26.45.50",
+    ch: "回复超过了 Vercel Hobby 计划的 60 秒限制。已保存的部分内容仍可见——请尝试更短的问题，或使用此站点进行长对话：http://120.26.45.50",
   },
   chatRetryLabel: {
     en: "Try again",

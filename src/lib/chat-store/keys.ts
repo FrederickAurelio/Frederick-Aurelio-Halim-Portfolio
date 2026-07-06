@@ -2,7 +2,7 @@ import type { StoredChatMessage } from "./types";
 
 const DEFAULT_MESSAGE_TTL_SECONDS = 60 * 60 * 6; // 6 hours
 /** Safety TTL if generation never finishes (stop/crash). */
-export const GENERATION_LOCK_TTL_SECONDS = 60 * 10; // 10 minutes
+export const GENERATION_LOCK_TTL_SECONDS = 60 * 5; // 5 minutes
 
 export function getMessageRetentionSeconds(): number {
   const raw = process.env.CHAT_MESSAGE_TTL_SECONDS;
