@@ -5,6 +5,7 @@ import { HiOutlineClipboard, HiOutlineClipboardDocumentCheck } from "react-icons
 import type { ChatMessage } from "@/lib/chat/types";
 import { cn } from "@/lib/utils";
 import ChatMarkdown from "./chat-markdown";
+import ChatLinkifiedText from "./ChatLinkifiedText";
 import ChatReasoningBlock from "./ChatReasoningBlock";
 
 type ChatMessageBubbleProps = {
@@ -85,7 +86,11 @@ export default function ChatMessageBubble({
         ) : isThinking ? (
           <PhaseIndicator label={thinkingLabel} />
         ) : isError ? (
-          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+          <ChatLinkifiedText
+            text={message.content}
+            className="whitespace-pre-wrap break-words"
+            linkClassName="font-medium underline hover:opacity-80"
+          />
         ) : showTypingDots ? (
           <TypingDots />
         ) : (
