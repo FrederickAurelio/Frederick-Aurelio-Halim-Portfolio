@@ -19,9 +19,9 @@ import type { ChatMessage } from "@/lib/chat/types";
 const launcherAnchorClass =
   "fixed right-4 z-50 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))]";
 
-/** Desktop popover: prefer 620px tall, 430px wide; shrink on small viewports. */
+/** Desktop popover: prefer 620px tall; on short vh keep 1rem top gap + room for launcher. */
 const desktopPopoverClass =
-  "flex h-[min(620px,calc(100dvh-5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px)))] max-h-[calc(100dvh-5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] w-[min(430px,calc(100vw-2rem))] flex-col overflow-hidden overscroll-y-contain rounded-2xl border-slate-200 p-0 shadow-xl";
+  "flex h-[min(620px,calc(100dvh-1.5rem-5.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px)))] max-h-[calc(100dvh-1rem-5.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] w-[min(430px,calc(100vw-2rem))] flex-col overflow-hidden overscroll-y-contain rounded-2xl border-slate-200 p-0 shadow-xl";
 
 type ChatResponsiveShellProps = {
   open: boolean;
@@ -124,7 +124,7 @@ export default function ChatResponsiveShell({
           side="top"
           align="end"
           sideOffset={16}
-          collisionPadding={16}
+          collisionPadding={{ top: 16, right: 16, bottom: 16, left: 16 }}
           onInteractOutside={(event) => event.preventDefault()}
           onPointerDownOutside={(event) => event.preventDefault()}
           onFocusOutside={(event) => event.preventDefault()}
