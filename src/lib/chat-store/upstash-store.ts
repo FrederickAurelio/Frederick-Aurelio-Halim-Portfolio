@@ -21,7 +21,10 @@ function getUpstashClient(): Redis {
     if (!url || !token) {
       throw new Error("Upstash Redis is not configured");
     }
-    client = new Redis({ url, token });
+    // Match ioredis string semantics — we JSON.stringify on write and parse on read.
+    // Upstash defaults to automaticDeserialization, which would return objects from
+    // GET and break parseStoredMessage (double-parse → null).
+    client = new Redis({ url, token, automaticDeserialization: false });
   }
   return client;
 }

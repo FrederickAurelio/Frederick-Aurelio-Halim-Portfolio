@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "npx tsx --test src/lib/openrouter/stream-transform.test.ts src/lib/knowledge/pick-suggestions.test.ts",
+    "test": "npx tsx --test src/lib/openrouter/stream-transform.test.ts src/lib/knowledge/pick-suggestions.test.ts src/lib/chat-store/keys.test.ts",
     "index-knowledge": "npx tsx scripts/index-knowledge.ts",
     "prepare": "husky"
   },

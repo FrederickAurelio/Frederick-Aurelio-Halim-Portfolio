@@ -76,7 +76,8 @@ export function createUpstashGenerationLockOps(
     },
 
     async isGenerationStopRequested(sessionId) {
-      return (await redis.get<string>(generationStopKey(sessionId))) === "1";
+      const value = await redis.get(generationStopKey(sessionId));
+      return value === "1" || value === 1;
     },
 
     async clearGenerationStopRequest(sessionId) {

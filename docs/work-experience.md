@@ -3,7 +3,7 @@ rag:
   id: work-experience
   type: experience
   title: Work Experience
-  aliases: [Mufy, Mufy AI, 木飞, work history, jobs]
+  aliases: [Mufy, Mufy AI, work history, jobs]
 ---
 
 # Work Experience

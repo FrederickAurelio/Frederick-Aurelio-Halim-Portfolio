@@ -48,10 +48,12 @@ export function getGenerationBufferPollMs(): number {
   return parsed;
 }
 
-export function parseStoredMessage(raw: string | null): StoredChatMessage | null {
-  if (!raw) return null;
+function normalizeStoredMessagePayload(raw: unknown): StoredChatMessage | null {
+  if (raw == null) return null;
   try {
-    const parsed = JSON.parse(raw) as StoredChatMessage;
+    const parsed = (
+      typeof raw === "string" ? JSON.parse(raw) : raw
+    ) as StoredChatMessage;
     if (
       typeof parsed.id === "string" &&
       (parsed.role === "user" || parsed.role === "assistant") &&
@@ -80,12 +82,17 @@ export function parseStoredMessage(raw: string | null): StoredChatMessage | null
   return null;
 }
 
+/** Accepts a JSON string (ioredis / Upstash with auto-deser off) or a pre-parsed object. */
+export function parseStoredMessage(raw: unknown): StoredChatMessage | null {
+  return normalizeStoredMessagePayload(raw);
+}
+
 export function serializeStoredMessage(message: StoredChatMessage): string {
   return JSON.stringify(message);
 }
 
 export async function loadMessagesByIds(
-  getMessage: (messageId: string) => Promise<string | null>,
+  getMessage: (messageId: string) => Promise<unknown>,
   ids: string[],
 ): Promise<StoredChatMessage[]> {
   const messages: StoredChatMessage[] = [];

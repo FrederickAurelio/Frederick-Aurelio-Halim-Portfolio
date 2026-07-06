@@ -8,10 +8,12 @@ import {
 } from "./keys";
 import type { GenerationBufferOps } from "./types";
 
-function parseGenerationBuffer(raw: string | null): GenerationBuffer | null {
-  if (!raw) return null;
+function parseGenerationBuffer(raw: unknown): GenerationBuffer | null {
+  if (raw == null) return null;
   try {
-    const parsed = JSON.parse(raw) as GenerationBuffer;
+    const parsed = (
+      typeof raw === "string" ? JSON.parse(raw) : raw
+    ) as GenerationBuffer;
     if (
       typeof parsed.userMessageId === "string" &&
       typeof parsed.assistantMessageId === "string" &&
