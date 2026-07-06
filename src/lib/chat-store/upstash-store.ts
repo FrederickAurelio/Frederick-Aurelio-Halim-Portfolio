@@ -99,10 +99,12 @@ export function createUpstashChatStore(): ChatStore {
 
     async getMessagesBefore(sessionId, before, limit) {
       const timeline = timelineKey(sessionId);
+      // BYSCORE + REV: min must be the high (exclusive) bound, max the low bound —
+      // same as ioredis zrevrangebyscore(`(${before}`, "-inf").
       const ids = (await redis.zrange(
         timeline,
-        "-inf",
         `(${before}`,
+        "-inf",
         { byScore: true, rev: true, offset: 0, count: limit },
       )) as string[];
       const messages = await loadSessionMessages(redis, sessionId, ids);
