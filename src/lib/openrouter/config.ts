@@ -32,3 +32,20 @@ export function getRagMinScore(): number {
   if (!Number.isFinite(parsed) || parsed < 0) return 0.32;
   return parsed;
 }
+
+function parsePositiveInt(raw: string | undefined, fallback: number): number {
+  if (!raw) return fallback;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
+}
+
+/** User/assistant pairs passed to the retrieval navigator LLM (default 3). */
+export function getRagNavigatorTurnPairs(): number {
+  return parsePositiveInt(process.env.RAG_NAVIGATOR_TURN_PAIRS, 3);
+}
+
+/** Recent chat messages used by enrich rules / doc resolution (default 4). */
+export function getRagEnrichContextMessages(): number {
+  return parsePositiveInt(process.env.RAG_ENRICH_CONTEXT_MESSAGES, 4);
+}

@@ -1,36 +1,29 @@
 import type { OpenRouterMessage } from "@/lib/openrouter/types";
 
+import { getRagEnrichContextMessages } from "@/lib/openrouter/config";
 import { loadKnowledgeMap } from "./load-knowledge-map";
+import {
+  findDocIdsInText,
+  resolveFocusDocIds,
+  resolvePrimaryDocId,
+} from "./resolve-doc-id";
 import { defaultRetrievalPlan, type RetrievalIntent, type RetrievalPlan } from "./retrieval-plan";
 
 function unique(values: string[]): string[] {
   return [...new Set(values.map((v) => v.trim()).filter(Boolean))];
 }
 
-function findDocIdsInText(text: string): string[] {
-  const map = loadKnowledgeMap();
-  const lower = text.toLowerCase();
-  const found: string[] = [];
-
-  for (const source of map.sources) {
-    const candidates = [source.docId, source.title, ...source.aliases];
-    if (candidates.some((c) => lower.includes(c.toLowerCase()))) {
-      found.push(source.docId);
-    }
-  }
-
-  return unique(found);
-}
-
 function recentContextText(history: OpenRouterMessage[]): string {
   return history
-    .slice(-4)
+    .slice(-getRagEnrichContextMessages())
     .map((message) => message.content)
     .join("\n");
 }
 
 const COMPARE_PATTERN = /\b(vs\.?|versus|compare|compared|difference between|哪个更好|对比|比较)\b/i;
 const STACK_PATTERN = /\b(stack|tech|technology|framework|libraries|用什么|技术栈)\b/i;
+const CURRENCY_DATA_PATTERN =
+  /\b(currency data|exchange rate|fx rate|forex rate|live rate|historical rate|frankfurter|currencybeacon|currency api|where do you get.*(currency|rate|data)|汇率|数据源)\b/i;
 const OPINION_PATTERN =
   /\b(what do you think|do you think|is he good|is he really|how good|skilled|capable|talented|厉害|怎么样|你觉得|好不好|真的行吗)\b/i;
 const COUNTRY_TRAVEL_PATTERN =
@@ -52,6 +45,9 @@ function sectionsForIntent(intent: RetrievalIntent, message: string): string[] {
     }
     if (STACK_PATTERN.test(message)) {
       base.push("tech-stack");
+    }
+    if (CURRENCY_DATA_PATTERN.test(message)) {
+      base.push("3-features", "4-tech-stack", "data-sources");
     }
   }
 
@@ -120,6 +116,11 @@ function expandSearchQueries(
       if (source) {
         queries.push(`${source.title} ${currentMessage} Frederick Halim portfolio`);
       }
+    }
+    if (CURRENCY_DATA_PATTERN.test(currentMessage) && docId === "nextjs-fxtrade") {
+      queries.push(
+        "Nextjs-FXTrade Frankfurter API historical exchange rates CurrencyBeacon live rates",
+      );
     }
   }
 
@@ -220,6 +221,26 @@ export function enrichRetrievalPlan(
     ]);
   }
 
+  if (CURRENCY_DATA_PATTERN.test(message)) {
+    const fxFocus =
+      resolvePrimaryDocId(message, context) === "nextjs-fxtrade" ||
+      focus_doc_ids.includes("nextjs-fxtrade") ||
+      /fx\s*trad|fxtrad|forex|fxtrade/i.test(message);
+    if (fxFocus || focus_doc_ids.length === 0) {
+      intent = intent === "general" ? "project_detail" : intent;
+      focus_doc_ids = unique([...focus_doc_ids, "nextjs-fxtrade"]);
+      include_sections = unique([
+        ...include_sections,
+        "data-sources",
+        "3-features",
+        "4-tech-stack",
+      ]);
+      answer_hint =
+        answer_hint ||
+        "Answer from context: historical rates from Frankfurter API (api.frankfurter.app, base CNY); live rates from CurrencyBeacon, polled every 60s via /api/currency and /api/latestcurrency. Do not guess other APIs.";
+    }
+  }
+
   if (intent === "off_topic") {
     return defaultRetrievalPlan({
       ...plan,
@@ -230,12 +251,21 @@ export function enrichRetrievalPlan(
   }
 
   if (
-    (intent === "project_detail" || intent === "follow_up") &&
+    (intent === "project_detail" || intent === "follow_up" || intent === "general") &&
     focus_doc_ids.length === 0
   ) {
-    const fromMessage = findDocIdsInText(message);
-    const fromContext = findDocIdsInText(context);
-    focus_doc_ids = fromMessage.length > 0 ? fromMessage.slice(0, 2) : fromContext.slice(0, 1);
+    focus_doc_ids = resolveFocusDocIds(message, context, 2);
+    if (focus_doc_ids.length > 0 && intent === "general") {
+      intent = "project_detail";
+    }
+  } else if (
+    (intent === "project_detail" || intent === "follow_up") &&
+    focus_doc_ids.length > 0
+  ) {
+    const resolved = resolvePrimaryDocId(message, context);
+    if (resolved && !focus_doc_ids.includes(resolved)) {
+      focus_doc_ids = [resolved, ...focus_doc_ids].slice(0, 2);
+    }
   }
 
   if (intent === "bio" && focus_doc_ids.length === 0) {

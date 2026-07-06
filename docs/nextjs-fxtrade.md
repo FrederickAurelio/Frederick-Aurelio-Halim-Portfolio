@@ -33,6 +33,14 @@ Nextjs-FXTrade is a forex-trading demo web app by Frederick Aurelio Halim.
 - Holdings table, total assets, responsive desktop/mobile layouts.
 - GSAP-animated landing page; compound-component modal for buy/sell dialogs.
 
+## 3b. Data sources (FX rates)
+<!-- rag-section: data-sources -->
+Where Nextjs-FXTrade gets currency data:
+- **Historical charts:** [Frankfurter API](https://api.frankfurter.app) — date-range series, base currency **CNY** (yuan). Fetched server-side via Next.js route `GET /api/currency?cur=&time=` (ranges: 1m / 6m / 1y / 3y).
+- **Live / latest rate:** [CurrencyBeacon API](https://api.currencybeacon.com) — latest quotes, base CNY. Route `GET /api/latestcurrency`, polled from the client every **60 seconds** (React Query).
+- **Why two providers:** Frankfurter gives free historical ranges; CurrencyBeacon is used for up-to-date latest prices on buy/sell.
+- **Not mock data** — real external APIs; demo uses virtual money only.
+
 ## 4. Tech stack
 <!-- rag-section: 4-tech-stack -->
 - **Frontend:** Next.js 14 (App Router), React 18, Tailwind CSS, MUI Material + MUI X Charts, GSAP, React Query, react-hot-toast.

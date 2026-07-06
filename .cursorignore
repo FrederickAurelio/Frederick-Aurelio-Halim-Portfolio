@@ -1,0 +1,3 @@
+# Secrets — keep out of Cursor indexing and agent context
+.env.local
+.env*.local

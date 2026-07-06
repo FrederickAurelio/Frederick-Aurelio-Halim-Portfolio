@@ -1,4 +1,5 @@
 import { createChatCompletion } from "@/lib/openrouter/client";
+import { getRagNavigatorTurnPairs } from "@/lib/openrouter/config";
 import type { OpenRouterMessage } from "@/lib/openrouter/types";
 
 import { enrichRetrievalPlan } from "./enrich-retrieval-plan";
@@ -103,7 +104,7 @@ export function buildNavigatorMessages(
 ): OpenRouterMessage[] {
   const map = formatKnowledgeMapForPrompt(loadKnowledgeMap());
   const system = NAVIGATOR_SYSTEM.replace("{MAP}", map);
-  const priorTurns = lastTurnPairs(history, 2);
+  const priorTurns = lastTurnPairs(history, getRagNavigatorTurnPairs());
 
   return [
     { role: "system", content: system },

@@ -36,27 +36,40 @@ async function embedBatch(
   model: string,
   inputs: string[],
 ): Promise<number[][]> {
-  const response = await fetch("https://openrouter.ai/api/v1/embeddings", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ model, input: inputs }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60_000);
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Embedding batch failed (${response.status}): ${text}`);
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/embeddings", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ model, input: inputs }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Embedding batch failed (${response.status}): ${text}`);
+    }
+
+    const body = (await response.json()) as {
+      data: { embedding: number[]; index: number }[];
+    };
+
+    return body.data
+      .sort((a, b) => a.index - b.index)
+      .map((item) => item.embedding);
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Embedding batch timed out after 60s");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const body = (await response.json()) as {
-    data: { embedding: number[]; index: number }[];
-  };
-
-  return body.data
-    .sort((a, b) => a.index - b.index)
-    .map((item) => item.embedding);
 }
 
 async function main(): Promise<void> {

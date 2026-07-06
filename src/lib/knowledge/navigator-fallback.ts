@@ -1,7 +1,7 @@
 import type { OpenRouterMessage } from "@/lib/openrouter/types";
 
 import { buildRetrievalQuery } from "./build-query";
-import { loadKnowledgeMap } from "./load-knowledge-map";
+import { resolvePrimaryDocId } from "./resolve-doc-id";
 import {
   defaultRetrievalPlan,
   type RetrievalPlan,
@@ -29,18 +29,7 @@ const PIVOT_PATTERN =
   /\b(other|another|besides|else|different)\b|其他|别的|还有|另一个/i;
 
 function findDocIdFromText(text: string): string | null {
-  const map = loadKnowledgeMap();
-  const lower = text.toLowerCase();
-
-  for (const source of map.sources) {
-    if (lower.includes(source.docId.toLowerCase())) return source.docId;
-    if (lower.includes(source.title.toLowerCase())) return source.docId;
-    for (const alias of source.aliases) {
-      if (lower.includes(alias.toLowerCase())) return source.docId;
-    }
-  }
-
-  return null;
+  return resolvePrimaryDocId(text, "");
 }
 
 function recentUserTexts(history: OpenRouterMessage[], limit: number): string[] {
@@ -146,13 +135,16 @@ export function fallbackRetrievalPlan(
   }
 
   const query = buildRetrievalQuery(history, current);
-  const docIds = findDocIdFromText(current) ?? findDocIdFromText(recentAssistantText(history));
+  const docId =
+    resolvePrimaryDocId(current, recentAssistantText(history)) ??
+    findDocIdFromText(current) ??
+    findDocIdFromText(recentAssistantText(history));
   return defaultRetrievalPlan({
-    intent: docIds ? "project_detail" : "general",
-    focus_doc_ids: docIds ? [docIds] : [],
-    include_sections: docIds ? ["at-a-glance", "tech-stack"] : ["at-a-glance"],
-    search_queries: docIds
-      ? [query, `Frederick Halim ${docIds} project details`]
+    intent: docId ? "project_detail" : "general",
+    focus_doc_ids: docId ? [docId] : [],
+    include_sections: docId ? ["at-a-glance", "tech-stack"] : ["at-a-glance"],
+    search_queries: docId
+      ? [query, `Frederick Halim ${docId} project details`]
       : [query, "Frederick Aurelio Halim portfolio projects and background"],
   });
 }
