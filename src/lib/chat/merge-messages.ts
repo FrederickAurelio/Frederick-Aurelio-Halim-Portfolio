@@ -7,6 +7,7 @@ export function storedToUiMessage(message: StoredChatMessage): ChatMessage {
     content: message.content,
     reasoning: message.reasoning,
     reasoningExpanded: false,
+    streamPhase: message.streamPhase,
     status: message.status === "generating" ? "streaming" : "complete",
     createdAt: message.createdAt,
   };

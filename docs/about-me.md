@@ -1,8 +1,18 @@
+---
+rag:
+  id: about-me
+  type: bio
+  title: Frederick Aurelio Halim
+  aliases: [Frederick, Aurelio Halim, 林健昌, Frederick Halim]
+---
+
 # About Me (Frederick Aurelio Halim)
 
-> AI-context document. Factual reference about the person behind the portfolio, meant to be reused for resume writing, cover letters, and other AI-assisted contexts. Mirrors the style of the project docs in this folder. Anything unconfirmed is flagged in §7.
+> Portfolio knowledge source. Facts about Frederick Aurelio Halim only.
 
 ## 1. At a glance
+<!-- rag-section: at-a-glance -->
+Frederick Aurelio Halim (林健昌) is a frontend and full-stack developer from Medan, Indonesia.
 - **Name:** Frederick Aurelio Halim.
 - **Chinese name:** 林健昌.
 - **Origin:** From Medan, Sumatera Utara, Indonesia. Indonesian nationality.
@@ -11,39 +21,44 @@
 - **Primary stack:** React, Next.js, Express, TypeScript, MongoDB, Supabase.
 
 ## 2. Background & story
+<!-- rag-section: background -->
+Frederick Aurelio Halim learned to code self-taught in high school before formal university study.
 - **Self-taught first, then formal.** Started coding on my own in high school, around 2020 to 2021 (second/third year of high school), before studying it properly at university.
 - **What keeps me in it:** the problem-solving. Working out the logic, then watching it click into place.
 - **How I work:** I like taking a feature all the way through, from the UI to the API and auth, then getting it live.
 
 ## 3. Education
+<!-- rag-section: education -->
+Frederick Aurelio Halim graduated from Zhejiang University of Science and Technology (浙江科技大学) in Hangzhou, China.
 - **Degree:** B.Eng. in Computer Science (with Honours).
 - **University:** Zhejiang University of Science and Technology (浙江科技大学), Hangzhou, China.
 - **Graduated:** 2026.
 
 ## 4. Languages
+<!-- rag-section: languages -->
+Frederick Aurelio Halim speaks Indonesian, English, and Mandarin Chinese.
 - **Indonesian:** native.
 - **English:** strong working proficiency (roughly 8/10 for internal reference; do not print a score in resumes).
 - **Mandarin Chinese:** working proficiency (roughly 7/10 for internal reference; do not print a score).
 - Can work comfortably in all three languages, including in a Chinese-language workplace (lived and worked in Hangzhou).
 
 ## 5. Interests & focus
+<!-- rag-section: interests -->
+Frederick Aurelio Halim is exploring AI agents and looking for teams building real products.
 - **Recently exploring:** AI agents, learning how tool calling and agent loops work.
 - **Outside of code:** games a fair bit.
 - **Looking for:** a team where I can build real products and keep growing as a developer.
 
 ## 6. Contact & links
+<!-- rag-section: contact -->
 - **Email:** frederick.ah88@gmail.com
-- **GitHub:** https://github.com/FrederickAurelio
+- **GitHub:** https://github.com/FrederickAurelio — full list of public repos (including smaller uni/learning projects not on this portfolio).
 - **WeChat:** available (QR on the portfolio site).
 - **LinkedIn / others:** to be added by Frederick.
 
-## 7. Open questions / to confirm
-- Current base location and relocation preferences (intentionally left unspecified for now).
-- LinkedIn URL and any other professional links.
-- Exact program/major title as printed on the diploma (recorded here as "Computer Science").
-- Preferred job-target framing (frontend-leaning vs full-stack) for different applications.
-
-## 8. Reference copy (from the live portfolio)
+## 7. Reference copy (from the live portfolio)
+<!-- rag-section: reference-copy -->
+Portfolio bio copy for Frederick Aurelio Halim in English.
 
 **English:**
   "I'm a frontend developer who builds and deploys full-stack web apps, mostly with React, Next.js, and Express. I'm comfortable across the whole stack. I build the interface, wire up the API and auth, then ship it.",

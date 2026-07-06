@@ -153,11 +153,30 @@ export function useChat(errorMessages: {
             onSaved: () => {
               // IDs already known from history
             },
-            onSync: ({ content, reasoning }) => {
+            onSync: ({ content, reasoning, streamPhase }) => {
               updateAssistant((message) => ({
                 ...message,
                 content,
                 reasoning: reasoning || undefined,
+                streamPhase: streamPhase ?? message.streamPhase,
+              }));
+            },
+            onRouting: () => {
+              updateAssistant((message) => ({
+                ...message,
+                streamPhase: "routing",
+              }));
+            },
+            onRetrieving: () => {
+              updateAssistant((message) => ({
+                ...message,
+                streamPhase: "retrieving",
+              }));
+            },
+            onPhase: (phase) => {
+              updateAssistant((message) => ({
+                ...message,
+                streamPhase: phase,
               }));
             },
             onThinking: (delta) => {
@@ -166,6 +185,10 @@ export function useChat(errorMessages: {
                 setStatus("streaming");
               }
               streamBatcher.pushThinking(delta);
+              updateAssistant((message) => ({
+                ...message,
+                streamPhase: message.content ? "content" : "thinking",
+              }));
             },
             onContent: (delta) => {
               if (!hasReceivedChunk) {
@@ -173,6 +196,10 @@ export function useChat(errorMessages: {
                 setStatus("streaming");
               }
               streamBatcher.pushContent(delta);
+              updateAssistant((message) => ({
+                ...message,
+                streamPhase: "content",
+              }));
             },
             onDone: () => {
               streamBatcher.flushNow();
@@ -331,6 +358,24 @@ export function useChat(errorMessages: {
             onSaved: ({ userMessageId, assistantMessageId }) => {
               reconcileIds(userMessageId, assistantMessageId);
             },
+            onRouting: () => {
+              updateAssistant((message) => ({
+                ...message,
+                streamPhase: "routing",
+              }));
+            },
+            onRetrieving: () => {
+              updateAssistant((message) => ({
+                ...message,
+                streamPhase: "retrieving",
+              }));
+            },
+            onPhase: (phase) => {
+              updateAssistant((message) => ({
+                ...message,
+                streamPhase: phase,
+              }));
+            },
             onThinking: (delta) => {
               if (!hasReceivedChunk) {
                 hasReceivedChunk = true;
@@ -338,6 +383,10 @@ export function useChat(errorMessages: {
               }
 
               streamBatcher.pushThinking(delta);
+              updateAssistant((message) => ({
+                ...message,
+                streamPhase: message.content ? "content" : "thinking",
+              }));
             },
             onContent: (delta) => {
               if (!hasReceivedChunk) {
@@ -346,6 +395,10 @@ export function useChat(errorMessages: {
               }
 
               streamBatcher.pushContent(delta);
+              updateAssistant((message) => ({
+                ...message,
+                streamPhase: "content",
+              }));
             },
             onDone: () => {
               streamBatcher.flushNow();

@@ -1,6 +1,6 @@
 import type { ChatStore } from "@/lib/chat-store";
 import { getGenerationBufferFlushMs } from "@/lib/chat-store/keys";
-import type { GenerationBuffer } from "@/lib/chat/types";
+import type { ChatStreamPhase, GenerationBuffer } from "@/lib/chat/types";
 
 type GenerationBufferWriterMeta = {
   userMessageId: string;
@@ -10,6 +10,7 @@ type GenerationBufferWriterMeta = {
 export class GenerationBufferWriter {
   private content = "";
   private reasoning = "";
+  private streamPhase: ChatStreamPhase | undefined;
   private seq = 0;
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
   private writeChain: Promise<void> = Promise.resolve();
@@ -36,15 +37,29 @@ export class GenerationBufferWriter {
     await this.store.initGenerationBuffer(this.sessionId, this.meta);
   }
 
+  setStreamPhase(phase: ChatStreamPhase): void {
+    if (this.streamPhase === phase) return;
+    this.streamPhase = phase;
+    if (phase === "routing" || phase === "retrieving" || phase === "thinking") {
+      void this.flushNow();
+      return;
+    }
+    this.scheduleFlush();
+  }
+
   appendThinking(delta: string): void {
     if (!delta) return;
     this.reasoning += delta;
+    if (this.streamPhase !== "content") {
+      this.streamPhase = "thinking";
+    }
     this.scheduleFlush();
   }
 
   appendContent(delta: string): void {
     if (!delta) return;
     this.content += delta;
+    this.streamPhase = "content";
     this.scheduleFlush();
   }
 
@@ -88,6 +103,7 @@ export class GenerationBufferWriter {
       reasoning: this.reasoning,
       seq: this.seq,
       updatedAt: Date.now(),
+      streamPhase: this.streamPhase,
     };
     await this.store.setGenerationBuffer(this.sessionId, buffer);
   }

@@ -2,12 +2,15 @@ export type MessageRole = "user" | "assistant" | "error";
 
 export type MessageStatus = "complete" | "streaming" | "error";
 
+export type ChatStreamPhase = "routing" | "retrieving" | "thinking" | "content";
+
 export type ChatMessage = {
   id: string;
   role: MessageRole;
   content: string;
   reasoning?: string;
   reasoningExpanded?: boolean;
+  streamPhase?: ChatStreamPhase;
   status: MessageStatus;
   createdAt: number;
 };
@@ -27,6 +30,7 @@ export type StoredChatMessage = {
   reasoning?: string;
   createdAt: number;
   status?: StoredMessageStatus;
+  streamPhase?: ChatStreamPhase;
 };
 
 export type GenerationBuffer = {
@@ -36,12 +40,14 @@ export type GenerationBuffer = {
   reasoning: string;
   seq: number;
   updatedAt: number;
+  streamPhase?: ChatStreamPhase;
 };
 
 export type ChatSyncEvent = {
   content: string;
   reasoning: string;
   seq: number;
+  streamPhase?: ChatStreamPhase;
 };
 
 export const NO_ACTIVE_GENERATION_CODE = "NO_ACTIVE_GENERATION";

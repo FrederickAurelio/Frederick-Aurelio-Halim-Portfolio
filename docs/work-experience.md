@@ -1,12 +1,22 @@
+---
+rag:
+  id: work-experience
+  type: experience
+  title: Work Experience
+  aliases: [Mufy, Mufy AI, 木飞, work history, jobs]
+---
+
 # Work Experience
 
-> AI-context document. Factual reference about Frederick's work history, meant to be reused for resume writing, cover letters, and other AI-assisted contexts. Mirrors the style of the project docs in this folder. Anything unconfirmed is flagged at the end.
+> Portfolio knowledge source. Facts about Frederick Aurelio Halim's work history only.
 
 ---
 
 ## Mufy AI — Frontend Developer
 
 ### 1. At a glance
+<!-- rag-section: mufy-at-a-glance -->
+Frederick Aurelio Halim worked as a Frontend Developer at Mufy AI in Hangzhou, China (May 2025 – June 2026).
 - **Role:** Frontend Developer.
 - **Company (product):** Mufy AI.
 - **Company (legal name):** 杭州智聊思远互联网科技有限公司.
@@ -15,11 +25,15 @@
 - **Period:** May 2025 to June 2026.
 
 ### 2. The product
+<!-- rag-section: mufy-product -->
+Mufy AI is an AI roleplay chat app where Frederick Aurelio Halim worked on the web frontend.
 - **What it is:** Mufy is an AI roleplay chat app with hundreds of characters across genres like romance, fantasy, and games.
 - **How it works:** You can chat with characters other people made, or create your own for others to play with.
 - **My side of it:** Worked on the web app as the product kept growing.
 
 ### 3. What I did
+<!-- rag-section: mufy-responsibilities -->
+Frederick Aurelio Halim built features, reusable components, and fixed bugs at Mufy AI.
 - Built new features and pages for the web app as the product kept growing.
 - Made reusable hooks and components so the team wasn't rewriting the same code every time.
 - Tested the app and fixed bugs as they came up, and cleaned up logic that had gotten messy over time.
@@ -27,6 +41,8 @@
 - Worked day to day with the designers, backend, and the other frontend devs to get things shipped.
 
 ### 4. Features / areas I worked on
+<!-- rag-section: mufy-features -->
+Frontend areas Frederick Aurelio Halim worked on at Mufy AI.
 - Details page
 - Homepage
 - Settings
@@ -34,6 +50,8 @@
 - Other features such as comments, fan badges, and more.
 
 ### 5. Tech stack
+<!-- rag-section: mufy-stack -->
+Tech stack Frederick Aurelio Halim used at Mufy AI.
 | Category | Technologies |
 |---|---|
 | Language | TypeScript, JavaScript (ES modules) |
@@ -49,6 +67,8 @@
 | Tooling | Git, AI coding tools |
 
 ### 6. Resume bullet candidates (factual, no invented metrics)
+<!-- rag-section: mufy-resume-bullets -->
+Resume bullet points for Frederick Aurelio Halim's Mufy AI role.
 - Built and shipped new features and pages for an AI roleplay chat web app (React 18, TypeScript, Vite) as the product scaled to hundreds of characters.
 - Delivered core surfaces including the homepage, details page, settings, shop, and supporting features like comments and badges.
 - Extracted reusable hooks and components to cut duplicated code and speed up feature work across the frontend team.

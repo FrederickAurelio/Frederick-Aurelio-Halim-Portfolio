@@ -44,6 +44,8 @@ type ChatMessageListProps = {
   copiedLabel: string;
   thinkingLabel: string;
   thinkingDoneLabel: string;
+  retrievingLabel: string;
+  routingLabel: string;
   showThinkingLabel: string;
   hideThinkingLabel: string;
   isLoading: boolean;
@@ -62,6 +64,8 @@ export default function ChatMessageList({
   copiedLabel,
   thinkingLabel,
   thinkingDoneLabel,
+  retrievingLabel,
+  routingLabel,
   showThinkingLabel,
   hideThinkingLabel,
   isLoading,
@@ -224,6 +228,8 @@ export default function ChatMessageList({
             copiedLabel={copiedLabel}
             thinkingLabel={thinkingLabel}
             thinkingDoneLabel={thinkingDoneLabel}
+            retrievingLabel={retrievingLabel}
+            routingLabel={routingLabel}
             showThinkingLabel={showThinkingLabel}
             hideThinkingLabel={hideThinkingLabel}
             onToggleReasoning={onToggleReasoning}

@@ -1,6 +1,6 @@
 import type { ChatStore } from "@/lib/chat-store";
 import { getGenerationBufferPollMs } from "@/lib/chat-store/keys";
-import type { GenerationBuffer } from "@/lib/chat/types";
+import type { ChatStreamPhase, GenerationBuffer } from "@/lib/chat/types";
 import { CHAT_SSE_HEADERS } from "@/lib/openrouter/stream-transform";
 
 function encodeSseEvent(event: string, data: unknown): string {
@@ -36,6 +36,24 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
       { once: true },
     );
   });
+}
+
+function emitPhaseEvent(
+  controller: ReadableStreamDefaultController<Uint8Array>,
+  encoder: TextEncoder,
+  phase: ChatStreamPhase | undefined,
+): void {
+  if (phase === "routing" || phase === "retrieving") {
+    safeEnqueue(controller, encoder, phase, {});
+  }
+  if (
+    phase === "routing" ||
+    phase === "retrieving" ||
+    phase === "thinking" ||
+    phase === "content"
+  ) {
+    safeEnqueue(controller, encoder, "phase", { phase });
+  }
 }
 
 function emitBufferDeltas(
@@ -129,11 +147,15 @@ export function createGenerationSubscribeStream(
             content: buffer.content,
             reasoning: buffer.reasoning,
             seq: buffer.seq,
+            streamPhase: buffer.streamPhase,
           });
 
           let lastSeq = buffer.seq;
           let lastReasoningLen = buffer.reasoning.length;
           let lastContentLen = buffer.content.length;
+          let lastEmittedPhase = buffer.streamPhase;
+
+          emitPhaseEvent(controller, encoder, buffer.streamPhase);
 
           while (true) {
             if (signal?.aborted) break;
@@ -169,6 +191,11 @@ export function createGenerationSubscribeStream(
               continue;
             }
 
+            if (updated.streamPhase !== lastEmittedPhase) {
+              emitPhaseEvent(controller, encoder, updated.streamPhase);
+              lastEmittedPhase = updated.streamPhase;
+            }
+
             if (updated.seq > lastSeq) {
               const next = emitBufferDeltas(
                 controller,
@@ -180,6 +207,9 @@ export function createGenerationSubscribeStream(
               lastReasoningLen = next.lastReasoningLen;
               lastContentLen = next.lastContentLen;
               lastSeq = updated.seq;
+              if (updated.streamPhase === "thinking" || updated.streamPhase === "content") {
+                lastEmittedPhase = updated.streamPhase;
+              }
             }
           }
 

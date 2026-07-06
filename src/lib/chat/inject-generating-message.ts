@@ -27,6 +27,7 @@ export async function injectGeneratingAssistant(
     reasoning: buffer.reasoning || undefined,
     createdAt: buffer.updatedAt,
     status: "generating" as const,
+    streamPhase: buffer.streamPhase,
   };
 
   return {

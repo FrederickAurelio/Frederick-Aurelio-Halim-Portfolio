@@ -1,12 +1,15 @@
 import { createParser } from "eventsource-parser";
 
-import type { ChatSavedEvent, ChatSyncEvent } from "@/lib/chat/types";
+import type { ChatSavedEvent, ChatStreamPhase, ChatSyncEvent } from "@/lib/chat/types";
 
 export type ChatStreamCallbacks = {
   onThinking?: (delta: string) => void;
   onContent?: (delta: string) => void;
   onSaved?: (payload: ChatSavedEvent) => void;
   onSync?: (payload: ChatSyncEvent) => void;
+  onRetrieving?: () => void;
+  onRouting?: () => void;
+  onPhase?: (phase: ChatStreamPhase) => void;
   onDone?: () => void;
   onError?: (message: string, status?: number) => void;
 };
@@ -19,7 +22,21 @@ type StreamPayload = {
   content?: string;
   reasoning?: string;
   seq?: number;
+  streamPhase?: string;
+  phase?: string;
 };
+
+function parseStreamPhase(value: string | undefined): ChatStreamPhase | undefined {
+  if (
+    value === "routing" ||
+    value === "retrieving" ||
+    value === "thinking" ||
+    value === "content"
+  ) {
+    return value;
+  }
+  return undefined;
+}
 
 async function readErrorMessage(response: Response): Promise<string> {
   try {
@@ -96,6 +113,17 @@ export async function consumeChatStream(
             });
           }
           break;
+        case "retrieving":
+          callbacks.onRetrieving?.();
+          break;
+        case "routing":
+          callbacks.onRouting?.();
+          break;
+        case "phase": {
+          const phase = parseStreamPhase(payload.phase);
+          if (phase) callbacks.onPhase?.(phase);
+          break;
+        }
         case "sync":
           if (
             typeof payload.content === "string" &&
@@ -106,6 +134,7 @@ export async function consumeChatStream(
               content: payload.content,
               reasoning: payload.reasoning,
               seq: payload.seq,
+              streamPhase: parseStreamPhase(payload.streamPhase),
             });
           }
           break;

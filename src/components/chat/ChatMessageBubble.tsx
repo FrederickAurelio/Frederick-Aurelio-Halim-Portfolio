@@ -13,6 +13,8 @@ type ChatMessageBubbleProps = {
   copiedLabel: string;
   thinkingLabel: string;
   thinkingDoneLabel: string;
+  retrievingLabel: string;
+  routingLabel: string;
   showThinkingLabel: string;
   hideThinkingLabel: string;
   onToggleReasoning?: (messageId: string) => void;
@@ -24,6 +26,8 @@ export default function ChatMessageBubble({
   copiedLabel,
   thinkingLabel,
   thinkingDoneLabel,
+  retrievingLabel,
+  routingLabel,
   showThinkingLabel,
   hideThinkingLabel,
   onToggleReasoning,
@@ -32,8 +36,28 @@ export default function ChatMessageBubble({
   const isUser = message.role === "user";
   const isError = message.role === "error";
   const isStreaming = message.status === "streaming";
+  const isRouting =
+    isStreaming &&
+    message.streamPhase === "routing" &&
+    !message.content &&
+    !message.reasoning;
+  const isRetrieving =
+    isStreaming &&
+    message.streamPhase === "retrieving" &&
+    !message.content &&
+    !message.reasoning;
+  const isThinking =
+    isStreaming &&
+    message.streamPhase === "thinking" &&
+    !message.content &&
+    !message.reasoning;
   const showTypingDots =
-    isStreaming && !message.content && !message.reasoning;
+    isStreaming &&
+    !message.content &&
+    !message.reasoning &&
+    !isRouting &&
+    !isRetrieving &&
+    !isThinking;
 
   const handleCopy = async () => {
     if (!message.content) return;
@@ -54,6 +78,12 @@ export default function ChatMessageBubble({
       >
         {isUser ? (
           <p className="whitespace-pre-wrap break-words">{message.content}</p>
+        ) : isRouting ? (
+          <PhaseIndicator label={routingLabel} />
+        ) : isRetrieving ? (
+          <PhaseIndicator label={retrievingLabel} />
+        ) : isThinking ? (
+          <PhaseIndicator label={thinkingLabel} />
         ) : showTypingDots ? (
           <TypingDots />
         ) : (
@@ -106,5 +136,17 @@ function TypingDots() {
       <span className="size-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:150ms]" />
       <span className="size-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:300ms]" />
     </div>
+  );
+}
+
+function PhaseIndicator({ label }: { label: string }) {
+  return (
+    <p className="flex items-center gap-2 py-0.5 text-slate-500">
+      <span
+        className="size-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-sky-500"
+        aria-hidden
+      />
+      <span>{label}</span>
+    </p>
   );
 }

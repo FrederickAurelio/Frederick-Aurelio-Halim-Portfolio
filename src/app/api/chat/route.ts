@@ -4,15 +4,12 @@ import {
   tryAcquireGeneration,
 } from "@/lib/chat/generation-registry";
 import { GenerationBufferWriter } from "@/lib/chat/generation-buffer-writer";
+import { createRagChatStream } from "@/lib/chat/rag-chat-stream";
 import { SessionError, requireSessionId } from "@/lib/chat/session";
 import { getChatStore } from "@/lib/chat-store";
 import { GENERATION_IN_PROGRESS_CODE } from "@/lib/chat/types";
-import { createChatCompletionStream } from "@/lib/openrouter/client";
 import { getOpenRouterConfig } from "@/lib/openrouter/config";
-import {
-  CHAT_SSE_HEADERS,
-  transformOpenRouterStream,
-} from "@/lib/openrouter/stream-transform";
+import { CHAT_SSE_HEADERS } from "@/lib/openrouter/stream-transform";
 import type { ChatApiRequest } from "@/lib/chat/types";
 
 export async function POST(request: Request) {
@@ -72,33 +69,6 @@ export async function POST(request: Request) {
       createdAt,
     });
 
-    const upstream = await createChatCompletionStream({
-      messages: [...history, { role: "user", content }],
-      signal: generationController.signal,
-    });
-
-    if (!upstream.ok) {
-      await bufferWriter.clear();
-      await releaseGeneration(activeSessionId);
-      lockHeld = false;
-      bufferWriter = null;
-
-      let errorMessage = "Upstream request failed";
-      try {
-        const errorBody = (await upstream.json()) as {
-          error?: { message?: string };
-        };
-        errorMessage = errorBody.error?.message ?? errorMessage;
-      } catch {
-        // Use default error message
-      }
-
-      const status =
-        upstream.status >= 400 && upstream.status < 600 ? upstream.status : 502;
-
-      return NextResponse.json({ error: errorMessage }, { status });
-    }
-
     const writer = bufferWriter;
 
     const onGenerationEnd = async () => {
@@ -124,14 +94,20 @@ export async function POST(request: Request) {
     };
 
     return new Response(
-      transformOpenRouterStream(upstream.body, {
+      createRagChatStream({
         savedPayload: { userMessageId, assistantMessageId },
+        history,
+        userMessage: content,
+        signal: generationController.signal,
         shouldStop: () => store.isGenerationStopRequested(activeSessionId),
         onThinkingDelta: (delta) => {
           writer.appendThinking(delta);
         },
         onContentDelta: (delta) => {
           writer.appendContent(delta);
+        },
+        onStreamPhase: (phase) => {
+          writer.setStreamPhase(phase);
         },
         onGenerationEnd: async () => {
           await onGenerationEnd();

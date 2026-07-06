@@ -1,0 +1,167 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "docId": "about-me",
+      "type": "bio",
+      "title": "Frederick Aurelio Halim",
+      "aliases": [
+        "Frederick",
+        "Aurelio Halim",
+        "林健昌",
+        "Frederick Halim"
+      ],
+      "sourceFile": "docs/about-me.md",
+      "sections": [
+        "introduction",
+        "at-a-glance",
+        "background",
+        "education",
+        "languages",
+        "interests",
+        "contact",
+        "reference-copy"
+      ]
+    },
+    {
+      "docId": "memories",
+      "type": "project",
+      "title": "Memories",
+      "aliases": [
+        "Memories app",
+        "scrapbook canvas",
+        "Konva canvas",
+        "digital collage"
+      ],
+      "sourceFile": "docs/memories.md",
+      "sections": [
+        "introduction",
+        "at-a-glance",
+        "2-problem-purpose",
+        "3-features",
+        "4-tech-stack",
+        "5-architecture",
+        "6-notable-technical-decisions-trade-offs",
+        "7-interesting-hard-problems-solved"
+      ]
+    },
+    {
+      "docId": "nextjs-fxtrade",
+      "type": "project",
+      "title": "Nextjs-FXTrade",
+      "aliases": [
+        "FXTrade",
+        "forex trade",
+        "forex demo",
+        "FX trade demo",
+        "nextjs fxtrade"
+      ],
+      "sourceFile": "docs/nextjs-fxtrade.md",
+      "sections": [
+        "introduction",
+        "at-a-glance",
+        "2-problem-purpose",
+        "3-features",
+        "4-tech-stack",
+        "5-architecture",
+        "6-notable-technical-decisions-trade-offs",
+        "7-interesting-hard-problems-solved"
+      ]
+    },
+    {
+      "docId": "projects-overview",
+      "type": "catalog",
+      "title": "Frederick's Projects",
+      "aliases": [
+        "projects list",
+        "portfolio projects",
+        "all projects",
+        "项目列表",
+        "biggest project",
+        "best project",
+        "flagship",
+        "where to start",
+        "other projects",
+        "more projects",
+        "besides these",
+        "GitHub repos"
+      ],
+      "sourceFile": "docs/projects-overview.md",
+      "sections": [
+        "introduction",
+        "overview",
+        "where-to-start",
+        "why-flagship",
+        "project-scale",
+        "other-projects-github"
+      ]
+    },
+    {
+      "docId": "promis-conveyor-chain",
+      "type": "project",
+      "title": "Promis Conveyor Chain",
+      "aliases": [
+        "Promis",
+        "promis-web",
+        "conveyor chain",
+        "palm oil website"
+      ],
+      "sourceFile": "docs/promis-conveyor-chain.md",
+      "sections": [
+        "introduction",
+        "at-a-glance",
+        "2-problem-purpose",
+        "3-features",
+        "4-tech-stack",
+        "5-architecture",
+        "6-notable-technical-decisions-trade-offs",
+        "7-interesting-hard-problems-solved"
+      ]
+    },
+    {
+      "docId": "quizconnect",
+      "type": "project",
+      "title": "QuizConnect",
+      "aliases": [
+        "quiz connect",
+        "multiplayer quiz",
+        "QuizzConnect",
+        "real-time quiz"
+      ],
+      "sourceFile": "docs/quizconnect.md",
+      "sections": [
+        "introduction",
+        "at-a-glance",
+        "2-problem-purpose",
+        "3-features",
+        "4-tech-stack",
+        "5-architecture",
+        "6-notable-technical-decisions-trade-offs",
+        "7-interesting-hard-problems-solved"
+      ]
+    },
+    {
+      "docId": "work-experience",
+      "type": "experience",
+      "title": "Work Experience",
+      "aliases": [
+        "Mufy",
+        "Mufy AI",
+        "木飞",
+        "work history",
+        "jobs"
+      ],
+      "sourceFile": "docs/work-experience.md",
+      "sections": [
+        "introduction",
+        "mufy-ai-frontend-developer",
+        "mufy-at-a-glance",
+        "mufy-product",
+        "mufy-responsibilities",
+        "mufy-features",
+        "mufy-stack",
+        "mufy-resume-bullets"
+      ]
+    }
+  ]
+}

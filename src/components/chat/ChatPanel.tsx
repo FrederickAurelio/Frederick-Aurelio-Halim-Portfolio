@@ -58,6 +58,8 @@ export default function ChatPanel({
   const stopLabel = chat.stopLabel[language];
   const thinkingLabel = chat.thinkingLabel[language];
   const thinkingDoneLabel = chat.thinkingDoneLabel[language];
+  const retrievingLabel = chat.retrievingLabel[language];
+  const routingLabel = chat.routingLabel[language];
   const showThinkingLabel = chat.showThinkingLabel[language];
   const hideThinkingLabel = chat.hideThinkingLabel[language];
   const suggestions = chat.suggestions[language];
@@ -96,6 +98,8 @@ export default function ChatPanel({
         copiedLabel={copiedLabel}
         thinkingLabel={thinkingLabel}
         thinkingDoneLabel={thinkingDoneLabel}
+        retrievingLabel={retrievingLabel}
+        routingLabel={routingLabel}
         showThinkingLabel={showThinkingLabel}
         hideThinkingLabel={hideThinkingLabel}
         isLoading={isLoading}

@@ -6,6 +6,7 @@ export type OpenRouterMessage = {
 export type OpenRouterConfig = {
   apiKey: string;
   model: string;
+  embeddingModel: string;
   httpReferer?: string;
   appTitle?: string;
 };

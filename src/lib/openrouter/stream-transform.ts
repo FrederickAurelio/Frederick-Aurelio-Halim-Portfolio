@@ -31,7 +31,7 @@ function encodeSseEvent(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-function safeEnqueue(
+export function safeEnqueue(
   controller: ReadableStreamDefaultController<Uint8Array>,
   encoder: TextEncoder,
   event: string,
@@ -44,28 +44,31 @@ function safeEnqueue(
   }
 }
 
-function extractThinkingDelta(delta: OpenRouterStreamChunk["choices"]): string {
+/** Exported for unit tests. OpenRouter aliases reasoning ≈ reasoning_content; never combine. */
+export function extractThinkingDelta(
+  delta: OpenRouterStreamChunk["choices"],
+): string {
   const d = delta?.[0]?.delta;
   if (!d) return "";
 
-  const parts: string[] = [];
-
-  if (typeof d.reasoning === "string" && d.reasoning) {
-    parts.push(d.reasoning);
-  }
-
-  if (typeof d.reasoning_content === "string" && d.reasoning_content) {
-    parts.push(d.reasoning_content);
-  }
-
-  if (Array.isArray(d.reasoning_details)) {
+  if (Array.isArray(d.reasoning_details) && d.reasoning_details.length > 0) {
+    const parts: string[] = [];
     for (const detail of d.reasoning_details) {
       const text = extractReasoningDetailText(detail);
       if (text) parts.push(text);
     }
+    if (parts.length > 0) return parts.join("");
   }
 
-  return parts.join("");
+  if (typeof d.reasoning_content === "string" && d.reasoning_content) {
+    return d.reasoning_content;
+  }
+
+  if (typeof d.reasoning === "string" && d.reasoning) {
+    return d.reasoning;
+  }
+
+  return "";
 }
 
 function extractReasoningDetailText(detail: OpenRouterReasoningDetail): string {
@@ -105,112 +108,123 @@ function processOpenRouterChunk(
   return null;
 }
 
-export function transformOpenRouterStream(
+type PipeOpenRouterOptions = TransformOptions & {
+  emitSaved?: boolean;
+};
+
+export function pipeOpenRouterToChatStream(
+  controller: ReadableStreamDefaultController<Uint8Array>,
   upstream: ReadableStream<Uint8Array> | null,
-  options?: TransformOptions,
-): ReadableStream<Uint8Array> {
+  options?: PipeOpenRouterOptions,
+): void {
   const encoder = new TextEncoder();
   const hooks = options;
 
-  return new ReadableStream({
-    start(controller) {
-      if (!upstream) {
-        safeEnqueue(controller, encoder, "error", {
-          message: "Empty response stream",
-        });
-        void options?.onGenerationEnd?.("error");
+  if (!upstream) {
+    safeEnqueue(controller, encoder, "error", {
+      message: "Empty response stream",
+    });
+    void options?.onGenerationEnd?.("error");
+    controller.close();
+    return;
+  }
+
+  const reader = upstream.getReader();
+  const decoder = new TextDecoder();
+  let streamError: string | null = null;
+  let generationEnded = false;
+
+  const endGeneration = async (reason: GenerationEndReason) => {
+    if (generationEnded) return;
+    generationEnded = true;
+    await options?.onGenerationEnd?.(reason);
+  };
+
+  const parser = createParser({
+    onEvent(event: EventSourceMessage) {
+      if (!event.data || event.data === "[DONE]") return;
+
+      try {
+        const chunk = JSON.parse(event.data) as OpenRouterStreamChunk;
+        const chunkError = processOpenRouterChunk(
+          chunk,
+          controller,
+          encoder,
+          hooks,
+        );
+        if (chunkError) {
+          streamError = chunkError;
+          void reader.cancel().catch(() => {});
+        }
+      } catch {
+        // Ignore malformed JSON chunks
+      }
+    },
+  });
+
+  const pump = async () => {
+    try {
+      if (options?.emitSaved !== false && options?.savedPayload) {
+        safeEnqueue(controller, encoder, "saved", options.savedPayload);
+        hooks?.onSaved?.(options.savedPayload);
+      }
+
+      while (true) {
+        if (await options?.shouldStop?.()) {
+          await reader.cancel().catch(() => {});
+          await endGeneration("aborted");
+          safeEnqueue(controller, encoder, "done", {});
+          controller.close();
+          return;
+        }
+
+        if (streamError) break;
+
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        parser.feed(decoder.decode(value, { stream: true }));
+
+        if (streamError) break;
+      }
+
+      parser.feed(decoder.decode());
+
+      if (streamError) {
+        safeEnqueue(controller, encoder, "error", { message: streamError });
+        await endGeneration("error");
         controller.close();
         return;
       }
 
-      const reader = upstream.getReader();
-      const decoder = new TextDecoder();
-      let streamError: string | null = null;
-      let generationEnded = false;
+      await endGeneration("complete");
+      safeEnqueue(controller, encoder, "done", {});
+      controller.close();
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        await endGeneration("aborted");
+        safeEnqueue(controller, encoder, "done", {});
+        controller.close();
+        return;
+      }
 
-      const endGeneration = async (reason: GenerationEndReason) => {
-        if (generationEnded) return;
-        generationEnded = true;
-        await options?.onGenerationEnd?.(reason);
-      };
+      const message = error instanceof Error ? error.message : "Stream failed";
+      safeEnqueue(controller, encoder, "error", { message });
+      await endGeneration("error");
+      controller.close();
+    }
+  };
 
-      const parser = createParser({
-        onEvent(event: EventSourceMessage) {
-          if (!event.data || event.data === "[DONE]") return;
+  void pump();
+}
 
-          try {
-            const chunk = JSON.parse(event.data) as OpenRouterStreamChunk;
-            const chunkError = processOpenRouterChunk(
-              chunk,
-              controller,
-              encoder,
-              hooks,
-            );
-            if (chunkError) {
-              streamError = chunkError;
-              void reader.cancel().catch(() => {});
-            }
-          } catch {
-            // Ignore malformed JSON chunks
-          }
-        },
-      });
-
-      const pump = async () => {
-        try {
-          if (options?.savedPayload) {
-            safeEnqueue(controller, encoder, "saved", options.savedPayload);
-            hooks?.onSaved?.(options.savedPayload);
-          }
-
-          while (true) {
-            if (await options?.shouldStop?.()) {
-              await reader.cancel().catch(() => {});
-              await endGeneration("aborted");
-              safeEnqueue(controller, encoder, "done", {});
-              controller.close();
-              return;
-            }
-
-            if (streamError) break;
-
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            parser.feed(decoder.decode(value, { stream: true }));
-
-            if (streamError) break;
-          }
-
-          parser.feed(decoder.decode());
-
-          if (streamError) {
-            safeEnqueue(controller, encoder, "error", { message: streamError });
-            await endGeneration("error");
-            controller.close();
-            return;
-          }
-
-          await endGeneration("complete");
-          safeEnqueue(controller, encoder, "done", {});
-          controller.close();
-        } catch (error) {
-          if (error instanceof DOMException && error.name === "AbortError") {
-            await endGeneration("aborted");
-            safeEnqueue(controller, encoder, "done", {});
-            controller.close();
-            return;
-          }
-
-          const message =
-            error instanceof Error ? error.message : "Stream failed";
-          safeEnqueue(controller, encoder, "error", { message });
-          await endGeneration("error");
-          controller.close();
-        }
-      };
-
-      void pump();
+export function transformOpenRouterStream(
+  upstream: ReadableStream<Uint8Array> | null,
+  options?: TransformOptions,
+): ReadableStream<Uint8Array> {
+  return new ReadableStream({
+    start(controller) {
+      pipeOpenRouterToChatStream(controller, upstream, options);
     },
   });
 }

@@ -388,6 +388,8 @@ export type ChatContent = {
   closeLabel: LocalizedText;
   thinkingLabel: LocalizedText;
   thinkingDoneLabel: LocalizedText;
+  retrievingLabel: LocalizedText;
+  routingLabel: LocalizedText;
   showThinkingLabel: LocalizedText;
   hideThinkingLabel: LocalizedText;
   chatErrorNotConfigured: LocalizedText;
@@ -445,6 +447,14 @@ export const chat: ChatContent = {
   thinkingDoneLabel: {
     en: "Thought process",
     ch: "思考过程",
+  },
+  retrievingLabel: {
+    en: "Searching portfolio notes…",
+    ch: "正在检索资料…",
+  },
+  routingLabel: {
+    en: "Figuring out what to look up…",
+    ch: "正在判断要查什么…",
   },
   showThinkingLabel: {
     en: "Show thinking",
