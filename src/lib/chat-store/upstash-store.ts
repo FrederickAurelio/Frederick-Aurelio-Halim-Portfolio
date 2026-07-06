@@ -14,6 +14,8 @@ import type { ChatStore, PaginatedMessages } from "./types";
 
 let client: Redis | null = null;
 
+const UPSTASH_REQUEST_TIMEOUT_MS = 8_000;
+
 function getUpstashClient(): Redis {
   if (!client) {
     const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -24,7 +26,13 @@ function getUpstashClient(): Redis {
     // Match ioredis string semantics — we JSON.stringify on write and parse on read.
     // Upstash defaults to automaticDeserialization, which would return objects from
     // GET and break parseStoredMessage (double-parse → null).
-    client = new Redis({ url, token, automaticDeserialization: false });
+    client = new Redis({
+      url,
+      token,
+      automaticDeserialization: false,
+      signal: () => AbortSignal.timeout(UPSTASH_REQUEST_TIMEOUT_MS),
+      retry: { retries: 1, backoff: () => 250 },
+    });
   }
   return client;
 }

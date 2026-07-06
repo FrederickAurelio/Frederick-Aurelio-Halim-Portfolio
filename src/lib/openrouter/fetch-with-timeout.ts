@@ -1,3 +1,5 @@
+export const REQUEST_TIMEOUT_MESSAGE = "Request timed out — please try again.";
+
 const DEFAULT_TIMEOUT_MS = 60_000;
 
 export async function fetchWithTimeout(
@@ -17,6 +19,11 @@ export async function fetchWithTimeout(
 
   try {
     return await fetch(url, { ...rest, signal: combinedSignal });
+  } catch (error) {
+    if (timeoutController.signal.aborted && !signal?.aborted) {
+      throw new Error(REQUEST_TIMEOUT_MESSAGE);
+    }
+    throw error;
   } finally {
     clearTimeout(timeoutId);
     signal?.removeEventListener("abort", onParentAbort);

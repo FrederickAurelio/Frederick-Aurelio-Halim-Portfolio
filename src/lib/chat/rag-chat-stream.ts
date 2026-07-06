@@ -7,6 +7,7 @@ import {
 import { detectReplyLanguage } from "@/lib/knowledge/refusal";
 import { retrieveWithPlan } from "@/lib/knowledge/retrieve";
 import { createChatCompletionStream } from "@/lib/openrouter/client";
+import { REQUEST_TIMEOUT_MESSAGE } from "@/lib/openrouter/fetch-with-timeout";
 import {
   pipeOpenRouterToChatStream,
   safeEnqueue,
@@ -38,6 +39,28 @@ async function isGenerationCancelled(
   } catch {
     return false;
   }
+}
+
+async function finishWithError(
+  controller: ReadableStreamDefaultController<Uint8Array>,
+  encoder: TextEncoder,
+  message: string,
+  onGenerationEnd?: (reason: GenerationEndReason) => void | Promise<void>,
+): Promise<void> {
+  safeEnqueue(controller, encoder, "error", { message });
+  await onGenerationEnd?.("error");
+  controller.close();
+}
+
+function isUserAbort(userSignal?: AbortSignal): boolean {
+  return Boolean(userSignal?.aborted);
+}
+
+function toStreamErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message === REQUEST_TIMEOUT_MESSAGE) {
+    return error.message;
+  }
+  return error instanceof Error ? error.message : "Stream failed";
 }
 
 async function finishAborted(
@@ -167,9 +190,12 @@ export function createRagChatStream(
               // use default
             }
 
-            safeEnqueue(controller, encoder, "error", { message: errorMessage });
-            await options.onGenerationEnd?.("error");
-            controller.close();
+            await finishWithError(
+              controller,
+              encoder,
+              errorMessage,
+              options.onGenerationEnd,
+            );
             return;
           }
 
@@ -181,16 +207,17 @@ export function createRagChatStream(
             onGenerationEnd: options.onGenerationEnd,
           });
         } catch (error) {
-          if (error instanceof DOMException && error.name === "AbortError") {
+          if (isUserAbort(options.signal)) {
             await finishAborted(controller, encoder, options.onGenerationEnd);
             return;
           }
 
-          const message =
-            error instanceof Error ? error.message : "Stream failed";
-          safeEnqueue(controller, encoder, "error", { message });
-          await options.onGenerationEnd?.("error");
-          controller.close();
+          await finishWithError(
+            controller,
+            encoder,
+            toStreamErrorMessage(error),
+            options.onGenerationEnd,
+          );
         }
       };
 

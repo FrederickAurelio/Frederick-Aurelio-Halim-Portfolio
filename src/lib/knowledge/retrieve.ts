@@ -340,13 +340,18 @@ export async function retrieveWithPlan(
     const queries =
       plan.search_queries.length > 0 ? plan.search_queries : [userMessage.trim()];
     const included = fetchIncludedSections(index.chunks, plan);
-    const semantic = await searchSemantic(
-      corpus,
-      queries,
-      topK,
-      signal,
-      shouldStop,
-    );
+    let semantic: ScoredChunk[] = [];
+    try {
+      semantic = await searchSemantic(
+        corpus,
+        queries,
+        topK,
+        signal,
+        shouldStop,
+      );
+    } catch {
+      // Embeddings timed out or failed — proceed with navigator-included sections only.
+    }
     scored = mergeScoredChunks(included, semantic, chunkCap);
   }
 

@@ -7,6 +7,8 @@ import { SessionError, requireSessionId } from "@/lib/chat/session";
 import { getChatStore } from "@/lib/chat-store";
 import { NO_ACTIVE_GENERATION_CODE } from "@/lib/chat/types";
 
+export const maxDuration = 120;
+
 export async function GET(request: Request) {
   try {
     const sessionId = await requireSessionId();
