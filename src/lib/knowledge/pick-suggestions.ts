@@ -6,13 +6,49 @@ import { sectionMatches } from "./section-matches";
 export const SUGGESTION_LIMIT_COLD_START = 3;
 export const SUGGESTION_LIMIT_FOLLOW_UP = 2;
 
+/** Floor scores by turn type — broad/stack turns stay strict; focused turns allow more chips. */
+export const FOLLOW_UP_MIN_FOCUSED = 6;
+export const FOLLOW_UP_MIN_BROAD = 7;
+export const FOLLOW_UP_MIN_AFTER_STACK = 9;
+/** Second chip needs this score, or must be within FOLLOW_UP_SECOND_GAP of the top. */
+export const FOLLOW_UP_STRONG_SECOND = 8;
+export const FOLLOW_UP_SECOND_GAP = 2;
+
+const PROJECT_DOC_IDS = new Set([
+  "quizconnect",
+  "nextjs-fxtrade",
+  "memories",
+  "promis-conveyor-chain",
+]);
+
+/** User asked about Frederick broadly, not one project. */
+const PORTFOLIO_WIDE_USER_PATTERN =
+  /\b(tech stack|your stack|what stack|what technologies|technologies do you|primary stack|skill set|your skills|who are you|about you|your background|what do you do|what languages|open to new roles|工作|技术栈|你是谁|背景|技能)\b/i;
+
+const RECOMMENDATION_ASKED_PATTERN =
+  /\b(flagship|best project|biggest|look at first|where to start|what should i look|recommend|most impressive|主打|最好|先看|推荐)\b/i;
+
+/** Sections OK on a broad turn — not deep implementation dives. */
+const SHALLOW_SECTION_IDS = new Set([
+  "overview",
+  "where-to-start",
+  "at-a-glance",
+  "background",
+  "education",
+  "languages",
+  "interests",
+  "contact",
+  "mufy-at-a-glance",
+  "mufy-product",
+  "other-projects-github",
+]);
+
 export type PickSuggestionsInput = {
   mode: "cold_start" | "follow_up";
   language: "en" | "ch";
   plan?: RetrievalPlan;
   retrievedChunkIds?: string[];
   userMessages: string[];
-  /** Last assistant reply — used to infer project focus on generic follow-ups. */
   assistantContext?: string;
   max?: number;
 };
@@ -21,11 +57,41 @@ function normalizeText(text: string): string {
   return text.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
+function isPortfolioWideUserMessage(message: string): boolean {
+  return PORTFOLIO_WIDE_USER_PATTERN.test(message);
+}
+
+function isPortfolioWideTurn(input: PickSuggestionsInput): boolean {
+  const lastUser = input.userMessages.at(-1) ?? "";
+  if (isPortfolioWideUserMessage(lastUser)) return true;
+
+  const plan = input.plan;
+  if (!plan) return false;
+  if (plan.intent === "list_projects") return true;
+
+  return false;
+}
+
+function userWantsRecommendation(input: PickSuggestionsInput): boolean {
+  const lastUser = input.userMessages.at(-1) ?? "";
+  if (RECOMMENDATION_ASKED_PATTERN.test(lastUser)) return true;
+  const plan = input.plan;
+  return (
+    plan?.intent === "recommend_project" ||
+    RECOMMENDATION_ASKED_PATTERN.test(plan?.answer_hint ?? "")
+  );
+}
+
 function getEffectiveFocusDocIds(input: PickSuggestionsInput): string[] {
   const { plan, userMessages, assistantContext } = input;
+  const lastUser = userMessages.at(-1) ?? "";
+
+  if (isPortfolioWideUserMessage(lastUser)) {
+    return [];
+  }
+
   if (plan?.focus_doc_ids.length) return plan.focus_doc_ids;
 
-  const lastUser = userMessages.at(-1) ?? "";
   const priorUsers = userMessages.slice(0, -1).join("\n");
   const context = [priorUsers, assistantContext].filter(Boolean).join("\n");
 
@@ -47,6 +113,12 @@ function userAlreadyAsked(candidate: SuggestionCandidate, userMessages: string[]
     if (words.length >= 2 && words.every((w) => normalized.includes(w))) return true;
     return false;
   });
+}
+
+function userAskedBroadStack(userMessages: string[]): boolean {
+  return userMessages.some((msg) =>
+    /\b(what'?s your tech stack|your tech stack|primary stack|技术栈)\b/i.test(msg),
+  );
 }
 
 function sectionMentionedInUserMessages(sectionId: string | undefined, userMessages: string[]): boolean {
@@ -77,7 +149,39 @@ function scoreCandidate(
 
   if (candidate.kind === "cold_start") return -100;
 
+  const lastUser = userMessages.at(-1) ?? "";
+  const portfolioWide = isPortfolioWideTurn(input);
   const focusSet = new Set(focusDocIds);
+  const wantsRecommendation = userWantsRecommendation(input);
+
+  if (
+    candidate.intent === "recommend_project" &&
+    !wantsRecommendation
+  ) {
+    return -100;
+  }
+
+  if (portfolioWide) {
+    if (
+      candidate.kind === "follow_up" &&
+      candidate.docId &&
+      PROJECT_DOC_IDS.has(candidate.docId)
+    ) {
+      if (
+        !candidate.sectionId ||
+        !SHALLOW_SECTION_IDS.has(candidate.sectionId)
+      ) {
+        return -100;
+      }
+    }
+    if (
+      userAskedBroadStack(userMessages) &&
+      candidate.sectionId === "tech-stack" &&
+      candidate.docId
+    ) {
+      return -100;
+    }
+  }
 
   if (focusSet.size > 0) {
     if (
@@ -105,6 +209,14 @@ function scoreCandidate(
     score += 2;
   }
 
+  if (
+    portfolioWide &&
+    candidate.docId === "about-me" &&
+    isPortfolioWideUserMessage(lastUser)
+  ) {
+    score += 3;
+  }
+
   if (candidate.sectionId) {
     const inPlan = plan.include_sections.some((s) =>
       sectionMatches(s, candidate.sectionId!),
@@ -113,8 +225,10 @@ function scoreCandidate(
     else if (!sectionMentionedInUserMessages(candidate.sectionId, userMessages)) {
       score += 3;
       if (
-        candidate.sectionId === "data-sources" ||
-        candidate.sectionId === "7-interesting-hard-problems-solved"
+        !portfolioWide &&
+        focusSet.size > 0 &&
+        (candidate.sectionId === "data-sources" ||
+          candidate.sectionId === "7-interesting-hard-problems-solved")
       ) {
         score += 1;
       }
@@ -135,15 +249,10 @@ function scoreCandidate(
 
   if (plan.intent === "list_projects") {
     if (candidate.docId === "projects-overview") score += 2;
-    if (candidate.kind === "pivot") score += 1;
   }
 
   if (userAlreadyAsked(candidate, userMessages)) {
     score -= 10;
-  }
-
-  if (candidate.kind === "follow_up" && !candidate.docId) {
-    score += 1;
   }
 
   if (candidate.kind === "global") {
@@ -155,6 +264,66 @@ function scoreCandidate(
 
 function localize(candidate: SuggestionCandidate, language: "en" | "ch"): string {
   return candidate.text[language];
+}
+
+function minScoreForTurn(input: PickSuggestionsInput): number {
+  if (userAskedBroadStack(input.userMessages)) {
+    return FOLLOW_UP_MIN_AFTER_STACK;
+  }
+  if (isPortfolioWideTurn(input)) {
+    return FOLLOW_UP_MIN_BROAD;
+  }
+  return FOLLOW_UP_MIN_FOCUSED;
+}
+
+type ScoredCandidate = { candidate: SuggestionCandidate; score: number };
+
+function selectFollowUpChips(
+  scored: ScoredCandidate[],
+  input: PickSuggestionsInput,
+  max: number,
+  language: "en" | "ch",
+): string[] {
+  const plan = input.plan;
+  const offTopic = plan?.intent === "off_topic";
+  const minScore = minScoreForTurn(input);
+
+  const qualified = scored
+    .filter(({ candidate, score }) => {
+      if (offTopic && candidate.kind === "global") return score > 0;
+      return score >= minScore;
+    })
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.candidate.id.localeCompare(b.candidate.id);
+    });
+
+  if (qualified.length === 0) return [];
+
+  const results: string[] = [];
+  const seen = new Set<string>();
+
+  const push = (entry: ScoredCandidate) => {
+    const text = localize(entry.candidate, language);
+    if (seen.has(text)) return;
+    seen.add(text);
+    results.push(text);
+  };
+
+  push(qualified[0]);
+
+  if (max >= 2 && qualified.length > 1) {
+    const top = qualified[0].score;
+    const second = qualified[1];
+    const competitive =
+      second.score >= FOLLOW_UP_STRONG_SECOND ||
+      top - second.score <= FOLLOW_UP_SECOND_GAP;
+    if (competitive) {
+      push(second);
+    }
+  }
+
+  return results;
 }
 
 export function pickSuggestions(input: PickSuggestionsInput): string[] {
@@ -185,23 +354,7 @@ export function pickSuggestions(input: PickSuggestionsInput): string[] {
   const scored = SUGGESTION_BANK.map((candidate) => ({
     candidate,
     score: scoreCandidate(candidate, input, focusDocIds),
-  }))
-    .filter(({ score }) => score > 0)
-    .sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      return a.candidate.id.localeCompare(b.candidate.id);
-    });
+  }));
 
-  const seen = new Set<string>();
-  const results: string[] = [];
-
-  for (const { candidate } of scored) {
-    const text = localize(candidate, language);
-    if (seen.has(text)) continue;
-    seen.add(text);
-    results.push(text);
-    if (results.length >= max) break;
-  }
-
-  return results;
+  return selectFollowUpChips(scored, input, max, language);
 }

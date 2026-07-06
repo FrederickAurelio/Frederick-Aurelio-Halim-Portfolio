@@ -91,8 +91,19 @@ export const SUGGESTION_BANK: SuggestionCandidate[] = [
       ch: "你现在在找工作吗？",
     },
   },
+  {
+    id: "bio-contact",
+    kind: "follow_up",
+    docId: "about-me",
+    intent: "bio",
+    sectionId: "contact",
+    text: {
+      en: "How can I contact you?",
+      ch: "怎么联系你？",
+    },
+  },
 
-  // ─── Projects catalog (5) ─────────────────────────────────────────────
+  // ─── Projects catalog (4) ─────────────────────────────────────────────
   {
     id: "catalog-list",
     kind: "follow_up",
@@ -100,17 +111,6 @@ export const SUGGESTION_BANK: SuggestionCandidate[] = [
     intent: "list_projects",
     sectionId: "overview",
     text: { en: "List all your projects", ch: "列出你所有的项目" },
-  },
-  {
-    id: "catalog-flagship",
-    kind: "follow_up",
-    docId: "projects-overview",
-    intent: "recommend_project",
-    sectionId: "why-flagship",
-    text: {
-      en: "Why is QuizConnect your flagship?",
-      ch: "为什么 QuizConnect 是主打项目？",
-    },
   },
   {
     id: "catalog-live-demos",
@@ -133,17 +133,17 @@ export const SUGGESTION_BANK: SuggestionCandidate[] = [
     },
   },
   {
-    id: "catalog-second-fx",
+    id: "catalog-main-four",
     kind: "follow_up",
     docId: "projects-overview",
-    sectionId: "where-to-start",
+    sectionId: "overview",
     text: {
-      en: "What should I look at after QuizConnect?",
-      ch: "看完 QuizConnect 还能看什么？",
+      en: "What are the main projects here?",
+      ch: "这个作品集里主要有哪些项目？",
     },
   },
 
-  // ─── QuizConnect (5) — flagship depth ───────────────────────────────
+  // ─── QuizConnect (5) ──────────────────────────────────────────────────
   {
     id: "qc-stack",
     kind: "follow_up",
@@ -194,8 +194,18 @@ export const SUGGESTION_BANK: SuggestionCandidate[] = [
       ch: "QuizConnect 最难的技术点是什么？",
     },
   },
+  {
+    id: "qc-overview",
+    kind: "follow_up",
+    docId: "quizconnect",
+    sectionId: "at-a-glance",
+    text: {
+      en: "What does QuizConnect do?",
+      ch: "QuizConnect 是做什么的？",
+    },
+  },
 
-  // ─── FXTrade (4) ──────────────────────────────────────────────────────
+  // ─── FXTrade (5) ──────────────────────────────────────────────────────
   {
     id: "fx-data-sources",
     kind: "follow_up",
@@ -224,6 +234,16 @@ export const SUGGESTION_BANK: SuggestionCandidate[] = [
     },
   },
   {
+    id: "fx-overview",
+    kind: "follow_up",
+    docId: "nextjs-fxtrade",
+    sectionId: "at-a-glance",
+    text: {
+      en: "What does FXTrade do?",
+      ch: "FXTrade 是做什么的？",
+    },
+  },
+  {
     id: "fx-trading-validation",
     kind: "follow_up",
     docId: "nextjs-fxtrade",
@@ -234,7 +254,17 @@ export const SUGGESTION_BANK: SuggestionCandidate[] = [
     },
   },
 
-  // ─── Memories (3) ─────────────────────────────────────────────────────
+  // ─── Memories (4) ─────────────────────────────────────────────────────
+  {
+    id: "mem-overview",
+    kind: "follow_up",
+    docId: "memories",
+    sectionId: "at-a-glance",
+    text: {
+      en: "What is Memories?",
+      ch: "Memories 是什么？",
+    },
+  },
   {
     id: "mem-konva",
     kind: "follow_up",
