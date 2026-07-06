@@ -3,6 +3,9 @@ import type { NextRequest } from "next/server";
 
 export const CHAT_SESSION_COOKIE = "portfolio-chat-session";
 
+/** Set by middleware so API routes see the session on the same request as Set-Cookie. */
+export const CHAT_SESSION_REQUEST_HEADER = "x-portfolio-chat-session";
+
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -28,7 +31,26 @@ export function isSecureSessionRequest(
   return request.nextUrl.protocol === "https:";
 }
 
-export async function requireSessionId(): Promise<string> {
+type SessionRequest = Pick<NextRequest, "cookies" | "headers">;
+
+export function resolveSessionId(request: SessionRequest): string | null {
+  const fromHeader = request.headers.get(CHAT_SESSION_REQUEST_HEADER);
+  if (isValidSessionId(fromHeader)) return fromHeader;
+
+  const fromCookie = request.cookies.get(CHAT_SESSION_COOKIE)?.value;
+  if (isValidSessionId(fromCookie)) return fromCookie;
+
+  return null;
+}
+
+export async function requireSessionId(
+  request?: SessionRequest,
+): Promise<string> {
+  if (request) {
+    const resolved = resolveSessionId(request);
+    if (resolved) return resolved;
+  }
+
   const cookieStore = await cookies();
   const sessionId = cookieStore.get(CHAT_SESSION_COOKIE)?.value;
   if (!isValidSessionId(sessionId)) {

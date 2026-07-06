@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    sessionId = await requireSessionId();
+    sessionId = await requireSessionId(request);
     const activeSessionId = sessionId;
     const store = await prepareChatStore();
 

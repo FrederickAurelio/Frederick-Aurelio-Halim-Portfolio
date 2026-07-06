@@ -10,7 +10,7 @@ import {
 
 export async function POST(request: NextRequest) {
   try {
-    const sessionId = await requireSessionId();
+    const sessionId = await requireSessionId(request);
     await prepareChatStore();
     const stopped = await stopActiveGeneration(sessionId);
     return finalizeChatJsonResponse(

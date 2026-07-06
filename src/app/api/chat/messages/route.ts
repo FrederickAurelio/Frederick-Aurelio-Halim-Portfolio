@@ -13,7 +13,7 @@ const MAX_LIMIT = 50;
 
 export async function GET(request: NextRequest) {
   try {
-    const sessionId = await requireSessionId();
+    const sessionId = await requireSessionId(request);
     const { searchParams } = new URL(request.url);
     const limit = Math.min(
       Math.max(Number.parseInt(searchParams.get("limit") ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT, 1),

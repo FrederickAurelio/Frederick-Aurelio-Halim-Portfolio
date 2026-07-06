@@ -5,6 +5,13 @@ services:
       args:
         NEXT_PUBLIC_SITE_URL: http://120.26.45.50
     restart: unless-stopped
+    # Next.js reads .env.local on the host only when running next dev/start directly.
+    # Inside Docker, secrets must be injected into the container (env_file below).
+    env_file:
+      - path: .env
+        required: false
+      - path: .env.local
+        required: false
     environment:
       NODE_ENV: production
       PORT: 3000

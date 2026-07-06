@@ -15,7 +15,7 @@ export const maxDuration = 120;
 
 export async function GET(request: NextRequest) {
   try {
-    const sessionId = await requireSessionId();
+    const sessionId = await requireSessionId(request);
     const store = await prepareChatStore();
 
     const locked = await store.isGenerationLocked(sessionId);
