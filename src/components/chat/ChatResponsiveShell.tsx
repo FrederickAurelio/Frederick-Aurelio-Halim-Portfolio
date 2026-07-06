@@ -19,9 +19,9 @@ import type { ChatMessage } from "@/lib/chat/types";
 const launcherAnchorClass =
   "fixed right-4 z-50 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))]";
 
-/** Desktop popover: prefer 536px tall, 430px wide; shrink on small viewports. */
+/** Desktop popover: prefer 620px tall, 430px wide; shrink on small viewports. */
 const desktopPopoverClass =
-  "flex h-[min(536px,calc(100dvh-6.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px)))] max-h-[calc(100dvh-6.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] w-[min(430px,calc(100vw-2rem))] flex-col overflow-hidden overscroll-y-contain rounded-2xl border-slate-200 p-0 shadow-xl";
+  "flex h-[min(620px,calc(100dvh-5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px)))] max-h-[calc(100dvh-5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] w-[min(430px,calc(100vw-2rem))] flex-col overflow-hidden overscroll-y-contain rounded-2xl border-slate-200 p-0 shadow-xl";
 
 type ChatResponsiveShellProps = {
   open: boolean;
@@ -34,6 +34,12 @@ type ChatResponsiveShellProps = {
   retentionLabel: string;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
+  historyErrorTitle?: string;
+  historyErrorDescription?: string;
+  retryLabel?: string;
+  onRetryHistory?: () => void;
+  inputDisabled?: boolean;
+  inputDisabledPlaceholder?: string;
   onLoadOlder: () => void;
   onDesktopOpenChange: (open: boolean) => void;
   onMobileOpenChange: (open: boolean) => void;
@@ -55,6 +61,12 @@ export default function ChatResponsiveShell({
   retentionLabel,
   hasNextPage,
   isFetchingNextPage,
+  historyErrorTitle,
+  historyErrorDescription,
+  retryLabel,
+  onRetryHistory,
+  inputDisabled,
+  inputDisabledPlaceholder,
   onLoadOlder,
   onDesktopOpenChange,
   onMobileOpenChange,

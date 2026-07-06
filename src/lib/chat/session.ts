@@ -18,7 +18,9 @@ export function isValidSessionId(value: string | undefined | null): value is str
 }
 
 /** Secure cookies only over HTTPS — plain HTTP (VPS IP) must use secure: false. */
-export function isSecureSessionRequest(request: NextRequest): boolean {
+export function isSecureSessionRequest(
+  request: Pick<NextRequest, "headers" | "nextUrl">,
+): boolean {
   const forwarded = request.headers.get("x-forwarded-proto");
   if (forwarded) {
     return forwarded.split(",")[0]?.trim().toLowerCase() === "https";

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import type { ChatMessage } from "@/lib/chat/types";
 import ChatEmptyState from "./ChatEmptyState";
+import ChatErrorState from "./ChatErrorState";
 import ChatMessageBubble from "./ChatMessageBubble";
 import ChatSpinner from "./ChatSpinner";
 
@@ -40,6 +41,10 @@ type ChatMessageListProps = {
   messages: ChatMessage[];
   emptyTitle: string;
   emptyDescription: string;
+  historyErrorTitle?: string;
+  historyErrorDescription?: string;
+  retryLabel?: string;
+  onRetryHistory?: () => void;
   copyLabel: string;
   copiedLabel: string;
   thinkingLabel: string;
@@ -60,6 +65,10 @@ export default function ChatMessageList({
   messages,
   emptyTitle,
   emptyDescription,
+  historyErrorTitle,
+  historyErrorDescription,
+  retryLabel,
+  onRetryHistory,
   copyLabel,
   copiedLabel,
   thinkingLabel,
@@ -190,6 +199,25 @@ export default function ChatMessageList({
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center overscroll-y-contain">
         <ChatSpinner />
+      </div>
+    );
+  }
+
+  if (!isLoadingHistory && messages.length === 0 && historyErrorTitle && onRetryHistory && retryLabel) {
+    return (
+      <div
+        className="flex min-h-0 flex-1 flex-col overflow-hidden overscroll-y-contain"
+        onWheel={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+      >
+        <ChatErrorState
+          title={historyErrorTitle}
+          description={historyErrorDescription ?? ""}
+          retryLabel={retryLabel}
+          onRetry={onRetryHistory}
+        />
       </div>
     );
   }

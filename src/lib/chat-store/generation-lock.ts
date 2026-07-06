@@ -66,7 +66,8 @@ export function createUpstashGenerationLockOps(
     },
 
     async isGenerationLocked(sessionId) {
-      return ((await redis.exists(generationLockKey(sessionId))) as number) === 1;
+      const count = await redis.exists(generationLockKey(sessionId));
+      return Number(count) > 0;
     },
 
     async requestGenerationStop(sessionId) {
@@ -77,7 +78,7 @@ export function createUpstashGenerationLockOps(
 
     async isGenerationStopRequested(sessionId) {
       const value = await redis.get(generationStopKey(sessionId));
-      return value === "1" || value === 1;
+      return value != null && String(value) === "1";
     },
 
     async clearGenerationStopRequest(sessionId) {

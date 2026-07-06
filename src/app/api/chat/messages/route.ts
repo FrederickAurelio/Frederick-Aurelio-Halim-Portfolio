@@ -1,12 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { injectGeneratingAssistant } from "@/lib/chat/inject-generating-message";
+import { mapChatRouteError } from "@/lib/chat/map-route-error";
 import { SessionError, requireSessionId } from "@/lib/chat/session";
-import { getChatStore } from "@/lib/chat-store";
+import {
+  finalizeChatJsonResponse,
+  prepareChatStore,
+} from "@/lib/chat-store/api";
+import { CHAT_ERROR_CODES } from "@/lib/chat/api-errors";
 
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 50;
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const sessionId = await requireSessionId();
     const { searchParams } = new URL(request.url);
@@ -18,7 +23,7 @@ export async function GET(request: Request) {
     const before = beforeRaw ? Number.parseInt(beforeRaw, 10) : null;
     const isLatestPage = before === null || !Number.isFinite(before);
 
-    const store = getChatStore();
+    const store = await prepareChatStore();
 
     const result =
       before !== null && Number.isFinite(before)
@@ -32,19 +37,19 @@ export async function GET(request: Request) {
       isLatestPage,
     );
 
-    return NextResponse.json(withGenerating);
+    return finalizeChatJsonResponse(
+      NextResponse.json(withGenerating),
+      request,
+    );
   } catch (error) {
     if (error instanceof SessionError) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (error instanceof Error && error.message.includes("not configured")) {
       return NextResponse.json(
-        { error: "Chat storage is not configured" },
-        { status: 503 },
+        { error: "Unauthorized", code: CHAT_ERROR_CODES.UNAUTHORIZED },
+        { status: 401 },
       );
     }
 
-    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+    const mapped = mapChatRouteError(error);
+    return NextResponse.json(mapped.body, { status: mapped.status });
   }
 }

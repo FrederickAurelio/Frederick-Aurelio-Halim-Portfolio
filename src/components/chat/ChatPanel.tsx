@@ -20,6 +20,12 @@ type ChatPanelProps = {
   retentionLabel: string;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
+  historyErrorTitle?: string;
+  historyErrorDescription?: string;
+  retryLabel?: string;
+  onRetryHistory?: () => void;
+  inputDisabled?: boolean;
+  inputDisabledPlaceholder?: string;
   onLoadOlder: () => void;
   onClose: () => void;
   onSend: (text: string) => void;
@@ -39,6 +45,12 @@ export default function ChatPanel({
   retentionLabel,
   hasNextPage,
   isFetchingNextPage,
+  historyErrorTitle,
+  historyErrorDescription,
+  retryLabel,
+  onRetryHistory,
+  inputDisabled = false,
+  inputDisabledPlaceholder,
   onLoadOlder,
   onClose,
   onSend,
@@ -107,6 +119,10 @@ export default function ChatPanel({
         isLoadingHistory={isLoadingHistory}
         hasNextPage={hasNextPage}
         isFetchingNextPage={isFetchingNextPage}
+        historyErrorTitle={historyErrorTitle}
+        historyErrorDescription={historyErrorDescription}
+        retryLabel={retryLabel}
+        onRetryHistory={onRetryHistory}
         onLoadOlder={onLoadOlder}
         onToggleReasoning={onToggleReasoning}
       />
@@ -117,10 +133,11 @@ export default function ChatPanel({
 
       <div data-chat-input>
         <ChatInput
-          placeholder={placeholder}
+          placeholder={inputDisabled && inputDisabledPlaceholder ? inputDisabledPlaceholder : placeholder}
           sendLabel={sendLabel}
           stopLabel={stopLabel}
           isLoading={isLoading}
+          disabled={inputDisabled}
           onSend={onSend}
           onAbort={onAbort}
           autoFocus={autoFocusInput}

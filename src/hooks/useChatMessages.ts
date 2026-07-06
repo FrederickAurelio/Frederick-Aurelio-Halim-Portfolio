@@ -2,11 +2,18 @@
 
 import { useMemo } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { ChatApiError, toNetworkChatApiError } from "@/lib/chat/api-error";
 import {
   CHAT_MESSAGES_QUERY_KEY,
   PAGE_SIZE,
   fetchChatMessagesPage,
 } from "@/lib/chat/fetch-messages";
+
+function normalizeHistoryError(error: unknown): ChatApiError | null {
+  if (!error) return null;
+  if (error instanceof ChatApiError) return error;
+  return toNetworkChatApiError(error);
+}
 
 export function useChatMessages() {
   const query = useInfiniteQuery({
@@ -15,6 +22,7 @@ export function useChatMessages() {
     initialPageParam: undefined as number | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     staleTime: 30_000,
+    retry: false,
   });
 
   const storedPages = useMemo(
@@ -23,10 +31,20 @@ export function useChatMessages() {
   );
   const retentionSeconds = query.data?.pages[0]?.retentionSeconds ?? null;
 
+  const historyError = useMemo(
+    () => normalizeHistoryError(query.error),
+    [query.error],
+  );
+
+  const isRefetchingHistory = query.isFetching && query.isError;
+
   return {
     storedPages,
     retentionSeconds,
     isLoadingHistory: query.isLoading,
+    isRefetchingHistory,
+    isHistoryError: query.isError,
+    historyError,
     isFetchingNextPage: query.isFetchingNextPage,
     hasNextPage: query.hasNextPage,
     fetchNextPage: query.fetchNextPage,

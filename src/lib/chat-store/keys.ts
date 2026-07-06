@@ -92,12 +92,14 @@ export function serializeStoredMessage(message: StoredChatMessage): string {
 }
 
 export async function loadMessagesByIds(
-  getMessage: (messageId: string) => Promise<unknown>,
   ids: string[],
+  loadRaw: (ids: string[]) => Promise<unknown[]>,
 ): Promise<StoredChatMessage[]> {
+  if (ids.length === 0) return [];
+
+  const raws = await loadRaw(ids);
   const messages: StoredChatMessage[] = [];
-  for (const id of ids) {
-    const raw = await getMessage(id);
+  for (const raw of raws) {
     const message = parseStoredMessage(raw);
     if (message) messages.push(message);
   }

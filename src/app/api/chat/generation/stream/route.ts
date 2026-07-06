@@ -1,25 +1,34 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import {
   createGenerationSubscribeStream,
   CHAT_SSE_HEADERS,
 } from "@/lib/chat/generation-subscribe-stream";
+import { mapChatRouteError } from "@/lib/chat/map-route-error";
+import { CHAT_ERROR_CODES } from "@/lib/chat/api-errors";
 import { SessionError, requireSessionId } from "@/lib/chat/session";
-import { getChatStore } from "@/lib/chat-store";
+import { prepareChatStore } from "@/lib/chat-store/api";
+import { appendUpstashSyncCookieHeader } from "@/lib/chat-store/upstash-sync.server";
+import { isUpstashProvider } from "@/lib/chat-store";
 import { NO_ACTIVE_GENERATION_CODE } from "@/lib/chat/types";
 
 export const maxDuration = 120;
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const sessionId = await requireSessionId();
-    const store = getChatStore();
+    const store = await prepareChatStore();
 
     const locked = await store.isGenerationLocked(sessionId);
     if (!locked) {
       return NextResponse.json(
-        { error: NO_ACTIVE_GENERATION_CODE },
+        { error: NO_ACTIVE_GENERATION_CODE, code: CHAT_ERROR_CODES.GENERIC },
         { status: 404 },
       );
+    }
+
+    const streamHeaders = new Headers(CHAT_SSE_HEADERS);
+    if (isUpstashProvider()) {
+      appendUpstashSyncCookieHeader(streamHeaders, request);
     }
 
     return new Response(
@@ -28,20 +37,17 @@ export async function GET(request: Request) {
         store,
         signal: request.signal,
       }),
-      { headers: CHAT_SSE_HEADERS },
+      { headers: streamHeaders },
     );
   } catch (error) {
     if (error instanceof SessionError) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (error instanceof Error && error.message.includes("not configured")) {
       return NextResponse.json(
-        { error: "Chat storage is not configured" },
-        { status: 503 },
+        { error: "Unauthorized", code: CHAT_ERROR_CODES.UNAUTHORIZED },
+        { status: 401 },
       );
     }
 
-    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+    const mapped = mapChatRouteError(error);
+    return NextResponse.json(mapped.body, { status: mapped.status });
   }
 }

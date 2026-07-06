@@ -12,6 +12,10 @@ function resolveProvider(): ChatStoreProvider {
   return "redis";
 }
 
+export function isUpstashProvider(): boolean {
+  return resolveProvider() === "upstash";
+}
+
 export function getChatStore(): ChatStore {
   if (!store) {
     store =

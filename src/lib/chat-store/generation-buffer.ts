@@ -113,7 +113,7 @@ export function createUpstashGenerationBufferOps(
 
     async getGenerationLockAssistantId(sessionId) {
       const value = await redis.get<string>(generationLockKey(sessionId));
-      return typeof value === "string" ? value : null;
+      return value != null ? String(value) : null;
     },
   };
 }

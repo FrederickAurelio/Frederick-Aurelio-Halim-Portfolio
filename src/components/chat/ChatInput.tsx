@@ -9,6 +9,7 @@ type ChatInputProps = {
   sendLabel: string;
   stopLabel: string;
   isLoading: boolean;
+  disabled?: boolean;
   onSend: (text: string) => void;
   onAbort: () => void;
   autoFocus?: boolean;
@@ -22,6 +23,7 @@ export default function ChatInput({
   sendLabel,
   stopLabel,
   isLoading,
+  disabled = false,
   onSend,
   onAbort,
   autoFocus = false,
@@ -61,6 +63,7 @@ export default function ChatInput({
   }, [autoFocus]);
 
   const handleSubmit = () => {
+    if (disabled) return;
     if (isLoading) {
       onAbort();
       return;
@@ -92,6 +95,7 @@ export default function ChatInput({
             "flex min-h-[44px] max-h-[120px] flex-1 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 transition-colors",
             "focus-within:border-sky-400 focus-within:bg-white",
             isLoading && "opacity-60",
+            disabled && "opacity-60",
           )}
           style={{ height: MIN_TEXTAREA_HEIGHT }}
         >
@@ -102,14 +106,14 @@ export default function ChatInput({
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             rows={1}
-            disabled={isLoading}
+            disabled={disabled || isLoading}
             className="chat-textarea block size-full min-h-[44px] max-h-[120px] resize-none border-0 bg-transparent px-3 py-2.5 text-sm leading-relaxed text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
           />
         </div>
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={!isLoading && !value.trim()}
+          disabled={disabled || (!isLoading && !value.trim())}
           aria-label={isLoading ? stopLabel : sendLabel}
           className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-sky-500 text-white transition-colors hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-40"
         >

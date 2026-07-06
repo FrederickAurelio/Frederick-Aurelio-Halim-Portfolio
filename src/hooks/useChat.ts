@@ -24,7 +24,24 @@ import {
   type ChatStatus,
   type StoredChatMessage,
 } from "@/lib/chat/types";
+import { CHAT_ERROR_CODES, type ChatErrorCode } from "@/lib/chat/api-errors";
+import { resolveChatErrorMessage } from "@/lib/chat/resolve-error-message";
 import { SUGGESTION_LIMIT_FOLLOW_UP } from "@/lib/knowledge/pick-suggestions";
+
+type UseChatErrorMessages = {
+  notConfigured: string;
+  storageUnavailable: string;
+  unauthorized: string;
+  generic: string;
+  generating: string;
+};
+
+function formatChatError(
+  messages: UseChatErrorMessages,
+  options: { code?: ChatErrorCode; message?: string; status?: number },
+): string {
+  return resolveChatErrorMessage(messages, options);
+}
 
 function toStoredMessage(message: ChatMessage): StoredChatMessage | null {
   if (message.role !== "user" && message.role !== "assistant") return null;
@@ -111,11 +128,7 @@ function finalizeOptimisticToCache(
   appendMessagesToChatCache(queryClient, stored);
 }
 
-export function useChat(errorMessages: {
-  notConfigured: string;
-  generic: string;
-  generating: string;
-}) {
+export function useChat(errorMessages: UseChatErrorMessages) {
   const queryClient = useQueryClient();
   const [optimisticMessages, setOptimisticMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState<ChatStatus>("idle");
@@ -263,7 +276,7 @@ export function useChat(errorMessages: {
                 new Set([assistantId]),
               );
             },
-            onError: (message, httpStatus) => {
+            onError: (message, httpStatus, code) => {
               streamBatcher.flushNow();
 
               if (httpStatus === 404 || message === NO_ACTIVE_GENERATION_CODE) {
@@ -274,6 +287,12 @@ export function useChat(errorMessages: {
                 });
                 return;
               }
+
+              const errorText = formatChatError(errorMessages, {
+                code,
+                message,
+                status: httpStatus,
+              });
 
               let shouldFinalize = false;
               setOptimisticMessages((prev) => {
@@ -293,7 +312,7 @@ export function useChat(errorMessages: {
                     ? {
                         ...messageState,
                         role: "error" as const,
-                        content: errorMessages.generic,
+                        content: errorText,
                         status: "error" as const,
                       }
                     : messageState,
@@ -482,10 +501,12 @@ export function useChat(errorMessages: {
               streamBatcher.flushNow();
               finalizeSendTurn();
             },
-            onError: (message, httpStatus) => {
+            onError: (message, httpStatus, code) => {
               streamBatcher.flushNow();
               const isGenerating =
-                httpStatus === 409 || message === GENERATION_IN_PROGRESS_CODE;
+                httpStatus === 409 ||
+                code === CHAT_ERROR_CODES.GENERATION_IN_PROGRESS ||
+                message === GENERATION_IN_PROGRESS_CODE;
 
               if (isGenerating) {
                 pendingSuggestionsRef.current = null;
@@ -512,9 +533,11 @@ export function useChat(errorMessages: {
                 return;
               }
 
-              const isNotConfigured = message
-                .toLowerCase()
-                .includes("not configured");
+              const errorText = formatChatError(errorMessages, {
+                code,
+                message,
+                status: httpStatus,
+              });
 
               let shouldFinalize = false;
               setOptimisticMessages((prev) => {
@@ -530,16 +553,17 @@ export function useChat(errorMessages: {
                 }
 
                 return prev.map((messageState) => {
-                  if (messageState.id !== serverAssistantId) {
+                  if (
+                    messageState.id !== serverAssistantId &&
+                    messageState.id !== tempAssistantId
+                  ) {
                     return messageState;
                   }
 
                   return {
                     ...messageState,
                     role: "error" as const,
-                    content: isNotConfigured
-                      ? errorMessages.notConfigured
-                      : errorMessages.generic,
+                    content: errorText,
                     status: "error" as const,
                   };
                 });

@@ -84,6 +84,8 @@ export default function ChatMessageBubble({
           <PhaseIndicator label={retrievingLabel} />
         ) : isThinking ? (
           <PhaseIndicator label={thinkingLabel} />
+        ) : isError ? (
+          <p className="whitespace-pre-wrap break-words">{message.content}</p>
         ) : showTypingDots ? (
           <TypingDots />
         ) : (

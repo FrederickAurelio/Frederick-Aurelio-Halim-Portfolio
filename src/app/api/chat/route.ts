@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import {
   releaseGeneration,
   tryAcquireGeneration,
@@ -6,16 +6,22 @@ import {
 import { GenerationBufferWriter } from "@/lib/chat/generation-buffer-writer";
 import { createRagChatStream } from "@/lib/chat/rag-chat-stream";
 import { SessionError, requireSessionId } from "@/lib/chat/session";
-import { getChatStore } from "@/lib/chat-store";
-import { GENERATION_IN_PROGRESS_CODE } from "@/lib/chat/types";
+import { prepareChatStore } from "@/lib/chat-store/api";
+import {
+  appendUpstashSyncCookieHeader,
+  upstashDonePayload,
+} from "@/lib/chat-store/upstash-sync.server";
+import { isUpstashProvider } from "@/lib/chat-store";
+import { mapChatRouteError } from "@/lib/chat/map-route-error";
+import { CHAT_ERROR_CODES } from "@/lib/chat/api-errors";
 import { getOpenRouterConfig } from "@/lib/openrouter/config";
 import { CHAT_SSE_HEADERS } from "@/lib/openrouter/stream-transform";
-import type { ChatApiRequest } from "@/lib/chat/types";
+import { GENERATION_IN_PROGRESS_CODE, type ChatApiRequest } from "@/lib/chat/types";
 
 /** RAG needs navigator + embeddings + answer stream — above Vercel Hobby's 10s default. */
 export const maxDuration = 120;
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   let sessionId: string | null = null;
   let lockHeld = false;
   let bufferWriter: GenerationBufferWriter | null = null;
@@ -23,14 +29,14 @@ export async function POST(request: Request) {
   try {
     if (!getOpenRouterConfig()) {
       return NextResponse.json(
-        { error: "Chat is not configured" },
+        { error: "Chat is not configured", code: CHAT_ERROR_CODES.NOT_CONFIGURED },
         { status: 503 },
       );
     }
 
     sessionId = await requireSessionId();
     const activeSessionId = sessionId;
-    const store = getChatStore();
+    const store = await prepareChatStore();
 
     const body = (await request.json()) as ChatApiRequest;
     const content = body.content?.trim() ?? "";
@@ -50,7 +56,10 @@ export async function POST(request: Request) {
 
     if (!generationController) {
       return NextResponse.json(
-        { error: GENERATION_IN_PROGRESS_CODE },
+        {
+          error: GENERATION_IN_PROGRESS_CODE,
+          code: CHAT_ERROR_CODES.GENERATION_IN_PROGRESS,
+        },
         { status: 409 },
       );
     }
@@ -75,7 +84,7 @@ export async function POST(request: Request) {
     const writer = bufferWriter;
     let turnSuggestions: string[] = [];
 
-    const onGenerationEnd = async () => {
+    const persistGenerationEnd = async () => {
       try {
         await writer.flushNow();
         const assistantContent = writer.getContent();
@@ -99,6 +108,11 @@ export async function POST(request: Request) {
       }
     };
 
+    const streamHeaders = new Headers(CHAT_SSE_HEADERS);
+    if (isUpstashProvider()) {
+      appendUpstashSyncCookieHeader(streamHeaders, request);
+    }
+
     return new Response(
       createRagChatStream({
         savedPayload: { userMessageId, assistantMessageId },
@@ -119,10 +133,11 @@ export async function POST(request: Request) {
           turnSuggestions = items;
         },
         onGenerationEnd: async () => {
-          await onGenerationEnd();
+          await persistGenerationEnd();
+          return upstashDonePayload();
         },
       }),
-      { headers: CHAT_SSE_HEADERS },
+      { headers: streamHeaders },
     );
   } catch (error) {
     if (bufferWriter) {
@@ -133,23 +148,13 @@ export async function POST(request: Request) {
     }
 
     if (error instanceof SessionError) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (error instanceof Error && error.message === "OPENROUTER_NOT_CONFIGURED") {
       return NextResponse.json(
-        { error: "Chat is not configured" },
-        { status: 503 },
+        { error: "Unauthorized", code: CHAT_ERROR_CODES.UNAUTHORIZED },
+        { status: 401 },
       );
     }
 
-    if (error instanceof Error && error.message.includes("not configured")) {
-      return NextResponse.json(
-        { error: "Chat storage is not configured" },
-        { status: 503 },
-      );
-    }
-
-    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+    const mapped = mapChatRouteError(error);
+    return NextResponse.json(mapped.body, { status: mapped.status });
   }
 }

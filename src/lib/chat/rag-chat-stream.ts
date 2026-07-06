@@ -24,7 +24,9 @@ export type RagChatStreamOptions = StreamTransformHooks & {
   signal?: AbortSignal;
   shouldStop?: () => boolean | Promise<boolean>;
   onStreamPhase?: (phase: ChatStreamPhase) => void;
-  onGenerationEnd?: (reason: GenerationEndReason) => void | Promise<void>;
+  onGenerationEnd?: (
+    reason: GenerationEndReason,
+  ) => void | Promise<void | Record<string, unknown>>;
   onSuggestionsReady?: (items: string[]) => void;
 };
 
@@ -45,7 +47,9 @@ async function finishWithError(
   controller: ReadableStreamDefaultController<Uint8Array>,
   encoder: TextEncoder,
   message: string,
-  onGenerationEnd?: (reason: GenerationEndReason) => void | Promise<void>,
+  onGenerationEnd?: (
+    reason: GenerationEndReason,
+  ) => void | Promise<void | Record<string, unknown>>,
 ): Promise<void> {
   safeEnqueue(controller, encoder, "error", { message });
   await onGenerationEnd?.("error");
@@ -66,10 +70,14 @@ function toStreamErrorMessage(error: unknown): string {
 async function finishAborted(
   controller: ReadableStreamDefaultController<Uint8Array>,
   encoder: TextEncoder,
-  onGenerationEnd?: (reason: GenerationEndReason) => void | Promise<void>,
+  onGenerationEnd?: (
+    reason: GenerationEndReason,
+  ) => void | Promise<void | Record<string, unknown>>,
 ): Promise<void> {
-  await onGenerationEnd?.("aborted");
-  safeEnqueue(controller, encoder, "done", {});
+  const extra = await onGenerationEnd?.("aborted");
+  const donePayload =
+    extra && typeof extra === "object" ? extra : {};
+  safeEnqueue(controller, encoder, "done", donePayload);
   controller.close();
 }
 

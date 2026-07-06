@@ -1,8 +1,21 @@
 import type { InfiniteData, QueryClient } from "@tanstack/react-query";
+import { parseChatErrorResponse, toNetworkChatApiError } from "@/lib/chat/api-error";
 import type { ChatMessagesPage, StoredChatMessage } from "@/lib/chat/types";
+import { UPSTASH_SYNC_HEADER } from "@/lib/chat-store/sync-constants";
 
 const PAGE_SIZE = 10;
 const DEFAULT_RETENTION_SECONDS = 60 * 60 * 6;
+
+let upstashSyncToken: string | null = null;
+
+export function setUpstashSyncToken(token: string | null | undefined): void {
+  upstashSyncToken = token?.trim() || null;
+}
+
+export function chatApiHeaders(): HeadersInit {
+  if (!upstashSyncToken) return {};
+  return { [UPSTASH_SYNC_HEADER]: upstashSyncToken };
+}
 
 function sortNewestFirst(messages: StoredChatMessage[]): StoredChatMessage[] {
   return [...messages].sort((a, b) => b.createdAt - a.createdAt);
@@ -56,11 +69,17 @@ export async function fetchChatMessagesPage(
   const params = new URLSearchParams({ limit: String(PAGE_SIZE) });
   if (before !== undefined) params.set("before", String(before));
 
-  const response = await fetch(`/api/chat/messages?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`Failed to load messages (${response.status})`);
+  try {
+    const response = await fetch(`/api/chat/messages?${params.toString()}`, {
+      headers: chatApiHeaders(),
+    });
+    if (!response.ok) {
+      throw await parseChatErrorResponse(response);
+    }
+    return response.json() as Promise<ChatMessagesPage>;
+  } catch (error) {
+    throw toNetworkChatApiError(error);
   }
-  return response.json() as Promise<ChatMessagesPage>;
 }
 
 export function hasStoredGeneratingAssistant(queryClient: QueryClient): boolean {

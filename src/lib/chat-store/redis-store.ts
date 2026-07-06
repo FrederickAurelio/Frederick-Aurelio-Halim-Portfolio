@@ -10,6 +10,7 @@ import {
 } from "./keys";
 import { createIoredisGenerationLockOps } from "./generation-lock";
 import { createIoredisGenerationBufferOps } from "./generation-buffer";
+import { touchSessionTtlIoredis } from "./touch-session";
 import type { ChatStore, PaginatedMessages } from "./types";
 
 let client: Redis | null = null;
@@ -25,21 +26,18 @@ function getRedisClient(): Redis {
   return client;
 }
 
-async function touchSession(redis: Redis, sessionId: string, ttl: number) {
-  const timeline = timelineKey(sessionId);
-  const ids = await redis.zrange(timeline, 0, -1);
-  const pipeline = redis.pipeline();
-  pipeline.expire(timeline, ttl);
-  for (const id of ids) {
-    pipeline.expire(messageKey(sessionId, id), ttl);
-  }
-  await pipeline.exec();
-}
-
 function withRetention(
   result: Omit<PaginatedMessages, "retentionSeconds">,
 ): PaginatedMessages {
   return { ...result, retentionSeconds: getMessageRetentionSeconds() };
+}
+
+function loadSessionMessages(redis: Redis, sessionId: string, ids: string[]) {
+  return loadMessagesByIds(ids, async (messageIds) => {
+    if (messageIds.length === 0) return [];
+    const keys = messageIds.map((id) => messageKey(sessionId, id));
+    return redis.mget(...keys);
+  });
 }
 
 export function createRedisChatStore(): ChatStore {
@@ -60,19 +58,17 @@ export function createRedisChatStore(): ChatStore {
       await redis
         .multi()
         .zadd(timeline, message.createdAt, message.id)
-        .set(msgKey, serializeStoredMessage(message))
+        .set(msgKey, serializeStoredMessage(message), "EX", ttl)
+        .expire(timeline, ttl)
         .exec();
 
-      await touchSession(redis, sessionId, ttl);
+      await touchSessionTtlIoredis(redis, sessionId, ttl);
     },
 
     async getLatestMessages(sessionId, limit) {
       const timeline = timelineKey(sessionId);
       const ids = await redis.zrevrange(timeline, 0, limit - 1);
-      const messages = await loadMessagesByIds(
-        (id) => redis.get(messageKey(sessionId, id)),
-        ids,
-      );
+      const messages = await loadSessionMessages(redis, sessionId, ids);
       const total = await redis.zcard(timeline);
       const hasMore = total > limit;
       return withRetention(buildPaginatedResult(messages, hasMore));
@@ -88,10 +84,7 @@ export function createRedisChatStore(): ChatStore {
         0,
         limit,
       );
-      const messages = await loadMessagesByIds(
-        (id) => redis.get(messageKey(sessionId, id)),
-        ids,
-      );
+      const messages = await loadSessionMessages(redis, sessionId, ids);
       const olderCount = await redis.zcount(timeline, "-inf", `(${before}`);
       const hasMore = olderCount > limit;
       return withRetention(buildPaginatedResult(messages, hasMore));
@@ -100,11 +93,7 @@ export function createRedisChatStore(): ChatStore {
     async getOpenRouterHistory(sessionId) {
       const timeline = timelineKey(sessionId);
       const ids = await redis.zrange(timeline, 0, -1);
-      const messages = await loadMessagesByIds(
-        (id) => redis.get(messageKey(sessionId, id)),
-        ids,
-      );
-      // Only role+content go to OpenRouter; metadata (suggestions, reasoning) stays client-side.
+      const messages = await loadSessionMessages(redis, sessionId, ids);
       return messages.map(
         (m): OpenRouterMessage => ({
           role: m.role,

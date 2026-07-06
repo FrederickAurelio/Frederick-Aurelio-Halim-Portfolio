@@ -1,6 +1,12 @@
 import { createParser } from "eventsource-parser";
 
+import {
+  parseChatErrorResponse,
+  toNetworkChatApiError,
+} from "@/lib/chat/api-error";
+import { CHAT_ERROR_CODES, type ChatErrorCode } from "@/lib/chat/api-errors";
 import type { ChatSavedEvent, ChatStreamPhase, ChatSyncEvent } from "@/lib/chat/types";
+import { chatApiHeaders, setUpstashSyncToken } from "@/lib/chat/fetch-messages";
 
 export type ChatStreamCallbacks = {
   onThinking?: (delta: string) => void;
@@ -12,7 +18,7 @@ export type ChatStreamCallbacks = {
   onPhase?: (phase: ChatStreamPhase) => void;
   onSuggestions?: (items: string[]) => void;
   onDone?: () => void;
-  onError?: (message: string, status?: number) => void;
+  onError?: (message: string, status?: number, code?: ChatErrorCode) => void;
 };
 
 type StreamPayload = {
@@ -26,7 +32,10 @@ type StreamPayload = {
   streamPhase?: string;
   phase?: string;
   items?: string[];
+  upstashSyncToken?: string;
 };
+
+const STREAM_ENDED_UNEXPECTEDLY = "STREAM_ENDED_UNEXPECTEDLY";
 
 function parseStreamPhase(value: string | undefined): ChatStreamPhase | undefined {
   if (
@@ -40,18 +49,20 @@ function parseStreamPhase(value: string | undefined): ChatStreamPhase | undefine
   return undefined;
 }
 
-async function readErrorMessage(response: Response): Promise<string> {
-  try {
-    const body = (await response.json()) as { error?: string | { message?: string } };
-    if (typeof body.error === "string") return body.error;
-    if (body.error && typeof body.error.message === "string") {
-      return body.error.message;
-    }
-  } catch {
-    // Fall through to default
+function applyDonePayload(payload: StreamPayload): void {
+  if (typeof payload.upstashSyncToken === "string" && payload.upstashSyncToken) {
+    setUpstashSyncToken(payload.upstashSyncToken);
   }
+}
 
-  return `Request failed (${response.status})`;
+function mergeChatApiHeaders(init: RequestInit = {}): RequestInit {
+  const headers = new Headers(init.headers);
+  for (const [key, value] of Object.entries(chatApiHeaders())) {
+    if (!headers.has(key)) {
+      headers.set(key, value);
+    }
+  }
+  return { ...init, headers };
 }
 
 export async function consumeChatStream(
@@ -62,21 +73,20 @@ export async function consumeChatStream(
   let response: Response;
 
   try {
-    response = await fetch(url, init);
+    response = await fetch(url, mergeChatApiHeaders(init));
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       return;
     }
 
-    callbacks.onError?.(
-      error instanceof Error ? error.message : "Network request failed",
-    );
+    const apiError = toNetworkChatApiError(error);
+    callbacks.onError?.(apiError.message, apiError.status, apiError.code);
     return;
   }
 
   if (!response.ok) {
-    const message = await readErrorMessage(response);
-    callbacks.onError?.(message, response.status);
+    const apiError = await parseChatErrorResponse(response);
+    callbacks.onError?.(apiError.message, apiError.status, apiError.code);
     return;
   }
 
@@ -88,6 +98,7 @@ export async function consumeChatStream(
 
   const decoder = new TextDecoder();
   let streamError: string | null = null;
+  let doneReceived = false;
 
   const parser = createParser({
     onEvent(event) {
@@ -148,6 +159,8 @@ export async function consumeChatStream(
           }
           break;
         case "done":
+          doneReceived = true;
+          applyDonePayload(payload);
           callbacks.onDone?.();
           break;
         case "error":
@@ -170,6 +183,15 @@ export async function consumeChatStream(
 
     if (streamError) {
       callbacks.onError?.(streamError);
+      return;
+    }
+
+    if (!doneReceived) {
+      callbacks.onError?.(
+        STREAM_ENDED_UNEXPECTEDLY,
+        undefined,
+        CHAT_ERROR_CODES.GENERIC,
+      );
     }
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {

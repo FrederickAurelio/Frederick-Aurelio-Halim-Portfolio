@@ -393,8 +393,13 @@ export type ChatContent = {
   showThinkingLabel: LocalizedText;
   hideThinkingLabel: LocalizedText;
   chatErrorNotConfigured: LocalizedText;
+  chatErrorStorage: LocalizedText;
+  chatErrorUnauthorized: LocalizedText;
+  chatErrorLoadHistory: LocalizedText;
   chatErrorGeneric: LocalizedText;
   chatErrorGenerating: LocalizedText;
+  chatRetryLabel: LocalizedText;
+  chatInputUnavailable: LocalizedText;
   historyRetention: LocalizedText;
 };
 
@@ -467,6 +472,18 @@ export const chat: ChatContent = {
     en: "Chat is not set up yet. Add an OpenRouter API key to enable it.",
     ch: "聊天功能尚未配置，需要添加 OpenRouter API 密钥。",
   },
+  chatErrorStorage: {
+    en: "Message storage is unavailable right now. Try again in a moment.",
+    ch: "消息存储暂时不可用，请稍后再试。",
+  },
+  chatErrorUnauthorized: {
+    en: "Your chat session expired. Refresh the page and try again.",
+    ch: "聊天会话已失效，请刷新页面后重试。",
+  },
+  chatErrorLoadHistory: {
+    en: "Couldn't load chat history",
+    ch: "无法加载聊天记录",
+  },
   chatErrorGeneric: {
     en: "Something went wrong. Try again.",
     ch: "出错了，请重试。",
@@ -474,6 +491,14 @@ export const chat: ChatContent = {
   chatErrorGenerating: {
     en: "A reply is still generating. Wait for it to finish or stop it first.",
     ch: "上一条回复还在生成中，请等待完成或先停止。",
+  },
+  chatRetryLabel: {
+    en: "Try again",
+    ch: "重试",
+  },
+  chatInputUnavailable: {
+    en: "Chat is temporarily unavailable",
+    ch: "聊天暂时不可用",
   },
   historyRetention: {
     en: "Chat history is kept for {hours} hours. Sending a message extends this.",

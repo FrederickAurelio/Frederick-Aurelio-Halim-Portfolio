@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "@/context/TextContext";
+import { resolveChatErrorMessage } from "@/lib/chat/resolve-error-message";
 import { mergeMessagesById } from "@/lib/chat/merge-messages";
 import { isReasoningExpanded } from "@/lib/chat/reasoning-expanded";
 import { resolveDisplaySuggestions } from "@/lib/knowledge/resolve-display-suggestions";
@@ -16,13 +17,28 @@ export default function ChatWidget() {
   const { open, ready, toggle, close, handleDesktopOpenChange, handleMobileOpenChange } =
     useChatOpenState();
 
+  const errorMessages = useMemo(
+    () => ({
+      notConfigured: chat.chatErrorNotConfigured[language],
+      storageUnavailable: chat.chatErrorStorage[language],
+      unauthorized: chat.chatErrorUnauthorized[language],
+      generic: chat.chatErrorGeneric[language],
+      generating: chat.chatErrorGenerating[language],
+    }),
+    [language],
+  );
+
   const {
     storedPages,
     retentionSeconds,
     isLoadingHistory,
+    isRefetchingHistory,
+    isHistoryError,
+    historyError,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    refetchHistory,
   } = useChatMessages();
 
   const {
@@ -31,17 +47,25 @@ export default function ChatWidget() {
     sendMessage,
     resumeGeneration,
     abort,
-  } = useChat({
-    notConfigured: chat.chatErrorNotConfigured[language],
-    generic: chat.chatErrorGeneric[language],
-    generating: chat.chatErrorGenerating[language],
-  });
+  } = useChat(errorMessages);
 
   const [expandedReasoningIds, setExpandedReasoningIds] = useState<Set<string>>(
     () => new Set(),
   );
   const prevStreamingAssistantIdRef = useRef<string | null>(null);
   const resumeStartedRef = useRef(false);
+
+  const historyErrorDescription = useMemo(() => {
+    if (!isHistoryError) return undefined;
+    if (!historyError) return errorMessages.generic;
+    return resolveChatErrorMessage(errorMessages, {
+      code: historyError.code,
+      message: historyError.message,
+      status: historyError.status,
+    });
+  }, [isHistoryError, historyError, errorMessages]);
+
+  const isChatUnavailable = isHistoryError;
 
   const toggleReasoningExpanded = useCallback((messageId: string) => {
     setExpandedReasoningIds((prev) => {
@@ -116,6 +140,7 @@ export default function ChatWidget() {
   const showSuggestions =
     !isLoading &&
     !isLoadingHistory &&
+    !isHistoryError &&
     optimisticMessages.length === 0 &&
     (messages.length === 0 || lastMessage?.role === "assistant") &&
     suggestions.length > 0;
@@ -129,6 +154,10 @@ export default function ChatWidget() {
     void fetchNextPage();
   }, [fetchNextPage]);
 
+  const handleRetryHistory = useCallback(() => {
+    void refetchHistory();
+  }, [refetchHistory]);
+
   if (!ready) return null;
 
   return (
@@ -136,13 +165,19 @@ export default function ChatWidget() {
       open={open}
       messages={messages}
       isLoading={isLoading}
-      isLoadingHistory={isLoadingHistory}
+      isLoadingHistory={isLoadingHistory || isRefetchingHistory}
       showSuggestions={showSuggestions}
       suggestions={suggestions}
       retentionHours={retentionHours}
       retentionLabel={chat.historyRetention[language]}
       hasNextPage={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}
+      historyErrorTitle={isHistoryError ? chat.chatErrorLoadHistory[language] : undefined}
+      historyErrorDescription={historyErrorDescription}
+      retryLabel={chat.chatRetryLabel[language]}
+      onRetryHistory={isHistoryError ? handleRetryHistory : undefined}
+      inputDisabled={isChatUnavailable}
+      inputDisabledPlaceholder={chat.chatInputUnavailable[language]}
       onLoadOlder={handleLoadOlder}
       onDesktopOpenChange={handleDesktopOpenChange}
       onMobileOpenChange={handleMobileOpenChange}

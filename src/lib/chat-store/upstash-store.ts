@@ -10,11 +10,16 @@ import {
 } from "./keys";
 import { createUpstashGenerationLockOps } from "./generation-lock";
 import { createUpstashGenerationBufferOps } from "./generation-buffer";
+import { touchSessionTtlUpstash } from "./touch-session";
 import type { ChatStore, PaginatedMessages } from "./types";
+import {
+  applyPendingUpstashSyncToken,
+  registerUpstashClient,
+} from "./upstash-sync.server";
 
 let client: Redis | null = null;
 
-const UPSTASH_REQUEST_TIMEOUT_MS = 8_000;
+const UPSTASH_REQUEST_TIMEOUT_MS = 15_000;
 
 function getUpstashClient(): Redis {
   if (!client) {
@@ -30,28 +35,30 @@ function getUpstashClient(): Redis {
       url,
       token,
       automaticDeserialization: false,
+      enableAutoPipelining: true,
       signal: () => AbortSignal.timeout(UPSTASH_REQUEST_TIMEOUT_MS),
-      retry: { retries: 1, backoff: () => 250 },
+      retry: { retries: 2, backoff: () => 300 },
     });
+    registerUpstashClient(client);
   }
-  return client;
-}
 
-async function touchSession(redis: Redis, sessionId: string, ttl: number) {
-  const timeline = timelineKey(sessionId);
-  const ids = (await redis.zrange(timeline, 0, -1)) as string[];
-  const pipeline = redis.pipeline();
-  pipeline.expire(timeline, ttl);
-  for (const id of ids) {
-    pipeline.expire(messageKey(sessionId, id), ttl);
-  }
-  await pipeline.exec();
+  applyPendingUpstashSyncToken();
+  return client;
 }
 
 function withRetention(
   result: Omit<PaginatedMessages, "retentionSeconds">,
 ): PaginatedMessages {
   return { ...result, retentionSeconds: getMessageRetentionSeconds() };
+}
+
+function loadSessionMessages(redis: Redis, sessionId: string, ids: string[]) {
+  return loadMessagesByIds(ids, async (messageIds) => {
+    if (messageIds.length === 0) return [];
+    const keys = messageIds.map((id) => messageKey(sessionId, id));
+    const values = await redis.mget<(string | null)[]>(...keys);
+    return values;
+  });
 }
 
 export function createUpstashChatStore(): ChatStore {
@@ -72,10 +79,11 @@ export function createUpstashChatStore(): ChatStore {
       await redis
         .multi()
         .zadd(timeline, { score: message.createdAt, member: message.id })
-        .set(msgKey, serializeStoredMessage(message))
+        .set(msgKey, serializeStoredMessage(message), { ex: ttl })
+        .expire(timeline, ttl)
         .exec();
 
-      await touchSession(redis, sessionId, ttl);
+      await touchSessionTtlUpstash(redis, sessionId, ttl);
     },
 
     async getLatestMessages(sessionId, limit) {
@@ -83,10 +91,7 @@ export function createUpstashChatStore(): ChatStore {
       const ids = (await redis.zrange(timeline, 0, limit - 1, {
         rev: true,
       })) as string[];
-      const messages = await loadMessagesByIds(
-        (id) => redis.get<string>(messageKey(sessionId, id)),
-        ids,
-      );
+      const messages = await loadSessionMessages(redis, sessionId, ids);
       const total = (await redis.zcard(timeline)) as number;
       const hasMore = total > limit;
       return withRetention(buildPaginatedResult(messages, hasMore));
@@ -100,10 +105,7 @@ export function createUpstashChatStore(): ChatStore {
         `(${before}`,
         { byScore: true, rev: true, offset: 0, count: limit },
       )) as string[];
-      const messages = await loadMessagesByIds(
-        (id) => redis.get<string>(messageKey(sessionId, id)),
-        ids,
-      );
+      const messages = await loadSessionMessages(redis, sessionId, ids);
       const olderCount = (await redis.zcount(
         timeline,
         "-inf",
@@ -116,11 +118,7 @@ export function createUpstashChatStore(): ChatStore {
     async getOpenRouterHistory(sessionId) {
       const timeline = timelineKey(sessionId);
       const ids = (await redis.zrange(timeline, 0, -1)) as string[];
-      const messages = await loadMessagesByIds(
-        (id) => redis.get<string>(messageKey(sessionId, id)),
-        ids,
-      );
-      // Only role+content go to OpenRouter; metadata (suggestions, reasoning) stays client-side.
+      const messages = await loadSessionMessages(redis, sessionId, ids);
       return messages.map(
         (m): OpenRouterMessage => ({
           role: m.role,

@@ -24,7 +24,9 @@ export type StreamTransformHooks = {
 type TransformOptions = StreamTransformHooks & {
   savedPayload?: { userMessageId: string; assistantMessageId: string };
   shouldStop?: () => boolean | Promise<boolean>;
-  onGenerationEnd?: (reason: GenerationEndReason) => void | Promise<void>;
+  onGenerationEnd?: (
+    reason: GenerationEndReason,
+  ) => void | Promise<void | Record<string, unknown>>;
 };
 
 function encodeSseEvent(event: string, data: unknown): string {
@@ -133,11 +135,15 @@ export function pipeOpenRouterToChatStream(
   const decoder = new TextDecoder();
   let streamError: string | null = null;
   let generationEnded = false;
+  let donePayload: Record<string, unknown> = {};
 
   const endGeneration = async (reason: GenerationEndReason) => {
     if (generationEnded) return;
     generationEnded = true;
-    await options?.onGenerationEnd?.(reason);
+    const extra = await options?.onGenerationEnd?.(reason);
+    if (extra && typeof extra === "object") {
+      donePayload = extra;
+    }
   };
 
   const parser = createParser({
@@ -173,7 +179,7 @@ export function pipeOpenRouterToChatStream(
         if (await options?.shouldStop?.()) {
           await reader.cancel().catch(() => {});
           await endGeneration("aborted");
-          safeEnqueue(controller, encoder, "done", {});
+          safeEnqueue(controller, encoder, "done", donePayload);
           controller.close();
           return;
         }
@@ -198,12 +204,12 @@ export function pipeOpenRouterToChatStream(
       }
 
       await endGeneration("complete");
-      safeEnqueue(controller, encoder, "done", {});
+      safeEnqueue(controller, encoder, "done", donePayload);
       controller.close();
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         await endGeneration("aborted");
-        safeEnqueue(controller, encoder, "done", {});
+        safeEnqueue(controller, encoder, "done", donePayload);
         controller.close();
         return;
       }
