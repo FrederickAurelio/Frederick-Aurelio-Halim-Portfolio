@@ -13,6 +13,8 @@ export type ChatMessage = {
   streamPhase?: ChatStreamPhase;
   status: MessageStatus;
   createdAt: number;
+  /** UI-only follow-up chips; not sent to LLMs */
+  suggestions?: string[];
 };
 
 export type ChatStatus = "idle" | "submitting" | "streaming";
@@ -31,6 +33,8 @@ export type StoredChatMessage = {
   createdAt: number;
   status?: StoredMessageStatus;
   streamPhase?: ChatStreamPhase;
+  /** UI-only follow-up chips (0–3); not sent to OpenRouter */
+  suggestions?: string[];
 };
 
 export type GenerationBuffer = {

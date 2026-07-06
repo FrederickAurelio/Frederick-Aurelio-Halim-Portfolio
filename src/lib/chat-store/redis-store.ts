@@ -104,6 +104,7 @@ export function createRedisChatStore(): ChatStore {
         (id) => redis.get(messageKey(sessionId, id)),
         ids,
       );
+      // Only role+content go to OpenRouter; metadata (suggestions, reasoning) stays client-side.
       return messages.map(
         (m): OpenRouterMessage => ({
           role: m.role,

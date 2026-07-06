@@ -32,6 +32,8 @@ const RECOMMEND_PATTERN =
   /\b(biggest|best|flagship|look up first|look at first|start with|which project should|recommend|most impressive|main project|where to start|what to check|最值得|最好|先看|推荐|哪个项目)\b/i;
 const OTHER_PROJECTS_PATTERN =
   /\b(other projects?|besides (these|those|that|the four|the 4)|any more projects?|more projects?|outside (these|the four)|anything else you('ve| have) built|other repos?|other than (these|those)|还有什么项目|还有其他|别的项目|除了这四个)\b|\bbesides?\s+(that|those|the)\s+(four|4)\b/i;
+const CONTACT_PATTERN =
+  /\b(contact|email|e-mail|reach you|reach me|get in touch|hire|hiring|linkedin|wechat|微信|联系|邮箱|怎么联系|联系方式)\b/i;
 const PORTFOLIO_ABOUT_FREDERICK =
   /\b(he|him|his|you|your|frederick|aurelio|林健昌|developer|project|stack|skill|work|job|china|country|good|think)\b|[\u4e00-\u9fff]/i;
 
@@ -274,6 +276,21 @@ export function enrichRetrievalPlan(
 
   if (intent === "experience" && focus_doc_ids.length === 0) {
     focus_doc_ids = ["work-experience"];
+  }
+
+  if (intent === "experience") {
+    answer_hint =
+      answer_hint ||
+      "Describe the Mufy AI role (Frontend Developer, May 2025 – June 2026, Hangzhou). Explain what the product is and include the live link https://chat.mufy.ai/. Mention concrete surfaces or stack from context — do not invent metrics.";
+  }
+
+  if (CONTACT_PATTERN.test(message)) {
+    intent = intent === "general" ? "bio" : intent;
+    focus_doc_ids = unique([...focus_doc_ids, "about-me"]);
+    include_sections = unique([...include_sections, "contact"]);
+    answer_hint =
+      answer_hint ||
+      "Contact only from context: email frederick.ah88@gmail.com, GitHub https://github.com/FrederickAurelio, WeChat QR on this page. No LinkedIn URL documented. Visitor is already on the portfolio — do not link to a portfolio website or invent domains.";
   }
 
   if (COMPARE_PATTERN.test(message)) {

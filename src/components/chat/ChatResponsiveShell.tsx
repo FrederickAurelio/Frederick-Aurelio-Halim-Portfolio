@@ -19,9 +19,9 @@ import type { ChatMessage } from "@/lib/chat/types";
 const launcherAnchorClass =
   "fixed right-4 z-50 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))]";
 
-/** Desktop popover: prefer 536px, shrink on short viewports above the launcher. */
+/** Desktop popover: prefer 536px tall, 430px wide; shrink on small viewports. */
 const desktopPopoverClass =
-  "flex h-[min(536px,calc(100dvh-6.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px)))] max-h-[calc(100dvh-6.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] w-[min(392px,calc(100vw-2rem))] flex-col overflow-hidden overscroll-y-contain rounded-2xl border-slate-200 p-0 shadow-xl";
+  "flex h-[min(536px,calc(100dvh-6.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px)))] max-h-[calc(100dvh-6.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] w-[min(430px,calc(100vw-2rem))] flex-col overflow-hidden overscroll-y-contain rounded-2xl border-slate-200 p-0 shadow-xl";
 
 type ChatResponsiveShellProps = {
   open: boolean;
@@ -29,6 +29,7 @@ type ChatResponsiveShellProps = {
   isLoading: boolean;
   isLoadingHistory: boolean;
   showSuggestions: boolean;
+  suggestions: string[];
   retentionHours: number | null;
   retentionLabel: string;
   hasNextPage: boolean;
@@ -49,6 +50,7 @@ export default function ChatResponsiveShell({
   isLoading,
   isLoadingHistory,
   showSuggestions,
+  suggestions,
   retentionHours,
   retentionLabel,
   hasNextPage,
@@ -71,6 +73,7 @@ export default function ChatResponsiveShell({
     isLoading,
     isLoadingHistory,
     showSuggestions,
+    suggestions,
     retentionHours,
     retentionLabel,
     hasNextPage,

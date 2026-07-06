@@ -396,7 +396,6 @@ export type ChatContent = {
   chatErrorGeneric: LocalizedText;
   chatErrorGenerating: LocalizedText;
   historyRetention: LocalizedText;
-  suggestions: LocalizedText<string[]>;
 };
 
 export const chat: ChatContent = {
@@ -479,13 +478,5 @@ export const chat: ChatContent = {
   historyRetention: {
     en: "Chat history is kept for {hours} hours. Sending a message extends this.",
     ch: "聊天记录保留 {hours} 小时，发送消息会延长保留时间。",
-  },
-  suggestions: {
-    en: [
-      "Who are you?",
-      "What's your tech stack?",
-      "Tell me about QuizConnect",
-    ],
-    ch: ["你是谁？", "你的技术栈是什么？", "介绍一下 QuizConnect"],
   },
 };

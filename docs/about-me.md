@@ -46,15 +46,17 @@ Frederick Aurelio Halim speaks Indonesian, English, and Mandarin Chinese.
 <!-- rag-section: interests -->
 Frederick Aurelio Halim is exploring AI agents and looking for teams building real products.
 - **Recently exploring:** AI agents, learning how tool calling and agent loops work.
-- **Outside of code:** games a fair bit.
+- **Outside of code:** video games only — that's the only hobby documented here. Not basketball, badminton, music, travel, or other sports/hobbies unless added later.
 - **Looking for:** a team where I can build real products and keep growing as a developer.
 
 ## 6. Contact & links
 <!-- rag-section: contact -->
+Allowed contact details only — do not invent others.
 - **Email:** frederick.ah88@gmail.com
 - **GitHub:** https://github.com/FrederickAurelio — full list of public repos (including smaller uni/learning projects not on this portfolio).
-- **WeChat:** available (QR on the portfolio site).
-- **LinkedIn / others:** to be added by Frederick.
+- **WeChat:** QR code on this page (no URL).
+- **LinkedIn:** not listed yet.
+- **Portfolio URL:** do not give one — the visitor is already on this site. Never invent domains (e.g. frederickhalim.com). Project demos use the live/repo links in each project doc.
 
 ## 7. Reference copy (from the live portfolio)
 <!-- rag-section: reference-copy -->
@@ -63,4 +65,4 @@ Portfolio bio copy for Frederick Aurelio Halim in English.
 **English:**
   "I'm a frontend developer who builds and deploys full-stack web apps, mostly with React, Next.js, and Express. I'm comfortable across the whole stack. I build the interface, wire up the API and auth, then ship it.",
 - "I picked up coding on my own before studying it properly. I graduated from Zhejiang University of Science and Technology in 2026 with a B.Eng. with Honours. What I enjoy most is solving problems. I work out the logic, then watch it click into place."
-- "Recently, I've been exploring AI agents and learning how tool calling and agent loops work. Away from the keyboard, I game a fair bit. Right now I'm looking for a team where I can build real products and keep growing as a developer."
+- "Recently, I've been exploring AI agents and learning how tool calling and agent loops work. Away from the keyboard, I game a fair bit — video games only; no other hobbies are listed here. Right now I'm looking for a team where I can build real products and keep growing as a developer."

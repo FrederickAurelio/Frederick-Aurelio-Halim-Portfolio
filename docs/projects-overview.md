@@ -19,7 +19,7 @@ Frederick Aurelio Halim has four portfolio projects documented here:
 - **Nextjs-FXTrade** (`nextjs-fxtrade`) — Forex trading demo with virtual money and live/historical rates. Stack: Next.js App Router, Supabase. Live: https://nextjs-fx-trade.vercel.app/
 - **Promis Conveyor Chain** (`promis-conveyor-chain`) — Indonesian marketing site for a conveyor-chain company. Stack: Next.js App Router. Live: https://promis-web.vercel.app/
 
-For biographical info see `about-me`. For work experience see `work-experience`.
+For biographical info see `about-me`. For work experience see `work-experience` (Mufy AI — https://chat.mufy.ai/).
 
 ## 2. Where to start
 <!-- rag-section: where-to-start -->

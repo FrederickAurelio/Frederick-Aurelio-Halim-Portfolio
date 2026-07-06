@@ -10,6 +10,7 @@ export function storedToUiMessage(message: StoredChatMessage): ChatMessage {
     streamPhase: message.streamPhase,
     status: message.status === "generating" ? "streaming" : "complete",
     createdAt: message.createdAt,
+    suggestions: message.suggestions,
   };
 }
 

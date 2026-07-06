@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "@/context/TextContext";
 import { mergeMessagesById } from "@/lib/chat/merge-messages";
 import { isReasoningExpanded } from "@/lib/chat/reasoning-expanded";
+import { resolveDisplaySuggestions } from "@/lib/knowledge/resolve-display-suggestions";
 import { useChat } from "@/hooks/useChat";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useChatOpenState } from "@/hooks/useChatOpenState";
@@ -27,7 +28,6 @@ export default function ChatWidget() {
   const {
     optimisticMessages,
     isLoading,
-    showSuggestions: showSuggestionsIdle,
     sendMessage,
     resumeGeneration,
     abort,
@@ -107,10 +107,18 @@ export default function ChatWidget() {
     resumeGeneration,
   ]);
 
+  const suggestions = useMemo(
+    () => resolveDisplaySuggestions(messages, language, isLoading),
+    [messages, language, isLoading],
+  );
+
+  const lastMessage = messages.at(-1);
   const showSuggestions =
-    showSuggestionsIdle &&
-    messages.length === 0 &&
-    !isLoadingHistory;
+    !isLoading &&
+    !isLoadingHistory &&
+    optimisticMessages.length === 0 &&
+    (messages.length === 0 || lastMessage?.role === "assistant") &&
+    suggestions.length > 0;
 
   const retentionHours =
     retentionSeconds !== null
@@ -130,6 +138,7 @@ export default function ChatWidget() {
       isLoading={isLoading}
       isLoadingHistory={isLoadingHistory}
       showSuggestions={showSuggestions}
+      suggestions={suggestions}
       retentionHours={retentionHours}
       retentionLabel={chat.historyRetention[language]}
       hasNextPage={hasNextPage}

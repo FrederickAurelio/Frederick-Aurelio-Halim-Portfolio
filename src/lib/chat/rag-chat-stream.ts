@@ -1,5 +1,10 @@
 import { planRetrieval } from "@/lib/knowledge/navigator";
 import { buildRagMessages } from "@/lib/knowledge/build-messages";
+import {
+  pickSuggestions,
+  SUGGESTION_LIMIT_FOLLOW_UP,
+} from "@/lib/knowledge/pick-suggestions";
+import { detectReplyLanguage } from "@/lib/knowledge/refusal";
 import { retrieveWithPlan } from "@/lib/knowledge/retrieve";
 import { createChatCompletionStream } from "@/lib/openrouter/client";
 import {
@@ -19,6 +24,7 @@ export type RagChatStreamOptions = StreamTransformHooks & {
   shouldStop?: () => boolean | Promise<boolean>;
   onStreamPhase?: (phase: ChatStreamPhase) => void;
   onGenerationEnd?: (reason: GenerationEndReason) => void | Promise<void>;
+  onSuggestionsReady?: (items: string[]) => void;
 };
 
 async function isGenerationCancelled(
@@ -104,6 +110,33 @@ export function createRagChatStream(
           if (await cancelled()) {
             await finishAborted(controller, encoder, options.onGenerationEnd);
             return;
+          }
+
+          const language = detectReplyLanguage(options.userMessage);
+          const assistantContext = [...options.history]
+            .reverse()
+            .find((m) => m.role === "assistant")
+            ?.content;
+          const suggestionItems = pickSuggestions({
+            mode: "follow_up",
+            language,
+            plan: retrieval.plan,
+            retrievedChunkIds: retrieval.chunks.map((c) => c.id),
+            userMessages: [
+              ...options.history
+                .filter((m) => m.role === "user")
+                .map((m) => m.content),
+              options.userMessage,
+            ],
+            assistantContext,
+            max: SUGGESTION_LIMIT_FOLLOW_UP,
+          });
+
+          if (suggestionItems.length > 0) {
+            options.onSuggestionsReady?.(suggestionItems);
+            safeEnqueue(controller, encoder, "suggestions", {
+              items: suggestionItems,
+            });
           }
 
           emitStreamPhase(controller, encoder, "thinking", options.onStreamPhase);

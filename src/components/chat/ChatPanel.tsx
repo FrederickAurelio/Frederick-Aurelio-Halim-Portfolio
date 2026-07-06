@@ -15,6 +15,7 @@ type ChatPanelProps = {
   isLoading: boolean;
   isLoadingHistory: boolean;
   showSuggestions: boolean;
+  suggestions: string[];
   retentionHours: number | null;
   retentionLabel: string;
   hasNextPage: boolean;
@@ -33,6 +34,7 @@ export default function ChatPanel({
   isLoading,
   isLoadingHistory,
   showSuggestions,
+  suggestions,
   retentionHours,
   retentionLabel,
   hasNextPage,
@@ -62,7 +64,6 @@ export default function ChatPanel({
   const routingLabel = chat.routingLabel[language];
   const showThinkingLabel = chat.showThinkingLabel[language];
   const hideThinkingLabel = chat.hideThinkingLabel[language];
-  const suggestions = chat.suggestions[language];
 
   useEffect(() => {
     if (autoFocusInput) {

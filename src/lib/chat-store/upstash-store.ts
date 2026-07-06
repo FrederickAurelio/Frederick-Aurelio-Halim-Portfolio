@@ -109,6 +109,7 @@ export function createUpstashChatStore(): ChatStore {
         (id) => redis.get<string>(messageKey(sessionId, id)),
         ids,
       );
+      // Only role+content go to OpenRouter; metadata (suggestions, reasoning) stays client-side.
       return messages.map(
         (m): OpenRouterMessage => ({
           role: m.role,

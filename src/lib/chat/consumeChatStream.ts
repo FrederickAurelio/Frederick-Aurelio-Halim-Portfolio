@@ -10,6 +10,7 @@ export type ChatStreamCallbacks = {
   onRetrieving?: () => void;
   onRouting?: () => void;
   onPhase?: (phase: ChatStreamPhase) => void;
+  onSuggestions?: (items: string[]) => void;
   onDone?: () => void;
   onError?: (message: string, status?: number) => void;
 };
@@ -24,6 +25,7 @@ type StreamPayload = {
   seq?: number;
   streamPhase?: string;
   phase?: string;
+  items?: string[];
 };
 
 function parseStreamPhase(value: string | undefined): ChatStreamPhase | undefined {
@@ -124,6 +126,13 @@ export async function consumeChatStream(
           if (phase) callbacks.onPhase?.(phase);
           break;
         }
+        case "suggestions":
+          if (Array.isArray(payload.items)) {
+            callbacks.onSuggestions?.(
+              payload.items.filter((s): s is string => typeof s === "string"),
+            );
+          }
+          break;
         case "sync":
           if (
             typeof payload.content === "string" &&

@@ -70,6 +70,7 @@ export async function POST(request: Request) {
     });
 
     const writer = bufferWriter;
+    let turnSuggestions: string[] = [];
 
     const onGenerationEnd = async () => {
       try {
@@ -77,12 +78,14 @@ export async function POST(request: Request) {
         const assistantContent = writer.getContent();
         const reasoning = writer.getReasoning();
 
-        if (assistantContent || reasoning) {
+        if (assistantContent || reasoning || turnSuggestions.length > 0) {
           await store.appendMessage(activeSessionId, {
             id: assistantMessageId,
             role: "assistant",
             content: assistantContent,
             reasoning: reasoning || undefined,
+            suggestions:
+              turnSuggestions.length > 0 ? turnSuggestions : undefined,
             createdAt: Date.now(),
           });
         }
@@ -108,6 +111,9 @@ export async function POST(request: Request) {
         },
         onStreamPhase: (phase) => {
           writer.setStreamPhase(phase);
+        },
+        onSuggestionsReady: (items) => {
+          turnSuggestions = items;
         },
         onGenerationEnd: async () => {
           await onGenerationEnd();

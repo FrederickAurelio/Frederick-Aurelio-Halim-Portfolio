@@ -58,6 +58,20 @@ export function parseStoredMessage(raw: string | null): StoredChatMessage | null
       typeof parsed.content === "string" &&
       typeof parsed.createdAt === "number"
     ) {
+      if (parsed.suggestions !== undefined) {
+        if (!Array.isArray(parsed.suggestions)) {
+          delete parsed.suggestions;
+        } else {
+          const cleaned = parsed.suggestions
+            .filter((s): s is string => typeof s === "string")
+            .slice(0, 3);
+          if (cleaned.length > 0) {
+            parsed.suggestions = cleaned;
+          } else {
+            delete parsed.suggestions;
+          }
+        }
+      }
       return parsed;
     }
   } catch {
