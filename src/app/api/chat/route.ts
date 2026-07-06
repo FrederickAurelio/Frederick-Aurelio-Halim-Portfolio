@@ -14,6 +14,7 @@ import {
 import { isUpstashProvider } from "@/lib/chat-store";
 import { mapChatRouteError } from "@/lib/chat/map-route-error";
 import { CHAT_ERROR_CODES } from "@/lib/chat/api-errors";
+import { attachVercelStreamDeadline } from "@/lib/chat/vercel-runtime";
 import { getOpenRouterConfig } from "@/lib/openrouter/config";
 import { CHAT_SSE_HEADERS } from "@/lib/openrouter/stream-transform";
 import { GENERATION_IN_PROGRESS_CODE, type ChatApiRequest } from "@/lib/chat/types";
@@ -25,6 +26,7 @@ export async function POST(request: NextRequest) {
   let sessionId: string | null = null;
   let lockHeld = false;
   let bufferWriter: GenerationBufferWriter | null = null;
+  let clearStreamDeadline: (() => void) | null = null;
 
   try {
     if (!getOpenRouterConfig()) {
@@ -72,6 +74,10 @@ export async function POST(request: NextRequest) {
     }, store);
     await bufferWriter.init();
 
+    const { signal: streamSignal, clear: clearDeadline } =
+      attachVercelStreamDeadline(generationController.signal);
+    clearStreamDeadline = clearDeadline;
+
     const history = await store.getOpenRouterHistory(activeSessionId);
 
     await store.appendMessage(activeSessionId, {
@@ -102,6 +108,7 @@ export async function POST(request: NextRequest) {
           });
         }
       } finally {
+        clearStreamDeadline?.();
         await releaseGeneration(activeSessionId);
         lockHeld = false;
         await writer.clear();
@@ -118,7 +125,7 @@ export async function POST(request: NextRequest) {
         savedPayload: { userMessageId, assistantMessageId },
         history,
         userMessage: content,
-        signal: generationController.signal,
+        signal: streamSignal,
         shouldStop: () => store.isGenerationStopRequested(activeSessionId),
         onThinkingDelta: (delta) => {
           writer.appendThinking(delta);
@@ -140,6 +147,7 @@ export async function POST(request: NextRequest) {
       { headers: streamHeaders },
     );
   } catch (error) {
+    clearStreamDeadline?.();
     if (bufferWriter) {
       await bufferWriter.clear().catch(() => {});
     }

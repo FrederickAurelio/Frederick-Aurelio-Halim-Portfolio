@@ -24,6 +24,7 @@ export default function ChatWidget() {
       unauthorized: chat.chatErrorUnauthorized[language],
       generic: chat.chatErrorGeneric[language],
       generating: chat.chatErrorGenerating[language],
+      vercelTimeout: chat.chatErrorVercelTimeout[language],
     }),
     [language],
   );

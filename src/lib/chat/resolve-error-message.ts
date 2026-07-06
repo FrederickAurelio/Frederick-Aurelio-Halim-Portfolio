@@ -7,6 +7,7 @@ export type ChatErrorMessages = {
   unauthorized: string;
   generic: string;
   generating: string;
+  vercelTimeout: string;
 };
 
 export function resolveChatErrorMessage(
@@ -29,6 +30,8 @@ export function resolveChatErrorMessage(
       return messages.unauthorized;
     case CHAT_ERROR_CODES.GENERATION_IN_PROGRESS:
       return messages.generating;
+    case CHAT_ERROR_CODES.VERCEL_TIMEOUT:
+      return messages.vercelTimeout;
     case CHAT_ERROR_CODES.GENERIC:
       return messages.generic;
     default:

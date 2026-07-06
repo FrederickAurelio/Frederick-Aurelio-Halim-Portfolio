@@ -1,4 +1,9 @@
 import { createParser, type EventSourceMessage } from "eventsource-parser";
+import { CHAT_ERROR_CODES } from "@/lib/chat/api-errors";
+import {
+  isVercelFunctionTimeoutSignal,
+  VERCEL_FUNCTION_TIMEOUT_CODE,
+} from "@/lib/chat/vercel-runtime";
 import type {
   OpenRouterReasoningDetail,
   OpenRouterStreamChunk,
@@ -112,6 +117,7 @@ function processOpenRouterChunk(
 
 type PipeOpenRouterOptions = TransformOptions & {
   emitSaved?: boolean;
+  signal?: AbortSignal;
 };
 
 export function pipeOpenRouterToChatStream(
@@ -176,6 +182,22 @@ export function pipeOpenRouterToChatStream(
       }
 
       while (true) {
+        if (options?.signal?.aborted) {
+          await reader.cancel().catch(() => {});
+          if (isVercelFunctionTimeoutSignal(options.signal)) {
+            safeEnqueue(controller, encoder, "error", {
+              message: VERCEL_FUNCTION_TIMEOUT_CODE,
+              code: CHAT_ERROR_CODES.VERCEL_TIMEOUT,
+            });
+            await endGeneration("error");
+          } else {
+            await endGeneration("aborted");
+            safeEnqueue(controller, encoder, "done", donePayload);
+          }
+          controller.close();
+          return;
+        }
+
         if (await options?.shouldStop?.()) {
           await reader.cancel().catch(() => {});
           await endGeneration("aborted");

@@ -7,6 +7,8 @@ import {
 import { CHAT_ERROR_CODES, type ChatErrorCode } from "@/lib/chat/api-errors";
 import type { ChatSavedEvent, ChatStreamPhase, ChatSyncEvent } from "@/lib/chat/types";
 import { chatApiHeaders, setUpstashSyncToken } from "@/lib/chat/fetch-messages";
+import { isVercelHostedSite } from "@/lib/chat/vercel-hosted";
+import { VERCEL_FUNCTION_TIMEOUT_CODE } from "@/lib/chat/vercel-runtime";
 
 export type ChatStreamCallbacks = {
   onThinking?: (delta: string) => void;
@@ -24,6 +26,7 @@ export type ChatStreamCallbacks = {
 type StreamPayload = {
   delta?: string;
   message?: string;
+  code?: ChatErrorCode;
   userMessageId?: string;
   assistantMessageId?: string;
   content?: string;
@@ -98,6 +101,7 @@ export async function consumeChatStream(
 
   const decoder = new TextDecoder();
   let streamError: string | null = null;
+  let streamErrorCode: ChatErrorCode | undefined;
   let doneReceived = false;
 
   const parser = createParser({
@@ -165,6 +169,10 @@ export async function consumeChatStream(
           break;
         case "error":
           streamError = payload.message ?? "Stream error";
+          if (payload.code) streamErrorCode = payload.code;
+          else if (streamError === VERCEL_FUNCTION_TIMEOUT_CODE) {
+            streamErrorCode = CHAT_ERROR_CODES.VERCEL_TIMEOUT;
+          }
           break;
         default:
           break;
@@ -182,7 +190,7 @@ export async function consumeChatStream(
     parser.feed(decoder.decode());
 
     if (streamError) {
-      callbacks.onError?.(streamError);
+      callbacks.onError?.(streamError, undefined, streamErrorCode);
       return;
     }
 
@@ -190,7 +198,9 @@ export async function consumeChatStream(
       callbacks.onError?.(
         STREAM_ENDED_UNEXPECTEDLY,
         undefined,
-        CHAT_ERROR_CODES.GENERIC,
+        isVercelHostedSite()
+          ? CHAT_ERROR_CODES.VERCEL_TIMEOUT
+          : CHAT_ERROR_CODES.GENERIC,
       );
     }
   } catch (error) {

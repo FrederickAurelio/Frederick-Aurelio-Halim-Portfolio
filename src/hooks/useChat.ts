@@ -26,6 +26,7 @@ import {
 } from "@/lib/chat/types";
 import { CHAT_ERROR_CODES, type ChatErrorCode } from "@/lib/chat/api-errors";
 import { resolveChatErrorMessage } from "@/lib/chat/resolve-error-message";
+import { randomId } from "@/lib/random-id";
 import { SUGGESTION_LIMIT_FOLLOW_UP } from "@/lib/knowledge/pick-suggestions";
 
 type UseChatErrorMessages = {
@@ -34,6 +35,7 @@ type UseChatErrorMessages = {
   unauthorized: string;
   generic: string;
   generating: string;
+  vercelTimeout: string;
 };
 
 function formatChatError(
@@ -61,7 +63,7 @@ function createMessage(
   status: ChatMessage["status"] = "complete",
 ): ChatMessage {
   return {
-    id: crypto.randomUUID(),
+    id: randomId(),
     role,
     content,
     status,
@@ -355,7 +357,7 @@ export function useChat(errorMessages: UseChatErrorMessages) {
         setOptimisticMessages((prev) => [
           ...prev,
           {
-            id: crypto.randomUUID(),
+            id: randomId(),
             role: "error" as const,
             content: errorMessages.generating,
             status: "error" as const,
@@ -365,8 +367,8 @@ export function useChat(errorMessages: UseChatErrorMessages) {
         return;
       }
 
-      const tempUserId = crypto.randomUUID();
-      const tempAssistantId = crypto.randomUUID();
+      const tempUserId = randomId();
+      const tempAssistantId = randomId();
 
       const userMessage: ChatMessage = {
         ...createMessage("user", trimmed),
@@ -522,7 +524,7 @@ export function useChat(errorMessages: UseChatErrorMessages) {
                   return [
                     ...withoutPair,
                     {
-                      id: crypto.randomUUID(),
+                      id: randomId(),
                       role: "error" as const,
                       content: errorMessages.generating,
                       status: "error" as const,

@@ -6,6 +6,11 @@ import {
 } from "@/lib/knowledge/pick-suggestions";
 import { detectReplyLanguage } from "@/lib/knowledge/refusal";
 import { retrieveWithPlan } from "@/lib/knowledge/retrieve";
+import { CHAT_ERROR_CODES } from "@/lib/chat/api-errors";
+import {
+  isVercelFunctionTimeoutSignal,
+  VERCEL_FUNCTION_TIMEOUT_CODE,
+} from "@/lib/chat/vercel-runtime";
 import { createChatCompletionStream } from "@/lib/openrouter/client";
 import { REQUEST_TIMEOUT_MESSAGE } from "@/lib/openrouter/fetch-with-timeout";
 import {
@@ -50,14 +55,43 @@ async function finishWithError(
   onGenerationEnd?: (
     reason: GenerationEndReason,
   ) => void | Promise<void | Record<string, unknown>>,
+  code?: string,
 ): Promise<void> {
-  safeEnqueue(controller, encoder, "error", { message });
+  safeEnqueue(controller, encoder, "error", { message, code });
   await onGenerationEnd?.("error");
   controller.close();
 }
 
+async function finishIfCancelled(
+  controller: ReadableStreamDefaultController<Uint8Array>,
+  encoder: TextEncoder,
+  signal: AbortSignal | undefined,
+  cancelled: () => Promise<boolean>,
+  onGenerationEnd?: (
+    reason: GenerationEndReason,
+  ) => void | Promise<void | Record<string, unknown>>,
+): Promise<boolean> {
+  if (!(await cancelled())) return false;
+
+  if (isVercelFunctionTimeoutSignal(signal)) {
+    await finishWithError(
+      controller,
+      encoder,
+      VERCEL_FUNCTION_TIMEOUT_CODE,
+      onGenerationEnd,
+      CHAT_ERROR_CODES.VERCEL_TIMEOUT,
+    );
+    return true;
+  }
+
+  await finishAborted(controller, encoder, onGenerationEnd);
+  return true;
+}
+
 function isUserAbort(userSignal?: AbortSignal): boolean {
-  return Boolean(userSignal?.aborted);
+  if (!userSignal?.aborted) return false;
+  if (isVercelFunctionTimeoutSignal(userSignal)) return false;
+  return true;
 }
 
 function toStreamErrorMessage(error: unknown): string {
@@ -109,8 +143,15 @@ export function createRagChatStream(
           safeEnqueue(controller, encoder, "saved", options.savedPayload);
           options.onSaved?.(options.savedPayload);
 
-          if (await cancelled()) {
-            await finishAborted(controller, encoder, options.onGenerationEnd);
+          if (
+            await finishIfCancelled(
+              controller,
+              encoder,
+              options.signal,
+              cancelled,
+              options.onGenerationEnd,
+            )
+          ) {
             return;
           }
 
@@ -123,8 +164,15 @@ export function createRagChatStream(
             options.signal,
           );
 
-          if (await cancelled()) {
-            await finishAborted(controller, encoder, options.onGenerationEnd);
+          if (
+            await finishIfCancelled(
+              controller,
+              encoder,
+              options.signal,
+              cancelled,
+              options.onGenerationEnd,
+            )
+          ) {
             return;
           }
 
@@ -138,8 +186,15 @@ export function createRagChatStream(
             options.shouldStop,
           );
 
-          if (await cancelled()) {
-            await finishAborted(controller, encoder, options.onGenerationEnd);
+          if (
+            await finishIfCancelled(
+              controller,
+              encoder,
+              options.signal,
+              cancelled,
+              options.onGenerationEnd,
+            )
+          ) {
             return;
           }
 
@@ -182,8 +237,15 @@ export function createRagChatStream(
             signal: options.signal,
           });
 
-          if (await cancelled()) {
-            await finishAborted(controller, encoder, options.onGenerationEnd);
+          if (
+            await finishIfCancelled(
+              controller,
+              encoder,
+              options.signal,
+              cancelled,
+              options.onGenerationEnd,
+            )
+          ) {
             return;
           }
 
@@ -209,12 +271,24 @@ export function createRagChatStream(
 
           pipeOpenRouterToChatStream(controller, upstream.body, {
             emitSaved: false,
+            signal: options.signal,
             shouldStop: options.shouldStop,
             onThinkingDelta: options.onThinkingDelta,
             onContentDelta: options.onContentDelta,
             onGenerationEnd: options.onGenerationEnd,
           });
         } catch (error) {
+          if (isVercelFunctionTimeoutSignal(options.signal)) {
+            await finishWithError(
+              controller,
+              encoder,
+              VERCEL_FUNCTION_TIMEOUT_CODE,
+              options.onGenerationEnd,
+              CHAT_ERROR_CODES.VERCEL_TIMEOUT,
+            );
+            return;
+          }
+
           if (isUserAbort(options.signal)) {
             await finishAborted(controller, encoder, options.onGenerationEnd);
             return;
