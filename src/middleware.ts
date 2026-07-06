@@ -3,6 +3,7 @@ import {
   CHAT_SESSION_COOKIE,
   CHAT_SESSION_MAX_AGE_SECONDS,
   createSessionId,
+  isSecureSessionRequest,
   isValidSessionId,
 } from "@/lib/chat/session";
 
@@ -15,7 +16,7 @@ export function middleware(request: NextRequest) {
       name: CHAT_SESSION_COOKIE,
       value: createSessionId(),
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isSecureSessionRequest(request),
       sameSite: "lax",
       path: "/",
       maxAge: CHAT_SESSION_MAX_AGE_SECONDS,

@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import type { NextRequest } from "next/server";
 
 export const CHAT_SESSION_COOKIE = "portfolio-chat-session";
 
@@ -14,6 +15,15 @@ export function createSessionId(): string {
 
 export function isValidSessionId(value: string | undefined | null): value is string {
   return typeof value === "string" && UUID_RE.test(value);
+}
+
+/** Secure cookies only over HTTPS — plain HTTP (VPS IP) must use secure: false. */
+export function isSecureSessionRequest(request: NextRequest): boolean {
+  const forwarded = request.headers.get("x-forwarded-proto");
+  if (forwarded) {
+    return forwarded.split(",")[0]?.trim().toLowerCase() === "https";
+  }
+  return request.nextUrl.protocol === "https:";
 }
 
 export async function requireSessionId(): Promise<string> {
