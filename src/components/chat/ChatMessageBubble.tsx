@@ -109,7 +109,9 @@ export default function ChatMessageBubble({
               />
             )}
 
-            {message.content && <ChatMarkdown content={message.content} />}
+            {message.content && (
+              <ChatMarkdown content={message.content} isStreaming={isStreaming} />
+            )}
 
             {isStreaming && message.reasoning && !message.content && (
               <span className="sr-only">{thinkingLabel}</span>

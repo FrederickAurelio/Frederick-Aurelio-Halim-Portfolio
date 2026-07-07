@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "npx tsx --test src/lib/openrouter/stream-transform.test.ts src/lib/knowledge/pick-suggestions.test.ts src/lib/knowledge/session-routing-state.test.ts src/lib/knowledge/enrich-retrieval-plan.test.ts src/lib/knowledge/navigator-fallback.test.ts src/lib/knowledge/resolve-multi-focus.test.ts src/lib/knowledge/retrieve.test.ts src/lib/chat-store/keys.test.ts",
+    "test": "npx tsx --test src/lib/openrouter/stream-transform.test.ts src/lib/knowledge/pick-suggestions.test.ts src/lib/knowledge/session-routing-state.test.ts src/lib/knowledge/enrich-retrieval-plan.test.ts src/lib/knowledge/navigator-fallback.test.ts src/lib/knowledge/resolve-multi-focus.test.ts src/lib/knowledge/retrieve.test.ts src/lib/chat-store/keys.test.ts src/lib/chat/markdown-blocks.test.ts",
     "index-knowledge": "npx tsx scripts/index-knowledge.ts",
     "prepare": "husky"
   },
@@ -29,6 +29,7 @@
     "react-icons": "^5.7.0",
     "react-intersection-observer": "^10.0.3",
     "react-markdown": "^10.1.0",
+    "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.6.0",
     "vaul": "^1.1.2"
