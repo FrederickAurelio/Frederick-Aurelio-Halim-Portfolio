@@ -85,7 +85,9 @@
         "other projects",
         "more projects",
         "besides these",
-        "GitHub repos"
+        "GitHub repos",
+        "Bookling",
+        "Wild Oasis"
       ],
       "sourceFile": "docs/projects-overview.md",
       "sections": [
@@ -94,7 +96,9 @@
         "where-to-start",
         "why-flagship",
         "project-scale",
-        "other-projects-github"
+        "other-projects-github",
+        "bookling",
+        "the-wild-oasis"
       ]
     },
     {

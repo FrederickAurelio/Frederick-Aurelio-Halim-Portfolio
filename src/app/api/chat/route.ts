@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
     clearStreamDeadline = clearDeadline;
 
     const history = await store.getOpenRouterHistory(activeSessionId);
+    const routingState = await store.getSessionRoutingState(activeSessionId);
 
     await store.appendMessage(activeSessionId, {
       id: userMessageId,
@@ -125,8 +126,11 @@ export async function POST(request: NextRequest) {
         savedPayload: { userMessageId, assistantMessageId },
         history,
         userMessage: content,
+        routingState,
         signal: streamSignal,
         shouldStop: () => store.isGenerationStopRequested(activeSessionId),
+        onRoutingStateReady: (next) =>
+          store.setSessionRoutingState(activeSessionId, next),
         onThinkingDelta: (delta) => {
           writer.appendThinking(delta);
         },

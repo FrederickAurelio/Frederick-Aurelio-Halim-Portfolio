@@ -3,7 +3,7 @@ rag:
   id: projects-overview
   type: catalog
   title: Frederick's Projects
-  aliases: [projects list, portfolio projects, all projects, 项目列表, biggest project, best project, flagship, where to start, other projects, more projects, besides these, GitHub repos]
+  aliases: [projects list, portfolio projects, all projects, 项目列表, biggest project, best project, flagship, where to start, other projects, more projects, besides these, GitHub repos, Bookling, Wild Oasis]
 ---
 
 # Frederick's Projects
@@ -66,11 +66,23 @@ Quick comparison for "biggest" or "which project" questions — by scope and wha
 
 These four — QuizConnect, Memories, Nextjs-FXTrade, and Promis Conveyor Chain — are the **main projects Frederick showcases on this portfolio**. Each is polished enough to present and shows a different side of his skills (real-time + LLM + deploy, canvas editor, fintech demo, marketing/SEO).
 
-Frederick has built **smaller things during university or for learning** — tutorials, experiments, half-finished repos — but nothing else he would call a standalone portfolio project yet.
+Frederick has **other public repos on GitHub** — university collabs, course projects, and experiments. They are not on the homepage, but two are worth naming if someone asks "anything else?":
 
-**Where to look for more:**
-- **GitHub profile:** https://github.com/FrederickAurelio — browse all public repos for side experiments, coursework, and older work not featured here.
-- **This chat** can go deep on the four documented projects, work experience (Mufy), or background — ask about a stack or app type and Frederick can explain how he approached something similar.
+### Bookling
+- **What:** Book-sharing web app — sign up, log in, post books, search/sort/filter, save favorites, see what others liked.
+- **Stack:** React + Tailwind frontend (Frederick); Django REST Framework backend (collaborator Stevanie).
+- **Repo:** https://github.com/FrederickAurelio/Bookling
+- **Note:** University-era full-stack collab; no live demo — GitHub repo only.
 
-**How to answer (tone guide):** Be honest that the site focuses on four projects; don't invent other flagship apps. Point curious visitors to GitHub for the long tail; offer to talk about the four or match their interest (e.g. "if you care about WebSockets, QuizConnect is the one").
+### The Wild Oasis
+- **What:** Hotel admin dashboard — cabins CRUD, bookings check-in/out, profiles, settings, dark mode. Built while following Jonas Schmedtmann's React course.
+- **Stack:** React, React Query, React Router, React Hook Form, styled-components, Supabase.
+- **Repo:** https://github.com/FrederickAurelio/Realworld-React-Project/tree/main/the-wild-oasis
+- **Live demo:** https://the-wild-oasis-two-murex.vercel.app/
+- **Note:** Tutorial/course project — good for seeing patterns (React Query remote state, compound components), not an original product.
+
+**Browse everything else:**
+- **GitHub profile:** https://github.com/FrederickAurelio — all public repos, including QuizConnect, Memories, FXTrade, and smaller experiments.
+
+**How to answer (tone guide):** Be honest that the site focuses on four projects. Name Bookling and Wild Oasis briefly with links when asked about "other" work; Bookling has no live demo (repo only). Wild Oasis is course-based. Point to https://github.com/FrederickAurelio for the full list; offer to go deep on the four showcase projects or match stack interest (e.g. WebSockets → QuizConnect).
 

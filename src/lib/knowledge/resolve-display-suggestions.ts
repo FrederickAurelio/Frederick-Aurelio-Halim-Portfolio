@@ -6,6 +6,12 @@ import {
   pickSuggestions,
   SUGGESTION_LIMIT_FOLLOW_UP,
 } from "@/lib/knowledge/pick-suggestions";
+import {
+  applySessionRoutingToPlan,
+  computeNextRoutingState,
+  EMPTY_SESSION_ROUTING_STATE,
+} from "@/lib/knowledge/session-routing-state";
+import type { RetrievalPlan } from "@/lib/knowledge/retrieval-plan";
 
 function messagesToOpenRouterHistory(messages: ChatMessage[]): OpenRouterMessage[] {
   return messages
@@ -17,11 +23,34 @@ function lastUserMessage(messages: ChatMessage[]): string {
   return [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
 }
 
+/** Replay fallback + sticky session routing for each user turn (no LLM). */
+function replayLastUserPlan(messages: ChatMessage[]): RetrievalPlan {
+  const history: OpenRouterMessage[] = [];
+  let state = EMPTY_SESSION_ROUTING_STATE;
+  let lastPlan = fallbackRetrievalPlan([], "");
+
+  for (const message of messages) {
+    if (message.role === "user") {
+      let plan = fallbackRetrievalPlan(history, message.content);
+      plan = applySessionRoutingToPlan(plan, message.content, state);
+      lastPlan = plan;
+      state = computeNextRoutingState(state, plan, message.content);
+    }
+    if (message.role === "user" || message.role === "assistant") {
+      history.push({
+        role: message.role as "user" | "assistant",
+        content: message.content,
+      });
+    }
+  }
+
+  return lastPlan;
+}
+
 function pickSuggestionsFallbackFromHistory(messages: ChatMessage[]): string[] {
   const lastUser = lastUserMessage(messages);
   const language = lastUser ? detectReplyLanguage(lastUser) : "en";
-  const history = messagesToOpenRouterHistory(messages);
-  const plan = fallbackRetrievalPlan(history, lastUser);
+  const plan = replayLastUserPlan(messages);
   const assistantContext =
     [...messages].reverse().find((m) => m.role === "assistant")?.content ?? "";
   return pickSuggestions({
@@ -66,4 +95,4 @@ export function resolveDisplaySuggestions(
   return [];
 }
 
-export { pickSuggestionsFallbackFromHistory };
+export { pickSuggestionsFallbackFromHistory, replayLastUserPlan };

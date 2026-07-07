@@ -7,6 +7,11 @@ import {
   resolveFocusDocIds,
   resolvePrimaryDocId,
 } from "./resolve-doc-id";
+import {
+  OTHER_PROJECTS_ANSWER_HINT,
+  OTHER_PROJECTS_PATTERN,
+  RECOMMEND_PATTERN,
+} from "./retrieval-patterns";
 import { defaultRetrievalPlan, type RetrievalIntent, type RetrievalPlan } from "./retrieval-plan";
 
 function unique(values: string[]): string[] {
@@ -24,18 +29,15 @@ const COMPARE_PATTERN = /\b(vs\.?|versus|compare|compared|difference between|哪
 const STACK_PATTERN = /\b(stack|tech|technology|framework|libraries|用什么|技术栈)\b/i;
 const CURRENCY_DATA_PATTERN =
   /\b(currency data|exchange rate|fx rate|forex rate|live rate|historical rate|frankfurter|currencybeacon|currency api|where do you get.*(currency|rate|data)|汇率|数据源)\b/i;
+const FX_CONTEXT_PATTERN = /\b(fx\s*trad|fxtrad|forex|fxtrade|exchange|frankfurter)\b/i;
 const OPINION_PATTERN =
   /\b(what do you think|do you think|is he good|is he really|how good|skilled|capable|talented|厉害|怎么样|你觉得|好不好|真的行吗)\b/i;
 const COUNTRY_TRAVEL_PATTERN =
-  /\b(country|countries|abroad|travel|visited|lived in|been to|other nation|哪个国家|其他国家|去过)\b/i;
-const RECOMMEND_PATTERN =
-  /\b(biggest|best|flagship|look up first|look at first|start with|which project should|recommend|most impressive|main project|where to start|what to check|最值得|最好|先看|推荐|哪个项目)\b/i;
-const OTHER_PROJECTS_PATTERN =
-  /\b(other projects?|besides (these|those|that|the four|the 4)|any more projects?|more projects?|outside (these|the four)|anything else you('ve| have) built|other repos?|other than (these|those)|还有什么项目|还有其他|别的项目|除了这四个)\b|\bbesides?\s+(that|those|the)\s+(four|4)\b/i;
+  /\b(abroad|travel|visited|lived in|been to|other nation|哪个国家|其他国家|去过)\b/i;
 const CONTACT_PATTERN =
   /\b(contact|email|e-mail|reach you|reach me|get in touch|hire|hiring|linkedin|wechat|微信|联系|邮箱|怎么联系|联系方式)\b/i;
 const PORTFOLIO_ABOUT_FREDERICK =
-  /\b(he|him|his|you|your|frederick|aurelio|林健昌|developer|project|stack|skill|work|job|china|country|good|think)\b|[\u4e00-\u9fff]/i;
+  /\b(frederick|aurelio|林健昌|developer|projects?|portfolio|skills?|jobs?)\b|[\u4e00-\u9fff]/i;
 
 function sectionsForIntent(intent: RetrievalIntent, message: string): string[] {
   const base: string[] = [];
@@ -148,8 +150,77 @@ function expandSearchQueries(
   return unique(queries).slice(0, 4);
 }
 
-/** Make navigator output proactive: widen sections, queries, and focus before retrieval. */
-export function enrichRetrievalPlan(
+function addSectionsWhenFocused(
+  plan: RetrievalPlan,
+  message: string,
+): Pick<RetrievalPlan, "include_sections"> {
+  const hasFocus = plan.focus_doc_ids.length > 0;
+  let include_sections = [...plan.include_sections];
+
+  if (hasFocus && STACK_PATTERN.test(message)) {
+    include_sections = unique([...include_sections, "tech-stack"]);
+  }
+
+  if (hasFocus && CONTACT_PATTERN.test(message)) {
+    include_sections = unique([...include_sections, "contact"]);
+  }
+
+  if (
+    hasFocus &&
+    CURRENCY_DATA_PATTERN.test(message) &&
+    (plan.focus_doc_ids.includes("nextjs-fxtrade") || FX_CONTEXT_PATTERN.test(message))
+  ) {
+    include_sections = unique([
+      ...include_sections,
+      "data-sources",
+      "3-features",
+      "4-tech-stack",
+    ]);
+  }
+
+  include_sections = unique([
+    ...include_sections,
+    ...sectionsForIntent(plan.intent, message),
+  ]);
+
+  return { include_sections };
+}
+
+/** After navigator success: widen sections/queries only; never change intent or focus. */
+export function enrichRetrievalPlanLight(
+  plan: RetrievalPlan,
+  currentMessage: string,
+  history: OpenRouterMessage[] = [],
+): RetrievalPlan {
+  const message = currentMessage.trim();
+
+  if (plan.intent === "list_projects" || plan.intent === "off_topic") {
+    return { ...plan };
+  }
+
+  const { include_sections } = addSectionsWhenFocused(plan, message);
+
+  const search_queries =
+    plan.focus_doc_ids.length > 0
+      ? expandSearchQueries({ ...plan, include_sections }, message, history)
+      : plan.search_queries;
+
+  const answer_hint =
+    plan.answer_hint ||
+    (include_sections.length > 0
+      ? `Use these section types when relevant: ${include_sections.join(", ")}.`
+      : "");
+
+  return defaultRetrievalPlan({
+    ...plan,
+    include_sections,
+    search_queries,
+    answer_hint,
+  });
+}
+
+/** After fallback only: may fix intent/focus when still empty; never override non-empty focus. */
+export function enrichRetrievalPlanHeavy(
   plan: RetrievalPlan,
   history: OpenRouterMessage[],
   currentMessage: string,
@@ -177,35 +248,34 @@ export function enrichRetrievalPlan(
   let focus_doc_ids = [...plan.focus_doc_ids];
   let include_sections = [...plan.include_sections];
   let answer_hint = plan.answer_hint;
+  const focusWasEmpty = focus_doc_ids.length === 0;
 
   if (RECOMMEND_PATTERN.test(message) || intent === "recommend_project") {
     intent = "recommend_project";
-    focus_doc_ids = unique([...focus_doc_ids, "projects-overview", "quizconnect"]);
+    if (focusWasEmpty) {
+      focus_doc_ids = unique([...focus_doc_ids, "projects-overview", "quizconnect"]);
+    }
     answer_hint =
       answer_hint ||
       "Recommend QuizConnect first with repo + live demo. Explain why from documented facts (WebSockets multiplayer, LLM, BullMQ, Docker Compose, GitHub Actions deploy to VPS). Offer a second project only if their interest is clear.";
   }
 
   if (OTHER_PROJECTS_PATTERN.test(message)) {
-    focus_doc_ids = unique([...focus_doc_ids, "projects-overview"]);
+    if (focusWasEmpty) {
+      focus_doc_ids = unique([...focus_doc_ids, "projects-overview"]);
+    }
     include_sections = unique([
       ...include_sections,
       "other-projects-github",
       "overview",
     ]);
-    answer_hint =
-      answer_hint ||
-      "Say the four portfolio projects are the main showcase. Smaller uni/learning repos exist on GitHub but aren't portfolio-ready. Link https://github.com/FrederickAurelio. Offer to dive into the four or match their stack interest.";
+    answer_hint = answer_hint || OTHER_PROJECTS_ANSWER_HINT;
   }
 
   if (OPINION_PATTERN.test(message)) {
     intent = "follow_up";
     if (focus_doc_ids.length === 0) focus_doc_ids = ["about-me"];
-    include_sections = unique([
-      ...include_sections,
-      "at-a-glance",
-      "background",
-    ]);
+    include_sections = unique([...include_sections, "at-a-glance", "background"]);
     answer_hint =
       answer_hint ||
       "Give a brief, modest opinion on skills/strengths from documented projects and stack. Use what was already said in the thread.";
@@ -213,7 +283,9 @@ export function enrichRetrievalPlan(
 
   if (COUNTRY_TRAVEL_PATTERN.test(message)) {
     intent = "bio";
-    focus_doc_ids = unique([...focus_doc_ids, "about-me"]);
+    if (focus_doc_ids.length === 0) {
+      focus_doc_ids = unique([...focus_doc_ids, "about-me"]);
+    }
     include_sections = unique([
       ...include_sections,
       "at-a-glance",
@@ -223,12 +295,8 @@ export function enrichRetrievalPlan(
     ]);
   }
 
-  if (CURRENCY_DATA_PATTERN.test(message)) {
-    const fxFocus =
-      resolvePrimaryDocId(message, context) === "nextjs-fxtrade" ||
-      focus_doc_ids.includes("nextjs-fxtrade") ||
-      /fx\s*trad|fxtrad|forex|fxtrade/i.test(message);
-    if (fxFocus || focus_doc_ids.length === 0) {
+  if (CURRENCY_DATA_PATTERN.test(message) && FX_CONTEXT_PATTERN.test(message)) {
+    if (focus_doc_ids.length === 0) {
       intent = intent === "general" ? "project_detail" : intent;
       focus_doc_ids = unique([...focus_doc_ids, "nextjs-fxtrade"]);
       include_sections = unique([
@@ -253,20 +321,12 @@ export function enrichRetrievalPlan(
   }
 
   if (
-    (intent === "project_detail" || intent === "follow_up" || intent === "general") &&
-    focus_doc_ids.length === 0
+    focus_doc_ids.length === 0 &&
+    (intent === "project_detail" || intent === "follow_up" || intent === "general")
   ) {
     focus_doc_ids = resolveFocusDocIds(message, context, 2);
     if (focus_doc_ids.length > 0 && intent === "general") {
       intent = "project_detail";
-    }
-  } else if (
-    (intent === "project_detail" || intent === "follow_up") &&
-    focus_doc_ids.length > 0
-  ) {
-    const resolved = resolvePrimaryDocId(message, context);
-    if (resolved && !focus_doc_ids.includes(resolved)) {
-      focus_doc_ids = [resolved, ...focus_doc_ids].slice(0, 2);
     }
   }
 
@@ -286,7 +346,9 @@ export function enrichRetrievalPlan(
 
   if (CONTACT_PATTERN.test(message)) {
     intent = intent === "general" ? "bio" : intent;
-    focus_doc_ids = unique([...focus_doc_ids, "about-me"]);
+    if (focus_doc_ids.length === 0) {
+      focus_doc_ids = unique([...focus_doc_ids, "about-me"]);
+    }
     include_sections = unique([...include_sections, "contact"]);
     answer_hint =
       answer_hint ||
@@ -300,10 +362,11 @@ export function enrichRetrievalPlan(
     }
   }
 
-  include_sections = unique([
-    ...include_sections,
-    ...sectionsForIntent(intent, message),
-  ]);
+  const sectionMerge = addSectionsWhenFocused(
+    { ...plan, intent, focus_doc_ids, include_sections },
+    message,
+  );
+  include_sections = sectionMerge.include_sections;
 
   if (intent === "recommend_project") {
     return defaultRetrievalPlan({
@@ -319,7 +382,7 @@ export function enrichRetrievalPlan(
   }
 
   const search_queries = expandSearchQueries(
-    { ...plan, intent, focus_doc_ids },
+    { ...plan, intent, focus_doc_ids, include_sections },
     message,
     history,
   );
@@ -338,4 +401,13 @@ export function enrichRetrievalPlan(
     search_queries,
     answer_hint: finalHint,
   });
+}
+
+/** @deprecated Use enrichRetrievalPlanHeavy via planRetrievalForTurn */
+export function enrichRetrievalPlan(
+  plan: RetrievalPlan,
+  history: OpenRouterMessage[],
+  currentMessage: string,
+): RetrievalPlan {
+  return enrichRetrievalPlanHeavy(plan, history, currentMessage);
 }

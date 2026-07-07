@@ -1,4 +1,5 @@
-import { planRetrieval } from "@/lib/knowledge/navigator";
+import { planRetrievalForTurn } from "@/lib/knowledge/plan-retrieval";
+import type { SessionRoutingState } from "@/lib/knowledge/session-routing-state";
 import { buildRagMessages } from "@/lib/knowledge/build-messages";
 import {
   pickSuggestions,
@@ -26,9 +27,11 @@ export type RagChatStreamOptions = StreamTransformHooks & {
   savedPayload: { userMessageId: string; assistantMessageId: string };
   history: OpenRouterMessage[];
   userMessage: string;
+  routingState: SessionRoutingState;
   signal?: AbortSignal;
   shouldStop?: () => boolean | Promise<boolean>;
   onStreamPhase?: (phase: ChatStreamPhase) => void;
+  onRoutingStateReady?: (state: SessionRoutingState) => void | Promise<void>;
   onGenerationEnd?: (
     reason: GenerationEndReason,
   ) => void | Promise<void | Record<string, unknown>>;
@@ -158,11 +161,14 @@ export function createRagChatStream(
           options.onStreamPhase?.("routing");
           emitStreamPhase(controller, encoder, "routing", options.onStreamPhase);
 
-          const plan = await planRetrieval(
+          const { plan, nextRoutingState } = await planRetrievalForTurn(
             options.history,
             options.userMessage,
+            options.routingState,
             options.signal,
           );
+
+          await options.onRoutingStateReady?.(nextRoutingState);
 
           if (
             await finishIfCancelled(

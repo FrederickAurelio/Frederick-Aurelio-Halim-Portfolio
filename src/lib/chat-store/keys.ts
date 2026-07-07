@@ -32,6 +32,10 @@ export function generationBufferKey(sessionId: string): string {
   return `chat:${sessionId}:gen:buffer`;
 }
 
+export function routingStateKey(sessionId: string): string {
+  return `chat:${sessionId}:routing`;
+}
+
 export function getGenerationBufferFlushMs(): number {
   const raw = process.env.CHAT_GEN_BUFFER_FLUSH_MS;
   if (!raw) return 200;

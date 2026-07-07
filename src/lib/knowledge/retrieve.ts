@@ -174,6 +174,14 @@ function fetchIncludedSections(
   const seen = new Set<string>();
   const results: ScoredChunk[] = [];
 
+  if (
+    !focusSet &&
+    plan.include_sections.length > 0 &&
+    (plan.intent === "follow_up" || plan.intent === "project_detail")
+  ) {
+    return results;
+  }
+
   for (const chunk of chunks) {
     if (excludeSet.has(chunk.docId)) continue;
     if (focusSet && !focusSet.has(chunk.docId)) continue;
@@ -370,7 +378,7 @@ export async function retrieveWithPlan(
   };
 }
 
-/** @deprecated Use planRetrieval + retrieveWithPlan from rag-chat-stream */
+/** @deprecated Use planRetrievalForTurn + retrieveWithPlan from rag-chat-stream */
 export async function retrieveKnowledge(
   _history: OpenRouterMessage[],
   currentMessage: string,

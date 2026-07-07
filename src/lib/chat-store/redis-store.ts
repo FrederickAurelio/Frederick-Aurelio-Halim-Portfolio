@@ -1,10 +1,16 @@
 import Redis from "ioredis";
 import type { OpenRouterMessage } from "@/lib/openrouter/types";
 import {
+  EMPTY_SESSION_ROUTING_STATE,
+  parseSessionRoutingState,
+  serializeSessionRoutingState,
+} from "@/lib/knowledge/session-routing-state";
+import {
   buildPaginatedResult,
   getMessageRetentionSeconds,
   loadMessagesByIds,
   messageKey,
+  routingStateKey,
   serializeStoredMessage,
   timelineKey,
 } from "./keys";
@@ -99,6 +105,26 @@ export function createRedisChatStore(): ChatStore {
           role: m.role,
           content: m.content,
         }),
+      );
+    },
+
+    async getSessionRoutingState(sessionId) {
+      const raw = await redis.get(routingStateKey(sessionId));
+      if (!raw) return { ...EMPTY_SESSION_ROUTING_STATE };
+      try {
+        return parseSessionRoutingState(JSON.parse(raw));
+      } catch {
+        return { ...EMPTY_SESSION_ROUTING_STATE };
+      }
+    },
+
+    async setSessionRoutingState(sessionId, state) {
+      const ttl = getMessageRetentionSeconds();
+      await redis.set(
+        routingStateKey(sessionId),
+        serializeSessionRoutingState(state),
+        "EX",
+        ttl,
       );
     },
   };

@@ -1,18 +1,22 @@
 import { createChatCompletion } from "@/lib/openrouter/client";
-import { getRagNavigatorTurnPairs } from "@/lib/openrouter/config";
+import {
+  getRagNavigatorMaxAssistantChars,
+  getRagNavigatorTurnPairs,
+} from "@/lib/openrouter/config";
 import type { OpenRouterMessage } from "@/lib/openrouter/types";
 
-import { enrichRetrievalPlan } from "./enrich-retrieval-plan";
 import { formatKnowledgeMapForPrompt } from "./format-map-for-prompt";
-import { fallbackRetrievalPlan } from "./navigator-fallback";
 import { loadKnowledgeMap } from "./load-knowledge-map";
 import {
-  defaultRetrievalPlan,
+  formatSessionTopicForPrompt,
+  type SessionRoutingState,
+} from "./session-routing-state";
+import { resolvePrimaryDocId } from "./resolve-doc-id";
+import {
   parseRetrievalPlan,
   type RetrievalPlan,
 } from "./retrieval-plan";
 
-const ASSISTANT_TRUNCATE = 300;
 const NAVIGATOR_TIMEOUT_MS = 8_000;
 
 const NAVIGATOR_SYSTEM = `You are the retrieval navigator for Frederick Aurelio Halim's portfolio chatbot.
@@ -21,7 +25,7 @@ Your job is to read the conversation and output a JSON retrieval plan — not an
 Be PROACTIVE, not passive:
 - Answer the literal question AND pull related context that helps (the "why", not just the "what").
 - For "best / biggest / where to start" → intent recommend_project; include projects-overview where-to-start + why-flagship + quizconnect at-a-glance.
-- For "other projects besides these four" / "anything else you've built" → intent general; focus projects-overview; include_sections: other-projects-github, overview; answer_hint: four main showcase projects + GitHub https://github.com/FrederickAurelio for smaller repos.
+- For "other projects besides these four" / "anything else you've built" → intent general; focus projects-overview; include_sections: other-projects-github, overview; answer_hint: four main showcase + Bookling (React/Django book-sharing collab) + Wild Oasis (course hotel-admin tutorial) with repo links from other-projects-github, then https://github.com/FrederickAurelio.
 - Anticipate what sections the answer model will need (at-a-glance + tech-stack for project questions, background for bio, etc.).
 - Prefer 2–4 diverse search_queries that approach the question from different angles (overview, specifics, synonyms/aliases).
 - Set focus_doc_ids when the topic is clear; set include_sections for sections you want pulled even if embedding rank is weak.
@@ -31,6 +35,10 @@ Be PROACTIVE, not passive:
 
 ## Knowledge map
 {MAP}
+
+{SESSION_TOPIC}
+
+{RULE_HINT}
 
 ## Intents
 - list_projects: user wants a full list ("what projects", "有哪些项目"). search_queries: [].
@@ -60,14 +68,15 @@ Rules:
 - exclude_doc_ids / focus_doc_ids: docId from map, max 4 each.
 - Output ONLY valid JSON.`;
 
-function truncateAssistant(content: string): string {
-  if (content.length <= ASSISTANT_TRUNCATE) return content;
-  return `${content.slice(0, ASSISTANT_TRUNCATE)}…`;
+function truncateAssistant(content: string, maxChars: number): string {
+  if (content.length <= maxChars) return content;
+  return `${content.slice(0, maxChars)}…`;
 }
 
 function lastTurnPairs(
   history: OpenRouterMessage[],
   maxPairs: number,
+  maxAssistantChars: number,
 ): OpenRouterMessage[] {
   const pairs: OpenRouterMessage[] = [];
   let i = history.length - 1;
@@ -84,7 +93,7 @@ function lastTurnPairs(
       if (userBefore) {
         pairs.unshift({
           role: "assistant",
-          content: truncateAssistant(message.content),
+          content: truncateAssistant(message.content, maxAssistantChars),
         });
         pairs.unshift({ role: "user", content: userBefore.content });
         i -= 2;
@@ -98,13 +107,37 @@ function lastTurnPairs(
   return pairs.slice(-maxPairs * 2);
 }
 
+function recentContextText(history: OpenRouterMessage[], limit = 6): string {
+  return history
+    .slice(-limit)
+    .map((message) => message.content)
+    .join("\n");
+}
+
+function buildRuleHint(history: OpenRouterMessage[], currentMessage: string): string {
+  const context = recentContextText(history);
+  const resolved = resolvePrimaryDocId(currentMessage.trim(), context);
+  if (!resolved) return "";
+  return `<rule_hint>\nSuggested focus doc from rules: ${resolved} (confirm or override based on conversation).\n</rule_hint>`;
+}
+
 export function buildNavigatorMessages(
   history: OpenRouterMessage[],
   currentMessage: string,
+  routingState: SessionRoutingState,
 ): OpenRouterMessage[] {
   const map = formatKnowledgeMapForPrompt(loadKnowledgeMap());
-  const system = NAVIGATOR_SYSTEM.replace("{MAP}", map);
-  const priorTurns = lastTurnPairs(history, getRagNavigatorTurnPairs());
+  const sessionTopic = formatSessionTopicForPrompt(routingState);
+  const ruleHint = buildRuleHint(history, currentMessage);
+  const maxAssistantChars = getRagNavigatorMaxAssistantChars();
+  const system = NAVIGATOR_SYSTEM.replace("{MAP}", map)
+    .replace("{SESSION_TOPIC}", sessionTopic)
+    .replace("{RULE_HINT}", ruleHint);
+  const priorTurns = lastTurnPairs(
+    history,
+    getRagNavigatorTurnPairs(),
+    maxAssistantChars,
+  );
 
   return [
     { role: "system", content: system },
@@ -128,13 +161,16 @@ function extractJsonContent(content: string): unknown {
   }
 }
 
-export async function planRetrieval(
+export type NavigatorLlmResult =
+  | { ok: true; plan: RetrievalPlan }
+  | { ok: false };
+
+export async function callNavigatorLlm(
   history: OpenRouterMessage[],
   currentMessage: string,
+  routingState: SessionRoutingState,
   signal?: AbortSignal,
-): Promise<RetrievalPlan> {
-  const fallback = () => fallbackRetrievalPlan(history, currentMessage);
-
+): Promise<NavigatorLlmResult> {
   const timeoutController = new AbortController();
   const onAbort = () => timeoutController.abort();
   signal?.addEventListener("abort", onAbort);
@@ -147,7 +183,7 @@ export async function planRetrieval(
 
   try {
     const response = await createChatCompletion({
-      messages: buildNavigatorMessages(history, currentMessage),
+      messages: buildNavigatorMessages(history, currentMessage, routingState),
       signal: combinedSignal,
       jsonMode: true,
       temperature: 0.2,
@@ -155,41 +191,20 @@ export async function planRetrieval(
       reasoningEffort: "none",
     });
 
-    if (!response.ok) {
-      return enrichRetrievalPlan(fallback(), history, currentMessage);
-    }
+    if (!response.ok) return { ok: false };
 
     const body = (await response.json()) as {
       choices?: { message?: { content?: string } }[];
     };
     const content = body.choices?.[0]?.message?.content;
-    if (!content) return enrichRetrievalPlan(fallback(), history, currentMessage);
+    if (!content) return { ok: false };
 
     const parsed = parseRetrievalPlan(extractJsonContent(content));
-    if (!parsed) return enrichRetrievalPlan(fallback(), history, currentMessage);
+    if (!parsed) return { ok: false };
 
-    if (parsed.intent === "list_projects" || parsed.intent === "recommend_project" || parsed.intent === "off_topic") {
-      return enrichRetrievalPlan(
-        defaultRetrievalPlan({
-          ...parsed,
-          search_queries: [],
-        }),
-        history,
-        currentMessage,
-      );
-    }
-
-    const withQueries =
-      parsed.search_queries.length === 0
-        ? defaultRetrievalPlan({
-            ...parsed,
-            search_queries: [currentMessage.trim()],
-          })
-        : parsed;
-
-    return enrichRetrievalPlan(withQueries, history, currentMessage);
+    return { ok: true, plan: parsed };
   } catch {
-    return enrichRetrievalPlan(fallback(), history, currentMessage);
+    return { ok: false };
   } finally {
     clearTimeout(timeoutId);
     signal?.removeEventListener("abort", onAbort);

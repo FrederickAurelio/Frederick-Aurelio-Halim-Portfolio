@@ -40,9 +40,14 @@ function parsePositiveInt(raw: string | undefined, fallback: number): number {
   return parsed;
 }
 
-/** User/assistant pairs passed to the retrieval navigator LLM (default 3). */
+/** User/assistant pairs passed to the retrieval navigator LLM (default 6). */
 export function getRagNavigatorTurnPairs(): number {
-  return parsePositiveInt(process.env.RAG_NAVIGATOR_TURN_PAIRS, 3);
+  return parsePositiveInt(process.env.RAG_NAVIGATOR_TURN_PAIRS, 6);
+}
+
+/** Max assistant chars per turn in navigator context (default 1500). */
+export function getRagNavigatorMaxAssistantChars(): number {
+  return parsePositiveInt(process.env.RAG_NAVIGATOR_MAX_ASSISTANT_CHARS, 1500);
 }
 
 /** Recent chat messages used by enrich rules / doc resolution (default 4). */

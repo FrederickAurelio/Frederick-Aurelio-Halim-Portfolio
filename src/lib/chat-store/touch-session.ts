@@ -1,6 +1,6 @@
 import type Redis from "ioredis";
 import type { Redis as UpstashRedis } from "@upstash/redis/node";
-import { timelineKey } from "./keys";
+import { timelineKey, routingStateKey } from "./keys";
 
 /** Sliding TTL: refresh timeline + every message key in one round trip. */
 export const TOUCH_SESSION_LUA = `
@@ -11,6 +11,9 @@ redis.call('EXPIRE', timeline, ttl)
 local ids = redis.call('ZRANGE', timeline, 0, -1)
 for _, id in ipairs(ids) do
   redis.call('EXPIRE', msgPrefix .. id, ttl)
+end
+if KEYS[2] then
+  redis.call('EXPIRE', KEYS[2], ttl)
 end
 return #ids
 `;
@@ -26,7 +29,7 @@ export async function touchSessionTtlUpstash(
 ): Promise<void> {
   await redis.eval(
     TOUCH_SESSION_LUA,
-    [timelineKey(sessionId)],
+    [timelineKey(sessionId), routingStateKey(sessionId)],
     [String(ttl), sessionMessageKeyPrefix(sessionId)],
   );
 }
@@ -38,8 +41,9 @@ export async function touchSessionTtlIoredis(
 ): Promise<void> {
   await redis.eval(
     TOUCH_SESSION_LUA,
-    1,
+    2,
     timelineKey(sessionId),
+    routingStateKey(sessionId),
     String(ttl),
     sessionMessageKeyPrefix(sessionId),
   );

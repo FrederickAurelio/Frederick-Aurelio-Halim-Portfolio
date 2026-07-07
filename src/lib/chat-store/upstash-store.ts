@@ -1,10 +1,17 @@
 import { Redis } from "@upstash/redis/node";
 import type { OpenRouterMessage } from "@/lib/openrouter/types";
 import {
+  EMPTY_SESSION_ROUTING_STATE,
+  parseSessionRoutingState,
+  serializeSessionRoutingState,
+  type SessionRoutingState,
+} from "@/lib/knowledge/session-routing-state";
+import {
   buildPaginatedResult,
   getMessageRetentionSeconds,
   loadMessagesByIds,
   messageKey,
+  routingStateKey,
   serializeStoredMessage,
   timelineKey,
 } from "./keys";
@@ -127,6 +134,23 @@ export function createUpstashChatStore(): ChatStore {
           content: m.content,
         }),
       );
+    },
+
+    async getSessionRoutingState(sessionId) {
+      const raw = await redis.get<string>(routingStateKey(sessionId));
+      if (!raw) return { ...EMPTY_SESSION_ROUTING_STATE };
+      try {
+        return parseSessionRoutingState(JSON.parse(raw));
+      } catch {
+        return { ...EMPTY_SESSION_ROUTING_STATE };
+      }
+    },
+
+    async setSessionRoutingState(sessionId, state) {
+      const ttl = getMessageRetentionSeconds();
+      await redis.set(routingStateKey(sessionId), serializeSessionRoutingState(state), {
+        ex: ttl,
+      });
     },
   };
 }

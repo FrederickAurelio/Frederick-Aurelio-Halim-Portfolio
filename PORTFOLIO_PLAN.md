@@ -114,7 +114,7 @@ Current Details section is close but framed as *"things I learned"* instead of *
   - Update `projects` and `details` in `data.ts`
 
 - [ ] **H5. Fix broken / fragile links**
-  - [ ] Bookling: `http://120.26.45.50:8080/` — replace or remove if dead
+  - [x] Bookling: live demo down — knowledge/chat points to GitHub repo only (no demo URL)
   - [ ] Verify all live demo links still work (FXTrade, Wild Oasis, Promis Chain, Memories)
 
 ---

@@ -3,6 +3,11 @@ import type { OpenRouterMessage } from "@/lib/openrouter/types";
 import { buildRetrievalQuery } from "./build-query";
 import { resolvePrimaryDocId } from "./resolve-doc-id";
 import {
+  OTHER_PROJECTS_ANSWER_HINT,
+  OTHER_PROJECTS_PATTERN,
+  RECOMMEND_PATTERN,
+} from "./retrieval-patterns";
+import {
   defaultRetrievalPlan,
   type RetrievalPlan,
 } from "./retrieval-plan";
@@ -16,17 +21,11 @@ const OPINION_PATTERN =
 const COUNTRY_TRAVEL_PATTERN =
   /\b(country|countries|abroad|travel|visited|lived in|been to|other nation|哪个国家|其他国家|去过)\b/i;
 
-const RECOMMEND_PATTERN =
-  /\b(biggest|best|flagship|look up first|look at first|start with|which project should|recommend|most impressive|main project|where to start|what to check|最值得|最好|先看|推荐|哪个项目)\b/i;
-
-const OTHER_PROJECTS_PATTERN =
-  /\b(other projects?|besides (these|those|that|the four|the 4)|any more projects?|more projects?|outside (these|the four)|anything else you('ve| have) built|other repos?|other than (these|those)|还有什么项目|还有其他|别的项目|除了这四个)\b|\bbesides?\s+(that|those|the)\s+(four|4)\b/i;
-
 const LIST_PROJECTS_PATTERN =
   /what projects?|which projects?|list (all )?projects?|projects does (he|frederick) have|有哪些项目|有什么项目|他有哪些项目|做过什么项目/i;
 
 const PIVOT_PATTERN =
-  /\b(other|another|besides|else|different)\b|其他|别的|还有|另一个/i;
+  /\b(another project|other project|different project|something else|换个项目|另一个项目)\b/i;
 
 function findDocIdFromText(text: string): string | null {
   return resolvePrimaryDocId(text, "");
@@ -81,8 +80,7 @@ export function fallbackRetrievalPlan(
       focus_doc_ids: ["projects-overview"],
       include_sections: ["other-projects-github", "overview"],
       search_queries: [],
-      answer_hint:
-        "The four portfolio projects are the main showcase. Smaller uni/learning repos are on GitHub but not portfolio-ready. Link https://github.com/FrederickAurelio. Offer to go deeper on the four or match their stack interest.",
+      answer_hint: OTHER_PROJECTS_ANSWER_HINT,
     });
   }
 

@@ -1,4 +1,5 @@
 import type { OpenRouterMessage } from "@/lib/openrouter/types";
+import type { SessionRoutingState } from "@/lib/knowledge/session-routing-state";
 import type {
   GenerationBuffer,
   PaginatedMessages,
@@ -39,5 +40,10 @@ export interface ChatStore extends GenerationLockOps, GenerationBufferOps {
     limit: number,
   ): Promise<PaginatedMessages>;
   getOpenRouterHistory(sessionId: string): Promise<OpenRouterMessage[]>;
+  getSessionRoutingState(sessionId: string): Promise<SessionRoutingState>;
+  setSessionRoutingState(
+    sessionId: string,
+    state: SessionRoutingState,
+  ): Promise<void>;
   getMessageRetentionSeconds(): number;
 }
