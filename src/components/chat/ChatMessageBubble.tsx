@@ -68,10 +68,10 @@ export default function ChatMessageBubble({
   };
 
   return (
-    <div className={cn("flex w-full", isUser ? "justify-end" : "justify-start")}>
+    <div className={cn("flex w-full min-w-0", isUser ? "justify-end" : "justify-start")}>
       <div
         className={cn(
-          "group relative max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
+          "group relative min-w-0 max-w-[85%] overflow-hidden rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
           isUser && "bg-sky-500 text-white",
           !isUser && !isError && "bg-slate-100 text-slate-900",
           isError && "bg-red-50 text-red-700",

@@ -19,10 +19,14 @@ export function getOpenRouterConfig(): OpenRouterConfig | null {
 
 export function getRagTopK(): number {
   const raw = process.env.RAG_TOP_K;
-  if (!raw) return 4;
+  if (!raw) return 6;
   const parsed = Number.parseInt(raw, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) return 4;
+  if (!Number.isFinite(parsed) || parsed <= 0) return 6;
   return parsed;
+}
+
+export function getRagMaxContextChunks(): number {
+  return parsePositiveInt(process.env.RAG_MAX_CONTEXT_CHUNKS, 16);
 }
 
 export function getRagMinScore(): number {

@@ -3,6 +3,14 @@ import type { OpenRouterMessage } from "@/lib/openrouter/types";
 import { buildRetrievalQuery } from "./build-query";
 import { resolvePrimaryDocId } from "./resolve-doc-id";
 import {
+  inferSectionsForMulti,
+  inferSectionsForMultiDoc,
+  inferSectionsForMultiProject,
+  resolveMultiFocusSet,
+} from "./resolve-multi-focus";
+import {
+  MULTI_DOC_ANSWER_HINT,
+  MULTI_PROJECT_ANSWER_HINT,
   OTHER_PROJECTS_ANSWER_HINT,
   OTHER_PROJECTS_PATTERN,
   RECOMMEND_PATTERN,
@@ -81,6 +89,23 @@ export function fallbackRetrievalPlan(
       include_sections: ["other-projects-github", "overview"],
       search_queries: [],
       answer_hint: OTHER_PROJECTS_ANSWER_HINT,
+    });
+  }
+
+  const multi = resolveMultiFocusSet(current, recentAssistantText(history));
+  if (multi) {
+    return defaultRetrievalPlan({
+      intent: multi.intent,
+      focus_doc_ids: multi.docIds,
+      include_sections:
+        multi.intent === "multi_project"
+          ? inferSectionsForMulti(current)
+          : inferSectionsForMultiDoc(current, multi.docIds),
+      search_queries: [],
+      answer_hint:
+        multi.intent === "multi_project"
+          ? MULTI_PROJECT_ANSWER_HINT
+          : MULTI_DOC_ANSWER_HINT,
     });
   }
 

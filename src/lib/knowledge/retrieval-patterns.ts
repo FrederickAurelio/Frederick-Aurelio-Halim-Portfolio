@@ -8,3 +8,9 @@ export const OTHER_PROJECTS_PATTERN =
 
 export const OTHER_PROJECTS_ANSWER_HINT =
   "Four portfolio projects are the main showcase. Also name Bookling (React + Django REST, book-sharing uni collab, no live demo — https://github.com/FrederickAurelio/Bookling) and The Wild Oasis (Jonas React course hotel-admin tutorial, https://github.com/FrederickAurelio/Realworld-React-Project/tree/main/the-wild-oasis). Point to https://github.com/FrederickAurelio for the full list. Be honest: Wild Oasis is course work; Bookling is older collab, repo only.";
+
+export const MULTI_PROJECT_ANSWER_HINT =
+  "Cover EACH project in focus_doc_ids separately (bullets or short paragraphs). Use only context for each — if one project's section is missing, say so for that project only; do not invent stacks or features.";
+
+export const MULTI_DOC_ANSWER_HINT =
+  "Cover EACH doc in focus_doc_ids separately (bullets or short paragraphs). Use only context per doc — if one section is missing, say so for that doc only. Chronological questions: order by documented dates. Do not invent facts.";

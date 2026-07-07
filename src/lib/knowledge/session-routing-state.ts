@@ -1,4 +1,5 @@
 import { resolvePrimaryDocId } from "./resolve-doc-id";
+import { hasMultiDocQuestion } from "./resolve-multi-focus";
 import {
   defaultRetrievalPlan,
   type RetrievalIntent,
@@ -44,6 +45,7 @@ export function isResumeTopicPhrase(message: string): boolean {
 export function isVagueFollowUp(message: string): boolean {
   const trimmed = message.trim();
   if (!trimmed || isCasualNoise(trimmed)) return false;
+  if (hasMultiDocQuestion(trimmed, "")) return false;
   if (resolvePrimaryDocId(trimmed, "")) return false;
   return VAGUE_ASPECT_PATTERN.test(trimmed);
 }
@@ -54,6 +56,8 @@ export function formatSessionTopicForPrompt(state: SessionRoutingState): string 
   primaryDocId: ${doc}
   note: "main topic" / vague follow-ups refer to primaryDocId unless the user names a different project.
   If primaryDocId is set and the user asks a vague follow-up ("what stack?", "how does auth work?", "back to main topic") without naming another project, you MUST set focus_doc_ids to [primaryDocId].
+  If the user names 2+ projects in one message, use intent multi_project with ALL named projects in focus_doc_ids — not project_detail.
+  If the user spans 2+ different docs/topics (e.g. education + work, bio + a project, compare non-project docs), use intent multi_doc with every relevant docId.
 </session_topic>`;
 }
 
@@ -66,10 +70,16 @@ export function applySessionRoutingToPlan(
   const message = currentMessage.trim();
 
   if (isCasualNoise(message)) return plan;
+  if (hasMultiDocQuestion(message, "")) return plan;
   if (resolvePrimaryDocId(message, "")) return plan;
   if (plan.focus_doc_ids.length > 0) return plan;
   if (!session.primaryDocId) return plan;
-  if (plan.intent === "list_projects" || plan.intent === "recommend_project") {
+  if (
+    plan.intent === "list_projects" ||
+    plan.intent === "recommend_project" ||
+    plan.intent === "multi_project" ||
+    plan.intent === "multi_doc"
+  ) {
     return plan;
   }
   if (plan.intent === "off_topic" && !isVagueFollowUp(message) && !isResumeTopicPhrase(message)) {
@@ -126,6 +136,22 @@ export function computeNextRoutingState(
   if (plan.intent === "list_projects") {
     return {
       primaryDocId: "projects-overview",
+      lastIntent: plan.intent,
+      updatedAt: now,
+    };
+  }
+
+  if (plan.intent === "multi_project") {
+    return {
+      primaryDocId: plan.focus_doc_ids[0] ?? previous.primaryDocId,
+      lastIntent: plan.intent,
+      updatedAt: now,
+    };
+  }
+
+  if (plan.intent === "multi_doc") {
+    return {
+      primaryDocId: plan.focus_doc_ids[0] ?? previous.primaryDocId,
       lastIntent: plan.intent,
       updatedAt: now,
     };

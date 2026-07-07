@@ -23,6 +23,8 @@ function normalizeNavigatorPlan(plan: RetrievalPlan, currentMessage: string): Re
   if (
     plan.intent === "list_projects" ||
     plan.intent === "recommend_project" ||
+    plan.intent === "multi_project" ||
+    plan.intent === "multi_doc" ||
     plan.intent === "off_topic"
   ) {
     return defaultRetrievalPlan({

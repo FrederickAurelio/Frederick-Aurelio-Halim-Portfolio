@@ -145,4 +145,30 @@ describe("session-routing-state", () => {
     );
     assert.equal(next.primaryDocId, null);
   });
+
+  it("does not apply sticky when user names two projects", () => {
+    const plan = defaultRetrievalPlan({ intent: "general", focus_doc_ids: [] });
+    const session = { primaryDocId: "quizconnect", lastIntent: null, updatedAt: 0 };
+    const result = applySessionRoutingToPlan(
+      plan,
+      "tech stack for QuizConnect and Memories",
+      session,
+    );
+    assert.deepEqual(result.focus_doc_ids, []);
+  });
+
+  it("multi_doc sets sticky to first focus doc", () => {
+    const prev = { primaryDocId: null, lastIntent: null, updatedAt: 0 };
+    const plan = defaultRetrievalPlan({
+      intent: "multi_doc",
+      focus_doc_ids: ["about-me", "work-experience"],
+    });
+    const next = computeNextRoutingState(
+      prev,
+      plan,
+      "chronologically from uni and work",
+    );
+    assert.equal(next.primaryDocId, "about-me");
+    assert.equal(next.lastIntent, "multi_doc");
+  });
 });

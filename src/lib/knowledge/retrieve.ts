@@ -1,4 +1,4 @@
-import { getOpenRouterConfig, getRagTopK, getRagMinScore } from "@/lib/openrouter/config";
+import { getOpenRouterConfig, getRagMaxContextChunks, getRagTopK, getRagMinScore } from "@/lib/openrouter/config";
 import { createEmbedding } from "@/lib/openrouter/embeddings";
 import type { OpenRouterMessage } from "@/lib/openrouter/types";
 
@@ -19,7 +19,6 @@ export type RetrievalResult = {
 
 const LIST_PROJECTS_CAP = 6;
 const RECOMMEND_PROJECT_CAP = 7;
-const MAX_CONTEXT_CHUNKS = 8;
 const INCLUDED_SECTION_SCORE = 0.92;
 
 /** Match exact section id or numbered suffix (e.g. tech-stack → 4-tech-stack). */
@@ -159,6 +158,30 @@ function fetchRecommendProjectChunks(
   return results.slice(0, RECOMMEND_PROJECT_CAP);
 }
 
+function fetchMultiDocChunks(
+  chunks: KnowledgeChunkRecord[],
+  plan: RetrievalPlan,
+): KnowledgeChunkRecord[] {
+  const docIds = plan.focus_doc_ids.slice(0, 4);
+  const sections =
+    plan.include_sections.length > 0 ? plan.include_sections : ["at-a-glance"];
+
+  const results: KnowledgeChunkRecord[] = [];
+  const seen = new Set<string>();
+
+  for (const docId of docIds) {
+    for (const sectionId of sections) {
+      const chunk = pickFirstChunk(chunks, docId, sectionId);
+      if (chunk && !seen.has(chunk.id)) {
+        seen.add(chunk.id);
+        results.push(chunk);
+      }
+    }
+  }
+
+  return results;
+}
+
 function fetchIncludedSections(
   chunks: KnowledgeChunkRecord[],
   plan: RetrievalPlan,
@@ -226,9 +249,17 @@ function mergeScoredChunks(
 }
 
 function effectiveChunkCap(plan: RetrievalPlan, baseTopK: number): number {
+  const maxChunks = getRagMaxContextChunks();
+
+  if (plan.intent === "multi_project" || plan.intent === "multi_doc") {
+    const docs = Math.max(plan.focus_doc_ids.length, 1);
+    const sections = Math.max(plan.include_sections.length, 1);
+    return Math.min(maxChunks, docs * sections + 2);
+  }
+
   const queryBoost = Math.min(plan.search_queries.length, 3);
   const sectionBoost = Math.min(plan.include_sections.length, 4);
-  return Math.min(MAX_CONTEXT_CHUNKS, baseTopK + queryBoost + Math.floor(sectionBoost / 2));
+  return Math.min(maxChunks, baseTopK + queryBoost + Math.floor(sectionBoost / 2));
 }
 
 async function isCancelled(
@@ -335,6 +366,17 @@ export async function retrieveWithPlan(
     }));
   } else if (plan.intent === "recommend_project") {
     scored = fetchRecommendProjectChunks(index.chunks).map((chunk) => ({
+      id: chunk.id,
+      source: chunk.source,
+      section: chunk.section,
+      text: chunk.text,
+      docId: chunk.docId,
+      docType: chunk.docType,
+      sectionId: chunk.sectionId,
+      score: 1,
+    }));
+  } else if (plan.intent === "multi_project" || plan.intent === "multi_doc") {
+    scored = fetchMultiDocChunks(index.chunks, plan).map((chunk) => ({
       id: chunk.id,
       source: chunk.source,
       section: chunk.section,

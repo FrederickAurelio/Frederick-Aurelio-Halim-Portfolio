@@ -40,8 +40,22 @@ export function findDocIdsInText(text: string): string[] {
   return unique(found);
 }
 
+const PROJECT_DOC_ID_CACHE = (): Set<string> => {
+  const map = loadKnowledgeMap();
+  return new Set(
+    map.sources.filter((source) => source.type === "project").map((s) => s.docId),
+  );
+};
+
+/** DocIds of type project only — excludes catalog/bio/experience. */
+export function findProjectDocIdsInText(text: string): string[] {
+  const projectIds = PROJECT_DOC_ID_CACHE();
+  return findDocIdsInText(text).filter((id) => projectIds.has(id));
+}
+
 /**
  * Pick one docId for focus: current message (incl. fuzzy + "now about X") beats broad context.
+ * Returns null when multiple projects are named — use resolveMultiProjectFocus instead.
  */
 export function resolvePrimaryDocId(
   message: string,
@@ -52,32 +66,27 @@ export function resolvePrimaryDocId(
   const aboutClause = aboutMatch?.[1]?.trim() ?? "";
 
   if (aboutClause) {
-    const fromAbout = findDocIdsInText(aboutClause);
-    if (fromAbout.length > 0) return fromAbout[0];
+    const fromAbout = findProjectDocIdsInText(aboutClause);
+    if (fromAbout.length === 1) return fromAbout[0];
+    if (fromAbout.length > 1) return null;
     const fuzzyAbout = fuzzyDocIdFromText(aboutClause);
     if (fuzzyAbout) return fuzzyAbout;
+    const fromAboutAny = findDocIdsInText(aboutClause);
+    if (fromAboutAny.length === 1) return fromAboutAny[0];
   }
+
+  const inMessageProjects = findProjectDocIdsInText(trimmed);
+  if (inMessageProjects.length === 1) return inMessageProjects[0];
+  if (inMessageProjects.length > 1) return null;
 
   const fuzzyMessage = fuzzyDocIdFromText(trimmed);
   if (fuzzyMessage) return fuzzyMessage;
 
   const inMessage = findDocIdsInText(trimmed);
   if (inMessage.length === 1) return inMessage[0];
-  if (inMessage.length > 1) return inMessage[0];
 
   const inContext = findDocIdsInText(context);
   if (inContext.length === 1) return inContext[0];
 
   return null;
-}
-
-export function resolveFocusDocIds(
-  message: string,
-  context: string,
-  max = 2,
-): string[] {
-  const primary = resolvePrimaryDocId(message, context);
-  if (primary) return [primary];
-
-  return findDocIdsInText(`${message}\n${context}`).slice(0, max);
 }

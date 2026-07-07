@@ -1,6 +1,8 @@
 export type RetrievalIntent =
   | "list_projects"
   | "recommend_project"
+  | "multi_project"
+  | "multi_doc"
   | "project_detail"
   | "bio"
   | "experience"
@@ -21,6 +23,8 @@ export type RetrievalPlan = {
 const INTENTS = new Set<RetrievalIntent>([
   "list_projects",
   "recommend_project",
+  "multi_project",
+  "multi_doc",
   "project_detail",
   "bio",
   "experience",

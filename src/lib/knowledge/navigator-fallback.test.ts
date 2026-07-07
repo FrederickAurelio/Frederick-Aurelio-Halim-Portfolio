@@ -30,4 +30,36 @@ describe("fallbackRetrievalPlan", () => {
     assert.ok(plan.include_sections.includes("other-projects-github"));
     assert.match(plan.answer_hint ?? "", /Bookling/i);
   });
+
+  it("QuizConnect and Memories stack uses multi_project", () => {
+    const plan = fallbackRetrievalPlan(
+      [],
+      "tech stack for QuizConnect and Memories",
+    );
+    assert.equal(plan.intent, "multi_project");
+    assert.ok(plan.focus_doc_ids.includes("quizconnect"));
+    assert.ok(plan.focus_doc_ids.includes("memories"));
+    assert.ok(plan.include_sections.includes("tech-stack"));
+  });
+
+  it("timeline question uses multi_doc with about-me and work-experience", () => {
+    const plan = fallbackRetrievalPlan(
+      [],
+      "give me your chronologically from when you start enter uni and list all your work time",
+    );
+    assert.equal(plan.intent, "multi_doc");
+    assert.ok(plan.focus_doc_ids.includes("about-me"));
+    assert.ok(plan.focus_doc_ids.includes("work-experience"));
+  });
+
+  it("work experience and two projects uses multi_doc in fallback", () => {
+    const plan = fallbackRetrievalPlan(
+      [],
+      "work experience and QuizConnect and Memories",
+    );
+    assert.equal(plan.intent, "multi_doc");
+    assert.ok(plan.focus_doc_ids.includes("work-experience"));
+    assert.ok(plan.focus_doc_ids.includes("quizconnect"));
+    assert.ok(plan.focus_doc_ids.includes("memories"));
+  });
 });

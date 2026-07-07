@@ -12,6 +12,7 @@ import {
   type SessionRoutingState,
 } from "./session-routing-state";
 import { resolvePrimaryDocId } from "./resolve-doc-id";
+import { resolveMultiFocusSet } from "./resolve-multi-focus";
 import {
   parseRetrievalPlan,
   type RetrievalPlan,
@@ -32,6 +33,8 @@ Be PROACTIVE, not passive:
 - answer_hint: tell the answer model what to emphasize AND what related angle to add (e.g. "recommend QuizConnect + why it stands out + live demo link").
 - For vague questions ("tell me about him", "what does he do"), combine about-me + projects-overview via multiple queries.
 - For follow-ups ("what stack?", "how does auth work?"), keep focus on the doc discussed in recent turns and add the matching section id.
+- For 2–4 projects in ONE message → intent multi_project; focus_doc_ids MUST include EVERY named project (max 4); include_sections = aspect asked; search_queries: [].
+- For 2+ different docs/topics in ONE message (education + work, bio + project, compare non-project docs, chronology spanning multiple areas) → intent multi_doc; focus_doc_ids: every relevant docId from the question; include_sections: aspect-appropriate sections per doc; search_queries: [].
 
 ## Knowledge map
 {MAP}
@@ -43,6 +46,8 @@ Be PROACTIVE, not passive:
 ## Intents
 - list_projects: user wants a full list ("what projects", "有哪些项目"). search_queries: [].
 - recommend_project: user asks what to look at first, biggest, best, flagship, most impressive ("what's your biggest project", "where should I start"). focus: projects-overview + quizconnect. include_sections: where-to-start, why-flagship, at-a-glance, tech-stack. search_queries: [].
+- multi_project: user names 2–4 projects in one message, compares them, or asks for the same aspect across multiple projects. focus_doc_ids: ALL named project docIds (max 4). search_queries: [].
+- multi_doc: user spans 2+ different docs in one message (any mix: bio + work, education + jobs, project + experience, chronology, compare non-project topics). focus_doc_ids: every relevant docId (max 4). search_queries: [].
 - project_detail: user asks about one specific project by name — set focus_doc_ids + include_sections: at-a-glance, tech-stack, problem-purpose.
 - bio: about Frederick personally — focus_doc_ids: ["about-me"], include_sections: at-a-glance, background, education.
 - experience: jobs, internships — focus_doc_ids: ["work-experience"], include_sections: mufy-at-a-glance, mufy-product.
@@ -116,7 +121,12 @@ function recentContextText(history: OpenRouterMessage[], limit = 6): string {
 
 function buildRuleHint(history: OpenRouterMessage[], currentMessage: string): string {
   const context = recentContextText(history);
-  const resolved = resolvePrimaryDocId(currentMessage.trim(), context);
+  const trimmed = currentMessage.trim();
+  const multi = resolveMultiFocusSet(trimmed, context);
+  if (multi) {
+    return `<rule_hint>\nSuggested ${multi.intent} focus: ${multi.docIds.join(", ")} (${multi.reason}). Include every listed doc.\n</rule_hint>`;
+  }
+  const resolved = resolvePrimaryDocId(trimmed, context);
   if (!resolved) return "";
   return `<rule_hint>\nSuggested focus doc from rules: ${resolved} (confirm or override based on conversation).\n</rule_hint>`;
 }

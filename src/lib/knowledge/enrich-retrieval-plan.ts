@@ -4,9 +4,9 @@ import { getRagEnrichContextMessages } from "@/lib/openrouter/config";
 import { loadKnowledgeMap } from "./load-knowledge-map";
 import {
   findDocIdsInText,
-  resolveFocusDocIds,
   resolvePrimaryDocId,
 } from "./resolve-doc-id";
+import { applyMultiFocus, resolveFocusDocIds } from "./resolve-multi-focus";
 import {
   OTHER_PROJECTS_ANSWER_HINT,
   OTHER_PROJECTS_PATTERN,
@@ -27,6 +27,8 @@ function recentContextText(history: OpenRouterMessage[]): string {
 
 const COMPARE_PATTERN = /\b(vs\.?|versus|compare|compared|difference between|哪个更好|对比|比较)\b/i;
 const STACK_PATTERN = /\b(stack|tech|technology|framework|libraries|用什么|技术栈)\b/i;
+const ARCHITECTURE_PATTERN =
+  /\b(architecture|how (is|does) it work|system design|架构|怎么实现)\b/i;
 const CURRENCY_DATA_PATTERN =
   /\b(currency data|exchange rate|fx rate|forex rate|live rate|historical rate|frankfurter|currencybeacon|currency api|where do you get.*(currency|rate|data)|汇率|数据源)\b/i;
 const FX_CONTEXT_PATTERN = /\b(fx\s*trad|fxtrad|forex|fxtrade|exchange|frankfurter)\b/i;
@@ -76,6 +78,20 @@ function sectionsForIntent(intent: RetrievalIntent, message: string): string[] {
       "at-a-glance",
       "tech-stack",
     );
+  }
+
+  if (intent === "multi_project") {
+    base.push("at-a-glance");
+    if (STACK_PATTERN.test(message)) {
+      base.push("tech-stack");
+    }
+    if (ARCHITECTURE_PATTERN.test(message)) {
+      base.push("architecture");
+    }
+  }
+
+  if (intent === "multi_doc") {
+    base.push("at-a-glance");
   }
 
   if (intent === "general" && OTHER_PROJECTS_PATTERN.test(message)) {
@@ -198,21 +214,28 @@ export function enrichRetrievalPlanLight(
     return { ...plan };
   }
 
-  const { include_sections } = addSectionsWhenFocused(plan, message);
+  const context = recentContextText(history);
+  const withMulti = applyMultiFocus(plan, message, context);
+
+  if (withMulti.intent === "multi_project" || withMulti.intent === "multi_doc") {
+    return withMulti;
+  }
+
+  const { include_sections } = addSectionsWhenFocused(withMulti, message);
 
   const search_queries =
-    plan.focus_doc_ids.length > 0
-      ? expandSearchQueries({ ...plan, include_sections }, message, history)
-      : plan.search_queries;
+    withMulti.focus_doc_ids.length > 0
+      ? expandSearchQueries({ ...withMulti, include_sections }, message, history)
+      : withMulti.search_queries;
 
   const answer_hint =
-    plan.answer_hint ||
+    withMulti.answer_hint ||
     (include_sections.length > 0
       ? `Use these section types when relevant: ${include_sections.join(", ")}.`
       : "");
 
   return defaultRetrievalPlan({
-    ...plan,
+    ...withMulti,
     include_sections,
     search_queries,
     answer_hint,
@@ -324,8 +347,10 @@ export function enrichRetrievalPlanHeavy(
     focus_doc_ids.length === 0 &&
     (intent === "project_detail" || intent === "follow_up" || intent === "general")
   ) {
-    focus_doc_ids = resolveFocusDocIds(message, context, 2);
-    if (focus_doc_ids.length > 0 && intent === "general") {
+    focus_doc_ids = resolveFocusDocIds(message, context, 4);
+    if (focus_doc_ids.length >= 2) {
+      intent = "multi_project";
+    } else if (focus_doc_ids.length > 0 && intent === "general") {
       intent = "project_detail";
     }
   }
@@ -361,6 +386,25 @@ export function enrichRetrievalPlanHeavy(
       focus_doc_ids = unique([...focus_doc_ids, ...compared]).slice(0, 4);
     }
   }
+
+  let workingPlan = defaultRetrievalPlan({
+    ...plan,
+    intent,
+    focus_doc_ids,
+    include_sections,
+    answer_hint,
+  });
+
+  workingPlan = applyMultiFocus(workingPlan, message, context);
+
+  if (workingPlan.intent === "multi_project" || workingPlan.intent === "multi_doc") {
+    return workingPlan;
+  }
+
+  intent = workingPlan.intent;
+  focus_doc_ids = workingPlan.focus_doc_ids;
+  include_sections = workingPlan.include_sections;
+  answer_hint = workingPlan.answer_hint;
 
   const sectionMerge = addSectionsWhenFocused(
     { ...plan, intent, focus_doc_ids, include_sections },
