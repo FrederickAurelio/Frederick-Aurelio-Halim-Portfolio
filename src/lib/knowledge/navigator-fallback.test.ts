@@ -29,6 +29,18 @@ describe("fallbackRetrievalPlan", () => {
     const plan = fallbackRetrievalPlan([], "any other projects besides these four?");
     assert.ok(plan.include_sections.includes("other-projects-github"));
     assert.match(plan.answer_hint ?? "", /Bookling/i);
+    assert.match(plan.answer_hint ?? "", /github\.com\/FrederickAurelio\/Bookling/);
+  });
+
+  it("not listed here question matches other projects and includes Bookling repo URL in hint", () => {
+    const plan = fallbackRetrievalPlan(
+      [],
+      "do you have other projects that are not listed here?",
+    );
+    assert.equal(plan.intent, "general");
+    assert.ok(plan.focus_doc_ids.includes("projects-overview"));
+    assert.ok(plan.include_sections.includes("other-projects-github"));
+    assert.match(plan.answer_hint ?? "", /github\.com\/FrederickAurelio\/Bookling/);
   });
 
   it("QuizConnect and Memories stack uses multi_project", () => {

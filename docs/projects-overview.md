@@ -84,5 +84,5 @@ Frederick has **other public repos on GitHub** — university collabs, course pr
 **Browse everything else:**
 - **GitHub profile:** https://github.com/FrederickAurelio — all public repos, including QuizConnect, Memories, FXTrade, and smaller experiments.
 
-**How to answer (tone guide):** Be honest that the site focuses on four projects. Name Bookling and Wild Oasis briefly with links when asked about "other" work; Bookling has no live demo (repo only). Wild Oasis is course-based. Point to https://github.com/FrederickAurelio for the full list; offer to go deep on the four showcase projects or match stack interest (e.g. WebSockets → QuizConnect).
+**How to answer (tone guide):** Be honest that the site focuses on four projects. When naming Bookling, always include **Repo:** https://github.com/FrederickAurelio/Bookling — never say "repo only" without printing the URL. Wild Oasis: include repo and live demo links from above. Point to https://github.com/FrederickAurelio for the full list; offer to go deep on the four showcase projects or match stack interest (e.g. WebSockets → QuizConnect).
 

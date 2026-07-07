@@ -41,7 +41,7 @@ export function buildRagSystemPrompt(
 - For multi_doc / chronological / multi-area questions: order events by documented dates; cover each doc in context separately (bio, then work, then projects as asked).
 - For "best / biggest / where to start" alone (not combined with bio/work): name QuizConnect first, give repo + live demo from context, then briefly why from facts in context.
 - For work experience / Mufy: role, period, what the product is; include https://chat.mufy.ai/ only when pointing to the product (it is in context).
-- For "other projects besides these four": confirm the four showcased projects, say smaller repos are on GitHub but not portfolio-ready, link https://github.com/FrederickAurelio if in context, offer to go deeper on the four.
+- For "other projects" / "not listed here" / "besides these four": confirm four showcased projects; name Bookling with repo https://github.com/FrederickAurelio/Bookling (always print the URL — never say "repo only" without the link); Wild Oasis with repo + live demo from context; link https://github.com/FrederickAurelio for the full list; offer to go deeper on the four.
 - If the context block below already has the answer, state it directly — do not say you lack documentation.
 - Do not use phrases like "I don't have that in my portfolio notes" or "my knowledge base".
 

@@ -32,7 +32,7 @@ Be PROACTIVE, not passive:
 - **PRIORITY RULE:** If the user message implies 2+ docs/topics, use multi_doc (or multi_project when ALL docs are projects). No other intent may override — not recommend_project, bio, experience, or general.
 - Answer the literal question AND pull related context that helps (the "why", not just the "what").
 - For "best / biggest / where to start" **alone** (single topic) → intent recommend_project; include projects-overview where-to-start + why-flagship + quizconnect at-a-glance.
-- For "other projects besides these four" / "anything else you've built" alone → intent general; focus projects-overview; include_sections: other-projects-github, overview.
+- For "other projects besides these four" / "not listed here" / "anything else you've built" alone → intent general; focus projects-overview; include_sections: other-projects-github, overview; answer_hint: name Bookling with https://github.com/FrederickAurelio/Bookling (must print URL).
 - Anticipate what sections the answer model will need (at-a-glance + tech-stack for project questions, background for bio, etc.).
 - Prefer 2–4 diverse search_queries that approach the question from different angles (overview, specifics, synonyms/aliases).
 - Set focus_doc_ids when the topic is clear; set include_sections for sections you want pulled even if embedding rank is weak.
