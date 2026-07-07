@@ -12,7 +12,12 @@ import {
   type SessionRoutingState,
 } from "./session-routing-state";
 import { resolvePrimaryDocId } from "./resolve-doc-id";
-import { resolveMultiFocusSet } from "./resolve-multi-focus";
+import {
+  buildMultiDocAnswerHint,
+  describeDocCoverage,
+  resolveMultiFocusSet,
+} from "./resolve-multi-focus";
+import { MULTI_PROJECT_ANSWER_HINT } from "./retrieval-patterns";
 import {
   parseRetrievalPlan,
   type RetrievalPlan,
@@ -24,9 +29,10 @@ const NAVIGATOR_SYSTEM = `You are the retrieval navigator for Frederick Aurelio 
 Your job is to read the conversation and output a JSON retrieval plan — not an answer to the user.
 
 Be PROACTIVE, not passive:
+- **PRIORITY RULE:** If the user message implies 2+ docs/topics, use multi_doc (or multi_project when ALL docs are projects). No other intent may override — not recommend_project, bio, experience, or general.
 - Answer the literal question AND pull related context that helps (the "why", not just the "what").
-- For "best / biggest / where to start" → intent recommend_project; include projects-overview where-to-start + why-flagship + quizconnect at-a-glance.
-- For "other projects besides these four" / "anything else you've built" → intent general; focus projects-overview; include_sections: other-projects-github, overview; answer_hint: four main showcase + Bookling (React/Django book-sharing collab) + Wild Oasis (course hotel-admin tutorial) with repo links from other-projects-github, then https://github.com/FrederickAurelio.
+- For "best / biggest / where to start" **alone** (single topic) → intent recommend_project; include projects-overview where-to-start + why-flagship + quizconnect at-a-glance.
+- For "other projects besides these four" / "anything else you've built" alone → intent general; focus projects-overview; include_sections: other-projects-github, overview.
 - Anticipate what sections the answer model will need (at-a-glance + tech-stack for project questions, background for bio, etc.).
 - Prefer 2–4 diverse search_queries that approach the question from different angles (overview, specifics, synonyms/aliases).
 - Set focus_doc_ids when the topic is clear; set include_sections for sections you want pulled even if embedding rank is weak.
@@ -34,7 +40,14 @@ Be PROACTIVE, not passive:
 - For vague questions ("tell me about him", "what does he do"), combine about-me + projects-overview via multiple queries.
 - For follow-ups ("what stack?", "how does auth work?"), keep focus on the doc discussed in recent turns and add the matching section id.
 - For 2–4 projects in ONE message → intent multi_project; focus_doc_ids MUST include EVERY named project (max 4); include_sections = aspect asked; search_queries: [].
-- For 2+ different docs/topics in ONE message (education + work, bio + project, compare non-project docs, chronology spanning multiple areas) → intent multi_doc; focus_doc_ids: every relevant docId from the question; include_sections: aspect-appropriate sections per doc; search_queries: [].
+- For 2+ different docs/topics in ONE message (education + work, bio + project, education + recommend, chronology, compare non-project topics) → intent multi_doc; focus_doc_ids: every relevant docId (max 4); include_sections: aspect-appropriate sections per doc; search_queries: [].
+
+## What multi_doc contains (cover EACH in the answer)
+- about-me (bio): background, education, languages, interests, contact
+- work-experience: Mufy AI role, period, product, responsibilities, stack
+- project docs (quizconnect, memories, nextjs-fxtrade, promis-conveyor-chain): what it is, features/stack as asked; repo + live demo from context
+- projects-overview (catalog): showcase list, where to start, flagship rationale, other GitHub repos
+When chronology is asked, order by documented dates. If they also ask biggest/best, end with that project section.
 
 ## Knowledge map
 {MAP}
@@ -47,7 +60,7 @@ Be PROACTIVE, not passive:
 - list_projects: user wants a full list ("what projects", "有哪些项目"). search_queries: [].
 - recommend_project: user asks what to look at first, biggest, best, flagship, most impressive ("what's your biggest project", "where should I start"). focus: projects-overview + quizconnect. include_sections: where-to-start, why-flagship, at-a-glance, tech-stack. search_queries: [].
 - multi_project: user names 2–4 projects in one message, compares them, or asks for the same aspect across multiple projects. focus_doc_ids: ALL named project docIds (max 4). search_queries: [].
-- multi_doc: user spans 2+ different docs in one message (any mix: bio + work, education + jobs, project + experience, chronology, compare non-project topics). focus_doc_ids: every relevant docId (max 4). search_queries: [].
+- multi_doc: user spans 2+ different docs in one message (any mix: bio + work, education + jobs, bio + recommend, project + experience, chronology). focus_doc_ids: every relevant docId (max 4). search_queries: []. answer_hint: list what each doc covers (bio / work / project / catalog).
 - project_detail: user asks about one specific project by name — set focus_doc_ids + include_sections: at-a-glance, tech-stack, problem-purpose.
 - bio: about Frederick personally — focus_doc_ids: ["about-me"], include_sections: at-a-glance, background, education.
 - experience: jobs, internships — focus_doc_ids: ["work-experience"], include_sections: mufy-at-a-glance, mufy-product.
@@ -124,7 +137,14 @@ function buildRuleHint(history: OpenRouterMessage[], currentMessage: string): st
   const trimmed = currentMessage.trim();
   const multi = resolveMultiFocusSet(trimmed, context);
   if (multi) {
-    return `<rule_hint>\nSuggested ${multi.intent} focus: ${multi.docIds.join(", ")} (${multi.reason}). Include every listed doc.\n</rule_hint>`;
+    const coverage = multi.docIds
+      .map((docId) => `${docId} (${describeDocCoverage(docId)})`)
+      .join("; ");
+    const hint =
+      multi.intent === "multi_project"
+        ? MULTI_PROJECT_ANSWER_HINT
+        : buildMultiDocAnswerHint(multi.docIds, trimmed);
+    return `<rule_hint>\nPRIORITY: ${multi.intent} — focus ALL: ${multi.docIds.join(", ")} (${multi.reason}).\nEach area: ${coverage}.\n${hint}\n</rule_hint>`;
   }
   const resolved = resolvePrimaryDocId(trimmed, context);
   if (!resolved) return "";

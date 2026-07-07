@@ -12,5 +12,6 @@ export const OTHER_PROJECTS_ANSWER_HINT =
 export const MULTI_PROJECT_ANSWER_HINT =
   "Cover EACH project in focus_doc_ids separately (bullets or short paragraphs). Use only context for each — if one project's section is missing, say so for that project only; do not invent stacks or features.";
 
+/** Base hint — pair with buildMultiDocAnswerHint(docIds) for per-doc coverage. */
 export const MULTI_DOC_ANSWER_HINT =
-  "Cover EACH doc in focus_doc_ids separately (bullets or short paragraphs). Use only context per doc — if one section is missing, say so for that doc only. Chronological questions: order by documented dates. Do not invent facts.";
+  "multi_doc: the user asked about 2+ portfolio areas in one message. Cover EACH focus doc separately (bullets or short paragraphs). Use only context per doc — if one section is missing, say so for that doc only. Chronological questions: order by documented dates. Do not invent facts.";

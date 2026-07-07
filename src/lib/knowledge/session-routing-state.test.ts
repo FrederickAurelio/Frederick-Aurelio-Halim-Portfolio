@@ -171,4 +171,30 @@ describe("session-routing-state", () => {
     assert.equal(next.primaryDocId, "about-me");
     assert.equal(next.lastIntent, "multi_doc");
   });
+
+  it("does not apply sticky session on personal country question", () => {
+    const plan = defaultRetrievalPlan({ intent: "general", focus_doc_ids: [] });
+    const session = {
+      primaryDocId: "nextjs-fxtrade",
+      lastIntent: "project_detail" as const,
+      updatedAt: 0,
+    };
+    const message =
+      "so you both work and study in china? is there any other country you work or study at?";
+    const result = applySessionRoutingToPlan(plan, message, session);
+    assert.deepEqual(result.focus_doc_ids, []);
+    assert.notEqual(result.focus_doc_ids[0], "nextjs-fxtrade");
+  });
+
+  it("bio intent clears project sticky when user pivots to personal topic", () => {
+    const next = computeNextRoutingState(
+      { primaryDocId: "nextjs-fxtrade", lastIntent: "project_detail", updatedAt: 0 },
+      defaultRetrievalPlan({
+        intent: "bio",
+        focus_doc_ids: ["about-me"],
+      }),
+      "so you both work and study in china? is there any other country?",
+    );
+    assert.equal(next.primaryDocId, "about-me");
+  });
 });

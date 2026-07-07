@@ -95,4 +95,31 @@ describe("retrieveWithPlan multi_doc", () => {
     assert.match(combined, /Socket\.IO|quiz/i);
     assert.match(combined, /Konva|scrapbook/i);
   });
+
+  it("fetches education, work, and flagship for timeline plus biggest project", async () => {
+    const plan = defaultRetrievalPlan({
+      intent: "multi_doc",
+      focus_doc_ids: ["about-me", "work-experience", "quizconnect"],
+      include_sections: [
+        "education",
+        "background",
+        "mufy-at-a-glance",
+        "mufy-responsibilities",
+        "why-flagship",
+        "at-a-glance",
+      ],
+      search_queries: [],
+    });
+
+    const result = await retrieveWithPlan(
+      plan,
+      "chronologically from uni, all work time, then biggest project",
+    );
+
+    assert.ok(result.chunks.length >= 3);
+    const combined = result.chunks.map((c) => c.text).join("\n");
+    assert.match(combined, /Zhejiang|浙江科技|2026/i);
+    assert.match(combined, /Mufy|May 2025/i);
+    assert.match(combined, /QuizConnect|Socket\.IO|BullMQ/i);
+  });
 });

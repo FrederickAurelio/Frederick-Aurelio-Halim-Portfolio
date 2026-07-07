@@ -9,14 +9,14 @@ import {
 import { defaultRetrievalPlan } from "./retrieval-plan";
 
 describe("pickSuggestions", () => {
-  it("returns at most 3 cold-start items", () => {
+  it("returns at most 2 cold-start items", () => {
     const items = pickSuggestions({
       mode: "cold_start",
       language: "en",
       userMessages: [],
     });
     assert.ok(items.length <= SUGGESTION_LIMIT_COLD_START);
-    assert.ok(items.length > 0);
+    assert.equal(items.length, SUGGESTION_LIMIT_COLD_START);
   });
 
   it("returns 0 to 2 follow-up items based on score threshold", () => {
@@ -134,7 +134,7 @@ describe("pickSuggestions", () => {
     assert.equal(items.length, 0);
   });
 
-  it("who are you follow-up can show bio chips with broad threshold", () => {
+  it("who are you follow-up stays empty when answer already covers at-a-glance", () => {
     const items = pickSuggestions({
       mode: "follow_up",
       language: "en",
@@ -144,10 +144,10 @@ describe("pickSuggestions", () => {
         include_sections: ["at-a-glance"],
       }),
       userMessages: ["Who are you?"],
-      assistantContext: "Frontend developer from Indonesia.",
+      assistantAnswer:
+        "I'm Frederick, a frontend developer from Indonesia. I build web apps with React and Next.js.",
     });
-    assert.ok(items.length >= 1);
-    assert.ok(items.length <= SUGGESTION_LIMIT_FOLLOW_UP);
+    assert.equal(items.length, 0);
   });
 
   it("shows flagship-style chip only when user asks for a recommendation", () => {
@@ -207,5 +207,143 @@ describe("pickSuggestions", () => {
   it("bank stays curated (not bloated)", async () => {
     const { SUGGESTION_BANK_SIZE } = await import("./suggestion-bank");
     assert.ok(SUGGESTION_BANK_SIZE >= 38 && SUGGESTION_BANK_SIZE <= 52);
+  });
+
+  it("suppresses overview and chart chips when FXTrade answer already covers them", () => {
+    const items = pickSuggestions({
+      mode: "follow_up",
+      language: "en",
+      plan: defaultRetrievalPlan({
+        intent: "project_detail",
+        focus_doc_ids: ["nextjs-fxtrade"],
+        include_sections: ["at-a-glance", "3-features"],
+      }),
+      userMessages: ["Tell me about FXTrade"],
+      assistantAnswer:
+        "FXTrade is a forex dashboard. It uses lightweight-charts for candlestick charts on the dashboard and pulls live currency data from external APIs.",
+      retrievedChunkIds: [
+        "nextjs-fxtrade#at-a-glance",
+        "nextjs-fxtrade#3-features",
+      ],
+    });
+    for (const item of items) {
+      const lower = item.toLowerCase();
+      assert.ok(
+        !lower.includes("what does fxtrade do") && !lower.includes("charts"),
+        `unexpected chip: ${item}`,
+      );
+    }
+    assert.ok(items.length <= 1);
+  });
+
+  it("returns empty when user already asked a specific feature question", () => {
+    const asked = "How does real-time multiplayer work?";
+    const items = pickSuggestions({
+      mode: "follow_up",
+      language: "en",
+      plan: defaultRetrievalPlan({
+        intent: "follow_up",
+        focus_doc_ids: ["quizconnect"],
+        include_sections: ["5-architecture"],
+      }),
+      userMessages: ["Tell me about QuizConnect", asked],
+      assistantAnswer:
+        "Real-time multiplayer uses Socket.IO rooms. Players join a lobby and the server broadcasts quiz state over websockets.",
+      retrievedChunkIds: ["quizconnect#5-architecture"],
+    });
+    assert.ok(!items.includes(asked));
+    assert.equal(items.length, 0);
+  });
+
+  it("suppresses chips for retrieved architecture sections", () => {
+    const items = pickSuggestions({
+      mode: "follow_up",
+      language: "en",
+      plan: defaultRetrievalPlan({
+        intent: "project_detail",
+        focus_doc_ids: ["quizconnect"],
+        include_sections: ["5-architecture"],
+      }),
+      userMessages: ["Tell me about QuizConnect"],
+      assistantAnswer: "QuizConnect is a multiplayer quiz app with AI-generated questions.",
+      retrievedChunkIds: ["quizconnect#5-architecture"],
+    });
+    for (const item of items) {
+      const lower = item.toLowerCase();
+      assert.ok(
+        !lower.includes("deploy") &&
+          !lower.includes("real-time") &&
+          !lower.includes("multiplayer"),
+        `unexpected chip: ${item}`,
+      );
+    }
+  });
+
+  it("only adds a second chip when it is strong and uncovered", () => {
+    const items = pickSuggestions({
+      mode: "follow_up",
+      language: "en",
+      plan: defaultRetrievalPlan({
+        intent: "project_detail",
+        focus_doc_ids: ["nextjs-fxtrade"],
+        include_sections: ["at-a-glance"],
+      }),
+      userMessages: ["Tell me about FXTrade"],
+      assistantAnswer:
+        "FXTrade is a forex trading dashboard built with Next.js and TypeScript. It shows live rates and charts for currency pairs on the main dashboard view.",
+      retrievedChunkIds: ["nextjs-fxtrade#at-a-glance"],
+    });
+    assert.ok(items.length <= 1);
+    if (items.length === 1) {
+      assert.ok(items[0].toLowerCase().includes("currency data"));
+    }
+  });
+
+  it("does not suggest FXTrade chips after country/work/study question even if prior turn was FXTrade", () => {
+    const countryQuestion =
+      "so you both work and study in china? is there any other country you work or study at?";
+    const items = pickSuggestions({
+      mode: "follow_up",
+      language: "en",
+      plan: defaultRetrievalPlan({
+        intent: "bio",
+        focus_doc_ids: [],
+        include_sections: ["education", "background"],
+      }),
+      userMessages: ["Tell me about FXTrade", countryQuestion],
+      assistantContext:
+        "FXTrade is a forex dashboard with live charts and currency data from Frankfurter API.",
+      assistantAnswer:
+        "Yes — both my study and work were in Hangzhou, China. I studied at Zhejiang University of Science and Technology and later worked on-site at Mufy AI, also in Hangzhou. No other country is documented for study or work.",
+      retrievedChunkIds: ["about-me#education", "about-me#background"],
+    });
+    for (const item of items) {
+      const lower = item.toLowerCase();
+      assert.ok(
+        !lower.includes("fxtrade") &&
+          !lower.includes("currency data") &&
+          !lower.includes("trades validated"),
+        `unexpected project chip: ${item}`,
+      );
+    }
+  });
+
+  it("bio intent with empty focus never infers project from assistant context", () => {
+    const items = pickSuggestions({
+      mode: "follow_up",
+      language: "en",
+      plan: defaultRetrievalPlan({ intent: "bio", focus_doc_ids: [] }),
+      userMessages: [
+        "so you both work and study in china? is there any other country?",
+      ],
+      assistantContext:
+        "FXTrade uses lightweight-charts and Frankfurter for currency data.",
+      assistantAnswer:
+        "Study and work were both in Hangzhou, China. No other country is documented.",
+    });
+    for (const item of items) {
+      const lower = item.toLowerCase();
+      assert.ok(!lower.includes("fxtrade"), `unexpected: ${item}`);
+    }
   });
 });

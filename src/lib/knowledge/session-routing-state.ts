@@ -27,8 +27,15 @@ const RESUME_TOPIC_PATTERN =
 const VAGUE_ASPECT_PATTERN =
   /\b(stack|tech stack|technology|framework|libraries|auth|authentication|deploy|deployment|architecture|how does|how do you|tell me more|what about|用什么|技术栈|怎么实现|架构|部署)\b/i;
 
+const PERSONAL_TOPIC_PATTERN =
+  /\b(country|countries|study|studied|studying|school|university|education|background|who are you|languages?|indonesia|china|hangzhou|medan|live in|lived in|abroad|travel|工作或学习|国家|求学|留学)\b/i;
+
 const PORTFOLIO_KEYWORD_PATTERN =
   /\b(project|stack|frederick|quiz|fx|memories|mufy|portfolio|work|job|skill|demo|github|经验|项目)\b|[\u4e00-\u9fff]/i;
+
+export function isPersonalTopicMessage(message: string): boolean {
+  return PERSONAL_TOPIC_PATTERN.test(message.trim());
+}
 
 export function isCasualNoise(message: string): boolean {
   const trimmed = message.trim();
@@ -70,6 +77,7 @@ export function applySessionRoutingToPlan(
   const message = currentMessage.trim();
 
   if (isCasualNoise(message)) return plan;
+  if (isPersonalTopicMessage(message)) return plan;
   if (hasMultiDocQuestion(message, "")) return plan;
   if (resolvePrimaryDocId(message, "")) return plan;
   if (plan.focus_doc_ids.length > 0) return plan;
@@ -152,6 +160,27 @@ export function computeNextRoutingState(
   if (plan.intent === "multi_doc") {
     return {
       primaryDocId: plan.focus_doc_ids[0] ?? previous.primaryDocId,
+      lastIntent: plan.intent,
+      updatedAt: now,
+    };
+  }
+
+  if (plan.intent === "bio" || plan.intent === "experience") {
+    const explicitProject = resolvePrimaryDocId(message, "");
+    if (!explicitProject) {
+      return {
+        primaryDocId:
+          plan.focus_doc_ids[0] ??
+          (plan.intent === "experience" ? "work-experience" : "about-me"),
+        lastIntent: plan.intent,
+        updatedAt: now,
+      };
+    }
+  }
+
+  if (isPersonalTopicMessage(message) && !resolvePrimaryDocId(message, "")) {
+    return {
+      primaryDocId: plan.focus_doc_ids[0] ?? "about-me",
       lastIntent: plan.intent,
       updatedAt: now,
     };

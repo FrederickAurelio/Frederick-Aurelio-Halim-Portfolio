@@ -7,6 +7,8 @@ import {
 import {
   MULTI_DOC_ANSWER_HINT,
   MULTI_PROJECT_ANSWER_HINT,
+  OTHER_PROJECTS_PATTERN,
+  RECOMMEND_PATTERN,
 } from "./retrieval-patterns";
 import { defaultRetrievalPlan, type RetrievalPlan } from "./retrieval-plan";
 
@@ -28,13 +30,17 @@ const DEPLOY_PATTERN = /\b(deploy|deployment|docker|ci\/?cd|部署)\b/i;
 const CHRONO_PATTERN =
   /\b(chronolog|timeline|time\s*line|from when|since|career|life story|时间线|先后|顺序)\b/i;
 const EDUCATION_SIGNAL =
-  /\b(education|university|uni\b|college|graduat|degree|school|浙江科技|大学|学历|毕业|求学)\b/i;
+  /\b(education|university|uni\b|college|graduat|degree|school|study|studied|studying|浙江科技|大学|学历|毕业|求学)\b/i;
 const WORK_SIGNAL =
   /\b(work|job|jobs|experience|employment|mufy|career|intern|实习|工作|经历)\b/i;
 const ALL_SHOWCASE_PATTERN =
   /\b(all (four|4)|all (projects|apps)|four projects|every project|each project|全部|四个项目)\b/i;
 const PROJECTS_GENERAL_SIGNAL =
   /\b((some of )?your projects|those projects|side projects|personal projects|few projects|several projects|a few projects|portfolio projects|项目)\b/i;
+
+/** Bio / location / education — do not pull project docIds from prior thread context. */
+const PERSONAL_TOPIC_PATTERN =
+  /\b(country|countries|study|studied|studying|school|university|education|background|who are you|languages?|indonesia|china|hangzhou|medan|live in|lived in|abroad|travel|工作或学习|国家|求学|留学)\b/i;
 
 /** Regex → docId when the user names a topic implicitly (not only by title/alias). */
 const IMPLICIT_DOC_SIGNALS: { docId: string; patterns: RegExp[] }[] = [
@@ -108,6 +114,97 @@ function isProjectDocId(docId: string): boolean {
 
 function allAreProjectDocIds(docIds: string[]): boolean {
   return docIds.length > 0 && docIds.every(isProjectDocId);
+}
+
+/** What each doc type covers — used in navigator hints and answer hints. */
+export function describeDocCoverage(docId: string): string {
+  const source = getSource(docId);
+  if (!source) return "facts from this doc as asked";
+
+  switch (source.type) {
+    case "bio":
+      return "bio: background, education, languages, interests, contact";
+    case "experience":
+      return "work: Mufy AI role, period (May 2025–June 2026), product, responsibilities, stack";
+    case "project":
+      return `${source.title}: what it is, features/stack/architecture as asked; repo + live demo links from context`;
+    case "catalog":
+      return "project catalog: showcase overview, where to start, flagship rationale, other GitHub repos";
+    default:
+      return `${source.title}: facts from context as asked`;
+  }
+}
+
+/** Human-readable list of what multi_doc must cover for the answer model. */
+export function buildMultiDocAnswerHint(
+  docIds: string[],
+  message = "",
+): string {
+  const lines = [
+    MULTI_DOC_ANSWER_HINT,
+    "",
+    "Cover each focused area:",
+    ...docIds.map((docId) => `- ${docId}: ${describeDocCoverage(docId)}`),
+  ];
+
+  if (CHRONO_PATTERN.test(message) || WORK_SIGNAL.test(message) || EDUCATION_SIGNAL.test(message)) {
+    lines.push("", "Order events by documented dates when answering chronology or career timeline.");
+  }
+
+  if (RECOMMEND_PATTERN.test(message) && docIds.some((id) => isProjectDocId(id))) {
+    lines.push(
+      "",
+      "If they also asked biggest/best/flagship: end with that project — name it, repo + live demo from context, brief why from facts.",
+    );
+  }
+
+  return lines.join("\n");
+}
+
+/**
+ * When the user combines topics (e.g. education + recommend a project), add implied docs
+ * so a single-signal message still becomes multi_doc.
+ */
+function augmentDocIdsForCompoundAsks(docIds: string[], message: string): string[] {
+  let result = unique(docIds);
+  const trimmed = message.trim();
+
+  if (RECOMMEND_PATTERN.test(trimmed)) {
+    const nonCatalog = result.filter((id) => id !== "projects-overview");
+    if (nonCatalog.length >= 1) {
+      result = filterFocusDocIds(unique([...result, "quizconnect"]));
+    }
+  }
+
+  if (OTHER_PROJECTS_PATTERN.test(trimmed) && !result.includes("projects-overview")) {
+    result = unique([...result, "projects-overview"]);
+  }
+
+  return result;
+}
+
+export function planFromMultiFocusSet(
+  multi: MultiFocusSet,
+  message: string,
+  base: Partial<RetrievalPlan> = {},
+): RetrievalPlan {
+  const include_sections =
+    multi.intent === "multi_project"
+      ? inferSectionsForMultiProject(message, base.include_sections ?? [])
+      : inferSectionsForMultiDoc(message, multi.docIds, base.include_sections ?? []);
+
+  return defaultRetrievalPlan({
+    ...base,
+    intent: multi.intent,
+    focus_doc_ids: multi.docIds,
+    include_sections,
+    search_queries: [],
+    answer_hint:
+      base.answer_hint?.trim() ||
+      (multi.intent === "multi_project"
+        ? MULTI_PROJECT_ANSWER_HINT
+        : buildMultiDocAnswerHint(multi.docIds, message)),
+  });
 }
 
 /** Explicit aliases/titles + implicit topic signals + fuzzy project names. */
@@ -227,13 +324,17 @@ export function inferSectionsForMultiDoc(
     addedAspect = true;
   }
   if (WORK_SIGNAL.test(message)) {
-    sections.push("mufy-at-a-glance", "mufy-product");
+    sections.push("mufy-at-a-glance", "mufy-product", "mufy-responsibilities");
     addedAspect = true;
   }
   if (CHRONO_PATTERN.test(message)) {
     for (const docId of docIds) {
       sections.push(...defaultSectionsForDoc(docId));
     }
+    addedAspect = true;
+  }
+  if (RECOMMEND_PATTERN.test(message)) {
+    sections.push("why-flagship", "where-to-start", "at-a-glance");
     addedAspect = true;
   }
 
@@ -282,12 +383,19 @@ export function resolveMultiFocusSet(
   }
 
   if (docIds.length < 2 && hasGeneralAspectKeyword(trimmed)) {
-    const fromContext = filterFocusDocIds(resolveDocIdsFromMessage(context));
-    if (fromContext.length >= 2) {
-      docIds = fromContext;
-      reason = "context_pair";
+    const namesProject = findProjectDocIdsInText(trimmed).length > 0;
+    if (!namesProject && PERSONAL_TOPIC_PATTERN.test(trimmed)) {
+      // e.g. "work and study in China" — keep message-derived docs only, not old project thread.
+    } else {
+      const fromContext = filterFocusDocIds(resolveDocIdsFromMessage(context));
+      if (fromContext.length >= 2) {
+        docIds = fromContext;
+        reason = "context_pair";
+      }
     }
   }
+
+  docIds = augmentDocIdsForCompoundAsks(docIds, trimmed);
 
   if (docIds.length < 2) return null;
 
@@ -338,11 +446,7 @@ export function hasMultiDocQuestion(message: string, context = ""): boolean {
 }
 
 function blockedIntent(plan: RetrievalPlan): boolean {
-  return (
-    plan.intent === "list_projects" ||
-    plan.intent === "recommend_project" ||
-    plan.intent === "off_topic"
-  );
+  return plan.intent === "list_projects" || plan.intent === "off_topic";
 }
 
 export function applyMultiProjectFocus(
@@ -355,16 +459,15 @@ export function applyMultiProjectFocus(
   const multi = resolveMultiProjectFocus(message, context);
   if (!multi) return plan;
 
-  const docIds = unique([...plan.focus_doc_ids, ...multi.docIds]).slice(0, 4);
+  const docIds = filterFocusDocIds(
+    unique([...plan.focus_doc_ids, ...multi.docIds]),
+  ).slice(0, 4);
 
-  return defaultRetrievalPlan({
-    ...plan,
-    intent: "multi_project",
-    focus_doc_ids: docIds,
-    include_sections: inferSectionsForMultiProject(message, plan.include_sections),
-    search_queries: [],
-    answer_hint: plan.answer_hint || MULTI_PROJECT_ANSWER_HINT,
-  });
+  return planFromMultiFocusSet(
+    { ...multi, docIds, intent: "multi_project" },
+    message,
+    { ...plan, focus_doc_ids: docIds },
+  );
 }
 
 export function applyMultiDocFocus(
@@ -372,23 +475,26 @@ export function applyMultiDocFocus(
   message: string,
   context: string,
 ): RetrievalPlan {
-  if (blockedIntent(plan) || plan.intent === "multi_project" || plan.intent === "multi_doc") {
+  if (
+    blockedIntent(plan) ||
+    plan.intent === "multi_project" ||
+    plan.intent === "multi_doc"
+  ) {
     return plan;
   }
 
   const multi = resolveMultiDocFocus(message, context);
   if (!multi) return plan;
 
-  const docIds = unique([...plan.focus_doc_ids, ...multi.docIds]).slice(0, 4);
+  const docIds = filterFocusDocIds(
+    unique([...plan.focus_doc_ids, ...multi.docIds]),
+  ).slice(0, 4);
 
-  return defaultRetrievalPlan({
-    ...plan,
-    intent: "multi_doc",
-    focus_doc_ids: docIds,
-    include_sections: inferSectionsForMultiDoc(message, docIds, plan.include_sections),
-    search_queries: [],
-    answer_hint: plan.answer_hint || MULTI_DOC_ANSWER_HINT,
-  });
+  return planFromMultiFocusSet(
+    { ...multi, docIds, intent: "multi_doc" },
+    message,
+    { ...plan, focus_doc_ids: docIds },
+  );
 }
 
 /** Unified multi-focus: mixed work + projects → multi_doc with every doc. */
@@ -402,24 +508,15 @@ export function applyMultiFocus(
   const multi = resolveMultiFocusSet(message, context);
   if (!multi) return plan;
 
-  const docIds = unique([...plan.focus_doc_ids, ...multi.docIds]).slice(0, 4);
-  const include_sections =
-    multi.intent === "multi_project"
-      ? inferSectionsForMultiProject(message, plan.include_sections)
-      : inferSectionsForMultiDoc(message, docIds, plan.include_sections);
+  const docIds = filterFocusDocIds(
+    unique([...plan.focus_doc_ids, ...multi.docIds]),
+  ).slice(0, 4);
 
-  return defaultRetrievalPlan({
-    ...plan,
-    intent: multi.intent,
-    focus_doc_ids: docIds,
-    include_sections,
-    search_queries: [],
-    answer_hint:
-      plan.answer_hint ||
-      (multi.intent === "multi_project"
-        ? MULTI_PROJECT_ANSWER_HINT
-        : MULTI_DOC_ANSWER_HINT),
-  });
+  return planFromMultiFocusSet(
+    { ...multi, docIds },
+    message,
+    { ...plan, focus_doc_ids: docIds },
+  );
 }
 
 export function getShowcaseProjectDocIds(): string[] {

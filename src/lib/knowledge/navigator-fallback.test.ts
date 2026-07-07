@@ -52,6 +52,24 @@ describe("fallbackRetrievalPlan", () => {
     assert.ok(plan.focus_doc_ids.includes("work-experience"));
   });
 
+  it("timeline plus biggest project uses multi_doc not recommend_project", () => {
+    const msg =
+      "give me your chronologically from when you start enter uni and list all your work time. ofc with what you do on the work.. after that your biggest project";
+    const plan = fallbackRetrievalPlan([], msg);
+    assert.equal(plan.intent, "multi_doc");
+    assert.ok(plan.focus_doc_ids.includes("about-me"));
+    assert.ok(plan.focus_doc_ids.includes("work-experience"));
+    assert.ok(plan.focus_doc_ids.includes("quizconnect"));
+    assert.match(plan.answer_hint ?? "", /about-me/);
+  });
+
+  it("education plus recommend uses multi_doc in fallback", () => {
+    const plan = fallbackRetrievalPlan([], "education history then recommend a project");
+    assert.equal(plan.intent, "multi_doc");
+    assert.ok(plan.focus_doc_ids.includes("about-me"));
+    assert.ok(plan.focus_doc_ids.includes("quizconnect"));
+  });
+
   it("work experience and two projects uses multi_doc in fallback", () => {
     const plan = fallbackRetrievalPlan(
       [],

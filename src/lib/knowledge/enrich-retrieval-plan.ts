@@ -4,9 +4,8 @@ import { getRagEnrichContextMessages } from "@/lib/openrouter/config";
 import { loadKnowledgeMap } from "./load-knowledge-map";
 import {
   findDocIdsInText,
-  resolvePrimaryDocId,
 } from "./resolve-doc-id";
-import { applyMultiFocus, resolveFocusDocIds } from "./resolve-multi-focus";
+import { applyMultiFocus, resolveFocusDocIds, resolveMultiFocusSet, planFromMultiFocusSet } from "./resolve-multi-focus";
 import {
   OTHER_PROJECTS_ANSWER_HINT,
   OTHER_PROJECTS_PATTERN,
@@ -215,6 +214,11 @@ export function enrichRetrievalPlanLight(
   }
 
   const context = recentContextText(history);
+  const multiEarly = resolveMultiFocusSet(message, context);
+  if (multiEarly) {
+    return planFromMultiFocusSet(multiEarly, message, plan);
+  }
+
   const withMulti = applyMultiFocus(plan, message, context);
 
   if (withMulti.intent === "multi_project" || withMulti.intent === "multi_doc") {
@@ -266,6 +270,11 @@ export function enrichRetrievalPlanHeavy(
 
   if (intent === "list_projects") {
     return { ...plan, intent };
+  }
+
+  const multiEarly = resolveMultiFocusSet(message, context);
+  if (multiEarly) {
+    return planFromMultiFocusSet(multiEarly, message, plan);
   }
 
   let focus_doc_ids = [...plan.focus_doc_ids];
@@ -349,7 +358,13 @@ export function enrichRetrievalPlanHeavy(
   ) {
     focus_doc_ids = resolveFocusDocIds(message, context, 4);
     if (focus_doc_ids.length >= 2) {
-      intent = "multi_project";
+      const allProjects =
+        focus_doc_ids.length > 0 &&
+        focus_doc_ids.every((id) => {
+          const source = loadKnowledgeMap().sources.find((s) => s.docId === id);
+          return source?.type === "project";
+        });
+      intent = allProjects ? "multi_project" : "multi_doc";
     } else if (focus_doc_ids.length > 0 && intent === "general") {
       intent = "project_detail";
     }

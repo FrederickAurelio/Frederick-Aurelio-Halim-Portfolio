@@ -48,17 +48,27 @@ function replayLastUserPlan(messages: ChatMessage[]): RetrievalPlan {
 }
 
 function pickSuggestionsFallbackFromHistory(messages: ChatMessage[]): string[] {
+  const lastAssistant = [...messages]
+    .reverse()
+    .find((m) => m.role === "assistant");
+  if (!lastAssistant?.content?.trim()) return [];
+
   const lastUser = lastUserMessage(messages);
   const language = lastUser ? detectReplyLanguage(lastUser) : "en";
   const plan = replayLastUserPlan(messages);
-  const assistantContext =
-    [...messages].reverse().find((m) => m.role === "assistant")?.content ?? "";
+  const priorAssistantContext =
+    messages
+      .filter((m) => m.role === "assistant")
+      .slice(0, -1)
+      .at(-1)?.content ?? "";
+
   return pickSuggestions({
     mode: "follow_up",
     language,
     plan,
     userMessages: messages.filter((m) => m.role === "user").map((m) => m.content),
-    assistantContext,
+    assistantContext: priorAssistantContext,
+    assistantAnswer: lastAssistant.content,
     max: SUGGESTION_LIMIT_FOLLOW_UP,
   });
 }
@@ -88,10 +98,7 @@ export function resolveDisplaySuggestions(
     });
   }
 
-  if (last?.role === "assistant") {
-    return pickSuggestionsFallbackFromHistory(messages);
-  }
-
+  // No stored chips — show nothing rather than re-pick from regex fallback.
   return [];
 }
 

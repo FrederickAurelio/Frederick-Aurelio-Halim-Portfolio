@@ -2,9 +2,12 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  buildMultiDocAnswerHint,
+  describeDocCoverage,
   filterFocusDocIds,
   inferSectionsForMultiDoc,
   inferSectionsForMultiProject,
+  planFromMultiFocusSet,
   resolveDocIdsFromMessage,
   resolveMultiDocFocus,
   resolveMultiFocusSet,
@@ -130,6 +133,77 @@ describe("resolveMultiDocFocus", () => {
     assert.ok(result.docIds.includes("work-experience"));
     assert.ok(result.docIds.includes("quizconnect"));
     assert.equal(result.docIds.length, 4);
+  });
+
+  it("timeline plus biggest project adds quizconnect and stays multi_doc", () => {
+    const msg =
+      "give me your chronologically from when you start enter uni and list all your work time. ofc with what you do on the work.. after that your biggest project";
+    const result = resolveMultiFocusSet(msg, "");
+    assert.ok(result);
+    assert.equal(result.intent, "multi_doc");
+    assert.ok(result.docIds.includes("about-me"));
+    assert.ok(result.docIds.includes("work-experience"));
+    assert.ok(result.docIds.includes("quizconnect"));
+  });
+
+  it("education plus recommend a project becomes multi_doc with about-me and quizconnect", () => {
+    const result = resolveMultiFocusSet("education history then recommend a project", "");
+    assert.ok(result);
+    assert.equal(result.intent, "multi_doc");
+    assert.ok(result.docIds.includes("about-me"));
+    assert.ok(result.docIds.includes("quizconnect"));
+  });
+
+  it("pure where should I start stays single-topic (no multi_doc)", () => {
+    assert.equal(resolveMultiFocusSet("where should I start?", ""), null);
+  });
+
+  it("work and study in china resolves about-me and work-experience without borrowing project context", () => {
+    const message =
+      "so you both work and study in china? is there any other country you work or study at?";
+    const context =
+      "FXTrade is a forex dashboard. It uses Frankfurter API for currency data and lightweight-charts.";
+    const result = resolveMultiFocusSet(message, context);
+    assert.ok(result);
+    assert.equal(result.intent, "multi_doc");
+    assert.ok(result.docIds.includes("about-me"));
+    assert.ok(result.docIds.includes("work-experience"));
+    assert.ok(!result.docIds.includes("nextjs-fxtrade"));
+  });
+});
+
+describe("buildMultiDocAnswerHint", () => {
+  it("lists what each focused doc covers", () => {
+    const hint = buildMultiDocAnswerHint(
+      ["about-me", "work-experience", "quizconnect"],
+      "chronological from uni and work then biggest project",
+    );
+    assert.match(hint, /about-me.*education/i);
+    assert.match(hint, /work-experience.*Mufy/i);
+    assert.match(hint, /quizconnect/i);
+    assert.match(hint, /chronolog/i);
+  });
+});
+
+describe("describeDocCoverage", () => {
+  it("maps doc types to coverage phrases", () => {
+    assert.match(describeDocCoverage("about-me"), /education/i);
+    assert.match(describeDocCoverage("work-experience"), /Mufy/i);
+    assert.match(describeDocCoverage("quizconnect"), /QuizConnect/i);
+  });
+});
+
+describe("planFromMultiFocusSet", () => {
+  it("builds multi_doc plan with per-doc answer hint", () => {
+    const multi = resolveMultiFocusSet(
+      "education and work experience",
+      "",
+    );
+    assert.ok(multi);
+    const plan = planFromMultiFocusSet(multi, "education and work experience");
+    assert.equal(plan.intent, "multi_doc");
+    assert.match(plan.answer_hint ?? "", /about-me/);
+    assert.match(plan.answer_hint ?? "", /work-experience/);
   });
 });
 

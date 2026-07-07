@@ -128,4 +128,48 @@ describe("enrichRetrievalPlanHeavy", () => {
     assert.ok(result.focus_doc_ids.includes("quizconnect"));
     assert.ok(result.focus_doc_ids.includes("memories"));
   });
+
+  it("light enrich upgrades recommend_project to multi_doc for timeline plus biggest project", () => {
+    const msg =
+      "give me your chronologically from when you start enter uni and list all your work time. ofc with what you do on the work.. after that your biggest project";
+    const plan = defaultRetrievalPlan({
+      intent: "recommend_project",
+      focus_doc_ids: ["projects-overview", "quizconnect"],
+      include_sections: ["why-flagship"],
+    });
+    const result = enrichRetrievalPlanLight(plan, msg, []);
+    assert.equal(result.intent, "multi_doc");
+    assert.ok(result.focus_doc_ids.includes("about-me"));
+    assert.ok(result.focus_doc_ids.includes("work-experience"));
+    assert.ok(result.focus_doc_ids.includes("quizconnect"));
+    assert.ok(result.include_sections.includes("education"));
+    assert.ok(result.include_sections.includes("mufy-responsibilities"));
+  });
+
+  it("heavy enrich keeps timeline plus biggest project as multi_doc", () => {
+    const msg =
+      "give me your chronologically from when you start enter uni and list all your work time. ofc with what you do on the work.. after that your biggest project";
+    const result = enrichRetrievalPlanHeavy(
+      defaultRetrievalPlan({ intent: "general", focus_doc_ids: [] }),
+      [],
+      msg,
+    );
+    assert.equal(result.intent, "multi_doc");
+    assert.ok(result.focus_doc_ids.includes("about-me"));
+    assert.ok(result.focus_doc_ids.includes("work-experience"));
+    assert.ok(result.focus_doc_ids.includes("quizconnect"));
+    assert.match(result.answer_hint ?? "", /about-me/);
+    assert.match(result.answer_hint ?? "", /work-experience/);
+  });
+
+  it("heavy enrich uses multi_doc for education plus recommend", () => {
+    const result = enrichRetrievalPlanHeavy(
+      defaultRetrievalPlan({ intent: "recommend_project", focus_doc_ids: ["quizconnect"] }),
+      [],
+      "education history then recommend a project",
+    );
+    assert.equal(result.intent, "multi_doc");
+    assert.ok(result.focus_doc_ids.includes("about-me"));
+    assert.ok(result.focus_doc_ids.includes("quizconnect"));
+  });
 });

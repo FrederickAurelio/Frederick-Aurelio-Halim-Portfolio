@@ -205,31 +205,18 @@ export function createRagChatStream(
           }
 
           const language = detectReplyLanguage(options.userMessage);
-          const assistantContext = [...options.history]
+          const userMessages = [
+            ...options.history
+              .filter((m) => m.role === "user")
+              .map((m) => m.content),
+            options.userMessage,
+          ];
+          const priorAssistantContext = [...options.history]
             .reverse()
             .find((m) => m.role === "assistant")
             ?.content;
-          const suggestionItems = pickSuggestions({
-            mode: "follow_up",
-            language,
-            plan: retrieval.plan,
-            retrievedChunkIds: retrieval.chunks.map((c) => c.id),
-            userMessages: [
-              ...options.history
-                .filter((m) => m.role === "user")
-                .map((m) => m.content),
-              options.userMessage,
-            ],
-            assistantContext,
-            max: SUGGESTION_LIMIT_FOLLOW_UP,
-          });
-
-          if (suggestionItems.length > 0) {
-            options.onSuggestionsReady?.(suggestionItems);
-            safeEnqueue(controller, encoder, "suggestions", {
-              items: suggestionItems,
-            });
-          }
+          const retrievedChunkIds = retrieval.chunks.map((c) => c.id);
+          let assistantAnswer = "";
 
           emitStreamPhase(controller, encoder, "thinking", options.onStreamPhase);
 
@@ -280,8 +267,33 @@ export function createRagChatStream(
             signal: options.signal,
             shouldStop: options.shouldStop,
             onThinkingDelta: options.onThinkingDelta,
-            onContentDelta: options.onContentDelta,
-            onGenerationEnd: options.onGenerationEnd,
+            onContentDelta: (delta) => {
+              assistantAnswer += delta;
+              options.onContentDelta?.(delta);
+            },
+            onGenerationEnd: async (reason) => {
+              if (reason === "complete" && assistantAnswer.trim()) {
+                const suggestionItems = pickSuggestions({
+                  mode: "follow_up",
+                  language,
+                  plan: retrieval.plan,
+                  retrievedChunkIds,
+                  userMessages,
+                  assistantContext: priorAssistantContext,
+                  assistantAnswer,
+                  max: SUGGESTION_LIMIT_FOLLOW_UP,
+                });
+
+                if (suggestionItems.length > 0) {
+                  options.onSuggestionsReady?.(suggestionItems);
+                  safeEnqueue(controller, encoder, "suggestions", {
+                    items: suggestionItems,
+                  });
+                }
+              }
+
+              return options.onGenerationEnd?.(reason);
+            },
           });
         } catch (error) {
           if (isVercelFunctionTimeoutSignal(options.signal)) {
