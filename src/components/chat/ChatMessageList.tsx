@@ -120,6 +120,12 @@ export default function ChatMessageList({
     onLoadOlder();
   }, [hasNextPage, isFetchingNextPage, onLoadOlder]);
 
+  const scrollToBottomIfPinned = useCallback(() => {
+    const el = listRef.current;
+    if (!el || !stickToBottomRef.current || prependAnchorRef.current) return;
+    el.scrollTop = el.scrollHeight;
+  }, []);
+
   const scrollKey = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i -= 1) {
       const message = messages[i];
@@ -146,10 +152,37 @@ export default function ChatMessageList({
       return;
     }
 
-    if (stickToBottomRef.current) {
-      el.scrollTop = el.scrollHeight;
-    }
-  }, [scrollKey, isFetchingNextPage]);
+    scrollToBottomIfPinned();
+  }, [scrollKey, isFetchingNextPage, scrollToBottomIfPinned]);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const pinLatestOnViewportChange = () => {
+      const inputFocused = Boolean(
+        document.activeElement?.closest("[data-chat-input]"),
+      );
+      if (inputFocused) {
+        stickToBottomRef.current = true;
+      }
+      if (!stickToBottomRef.current) return;
+
+      scrollToBottomIfPinned();
+      window.requestAnimationFrame(scrollToBottomIfPinned);
+      window.setTimeout(scrollToBottomIfPinned, 150);
+    };
+
+    vv.addEventListener("resize", pinLatestOnViewportChange);
+    vv.addEventListener("scroll", pinLatestOnViewportChange);
+    window.addEventListener("resize", pinLatestOnViewportChange);
+
+    return () => {
+      vv.removeEventListener("resize", pinLatestOnViewportChange);
+      vv.removeEventListener("scroll", pinLatestOnViewportChange);
+      window.removeEventListener("resize", pinLatestOnViewportChange);
+    };
+  }, [scrollToBottomIfPinned]);
 
   useEffect(() => {
     if (!isLoading) return;
@@ -247,7 +280,7 @@ export default function ChatMessageList({
           <ChatSpinner />
         </div>
       )}
-      <div className="flex flex-col gap-3">
+      <div className="flex min-h-full flex-col justify-end gap-3">
         {messages.map((message) => (
           <ChatMessageBubble
             key={message.id}

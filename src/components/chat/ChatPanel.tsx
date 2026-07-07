@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { useLanguage } from "@/context/TextContext";
 import { chat } from "@/utils/data";
 import ChatHeader from "./ChatHeader";
@@ -76,18 +75,6 @@ export default function ChatPanel({
   const routingLabel = chat.routingLabel[language];
   const showThinkingLabel = chat.showThinkingLabel[language];
   const hideThinkingLabel = chat.hideThinkingLabel[language];
-
-  useEffect(() => {
-    if (autoFocusInput) {
-      const timer = setTimeout(() => {
-        const textarea = document.querySelector<HTMLTextAreaElement>(
-          "[data-chat-input]",
-        );
-        textarea?.focus();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [autoFocusInput]);
 
   return (
     <div

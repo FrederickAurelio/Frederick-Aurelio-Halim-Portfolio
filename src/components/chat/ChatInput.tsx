@@ -57,9 +57,15 @@ export default function ChatInput({
   }, [value, resizeTextarea]);
 
   useEffect(() => {
-    if (autoFocus) {
-      textareaRef.current?.focus();
-    }
+    if (!autoFocus) return;
+    const el = textareaRef.current;
+    if (!el) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      el.focus({ preventScroll: true });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [autoFocus]);
 
   const handleSubmit = () => {
