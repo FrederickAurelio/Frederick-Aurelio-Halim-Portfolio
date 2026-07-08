@@ -1,39 +1,34 @@
 ---
-description: Portfolio project context, workflow, and task tracking
+description: Portfolio project context and workflow
 alwaysApply: true
 ---
 
 # Portfolio — Project Context
 
-Personal portfolio for **Frederick Aurelio Halim**. Updating from 2024 → 2026 content.
+Personal portfolio for **Frederick Aurelio Halim** — bilingual EN/中文 site + RAG chat widget.
 
 ## Stack
-Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · GSAP · bilingual EN/中文
+Next.js 16 · React 19 · TypeScript · Tailwind 4 · GSAP · TanStack Query · OpenRouter · Redis/Upstash
 
 ## Key files
-- `src/utils/data.ts` — **all copy** (hero, projects, details, stacks, navbar)
-- `src/app/page.tsx` — section order
-- `src/context/TextContext.tsx` — language toggle (`en` | `ch`)
+- `src/utils/data.ts` — static UI copy + chat widget strings (`hero`, `about`, `experience`, `projects`, `stacks`, `details`, `chat`)
+- `docs/*.md` — chat knowledge (→ `src/lib/knowledge/index.json` via `npm run index-knowledge`)
+- `src/lib/chat/rag-chat-stream.ts` — RAG SSE pipeline
+- `src/lib/knowledge/` — navigator, retrieval, suggestions, prompts
+- `src/components/chat/ChatWidget.tsx` — chat UI entry (mounted in Providers)
+- `src/middleware.ts` — chat session cookie
 - `public/` — images, fonts, screenshots
 
 ## Workflow
-1. User picks a task from `PORTFOLIO_PLAN.md` by ID (e.g. H1, M2, L1)
-2. Apply `portfolio-writing` rules for any copy changes
-3. Check off the task in `PORTFOLIO_PLAN.md` when done
-4. User provides facts first; agent structures and implements — never invent metrics or job history
+1. User describes the change
+2. Facts first — never invent metrics or job history
+3. Static copy → `data.ts`; chat facts → `docs/` then re-index; chat logic → `src/lib/chat/` or `src/lib/knowledge/`
+4. Minimal diffs; do not commit unless user asks
 
-## Content rules (summary)
+## Content rules
 - Show what you built and why — not adjective bios
-- Problem → decision → outcome for projects
-- 3–5 curated projects max on homepage
-- EN and 中文 must match facts (not fluffy machine translation)
+- EN and 中文 must match facts
+- No AI-slop: leverage, seamless, robust, cutting-edge, passionate, Furthermore
 
-## Extended docs
-- `AGENTS.md` — full agent guide
-- `PORTFOLIO_PLAN.md` — task checklist
-- `PORTFOLIO_WRITING_RULES.md` — full writing reference with examples
-
-## Code change scope
-- Minimal diffs; match existing patterns (`"use client"`, `@/` imports, GSAP in sections)
-- Do not commit unless user asks
-- Do not add unrelated features when doing content updates
+## Docs
+- `AGENTS.md` — full agent guide (architecture, env vars, chat pipeline)

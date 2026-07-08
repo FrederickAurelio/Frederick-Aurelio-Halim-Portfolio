@@ -7,10 +7,12 @@ alwaysApply: false
 # Portfolio Code Conventions
 
 ## Structure
-- App Router: `src/app/` (layout, page, globals.css)
+- App Router: `src/app/` (layout, page, globals.css, `api/chat/`)
 - Sections: `src/components/sections/` — one component per scroll section
+- Chat UI: `src/components/chat/`
 - Shared UI: `src/components/`
-- All static content: `src/utils/data.ts` (typed exports, `satisfies`)
+- Static content: `src/utils/data.ts` (typed exports, `satisfies`)
+- Chat knowledge: `docs/` → `src/lib/knowledge/` (index, retrieval, prompts)
 - GSAP client import: `@/lib/gsap-client` (not raw `gsap` in components)
 
 ## Components
@@ -25,11 +27,17 @@ alwaysApply: false
 - Keep animation subtle; respect reduced motion patterns if adding new motion
 
 ## Data changes
-- Add new section content to `data.ts` first, then wire component
+- Static UI copy: add to `data.ts` first, then wire component
+- Chat facts: edit `docs/*.md`, run `npm run index-knowledge`
 - New navbar item: update `hero[language].navbar` + section `id`
 - Project detail anchor: `refMore: "#slug"` matches `id={detail.logo}` in Details
 
+## Chat / knowledge
+- Stream path: `api/chat/route.ts` → `rag-chat-stream.ts`
+- Tests live alongside libs (`*.test.ts`); run `npm run test` after logic changes
+- Env: `OPENROUTER_API_KEY`; optional Redis/Upstash for chat-store on Vercel
+
 ## Don't
-- Move content into components as hardcoded strings — keep `data.ts` as single source
-- Swap tutorial-project framing into case studies without user confirmation
-- Large refactors when user asked for one task ID from the plan
+- Move static content into components as hardcoded strings — keep `data.ts` as single source
+- Invent portfolio facts in code or prompts without user confirmation
+- Large refactors when user asked for a small focused change
