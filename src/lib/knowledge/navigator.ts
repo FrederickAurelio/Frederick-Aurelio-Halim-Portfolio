@@ -65,7 +65,7 @@ When chronology is asked, order by documented dates. If they also ask biggest/be
 - bio: about Frederick personally — focus_doc_ids: ["about-me"], include_sections: at-a-glance, background, education.
 - experience: jobs, internships — focus_doc_ids: ["work-experience"], include_sections: mufy-at-a-glance, mufy-product.
 - pivot_other: user wants a DIFFERENT project than the one just discussed. exclude_doc_ids = doc just discussed. search_queries must NOT lead with excluded project.
-- follow_up: same topic, more detail — keep focus_doc_ids from context; add include_sections for the aspect asked (e.g. tech-stack).
+- follow_up: same topic, more detail — keep focus_doc_ids from context with the active doc at index 0; add include_sections for the aspect asked (e.g. tech-stack).
 - off_topic: ONLY for clearly unrelated requests (weather, recipes, homework, politics, general trivia) — NOT opinions about Frederick, NOT follow-ups, NOT "is he good".
 - opinion: subjective / evaluative about Frederick ("is he good?", "what do you think?", "厉害吗") — intent: follow_up, focus about-me, answer_hint: modest honest take from facts + thread.
 - general: broad or unclear — use 2–3 search_queries + include at-a-glance sections when comparing projects.
@@ -84,6 +84,7 @@ Rules:
 - search_queries: 2–4 items when intent is not list_projects/off_topic. Each phrase should be a complete sentence or rich phrase.
 - include_sections: section ids from the map (not file paths). Use when you know the answer needs that slice of a doc.
 - exclude_doc_ids / focus_doc_ids: docId from map, max 4 each.
+- focus_doc_ids ORDER matters: index 0 is the primary topic for this turn (retrieval weight + suggestion fallback). Put the doc the user is actually asking about first. follow_up on a project thread → that project first, not about-me. multi_doc / multi_project → order by relevance to the question (most important doc first).
 - Output ONLY valid JSON.`;
 
 function truncateAssistant(content: string, maxChars: number): string {

@@ -63,6 +63,7 @@ export function formatSessionTopicForPrompt(state: SessionRoutingState): string 
   primaryDocId: ${doc}
   note: "main topic" / vague follow-ups refer to primaryDocId unless the user names a different project.
   If primaryDocId is set and the user asks a vague follow-up ("what stack?", "how does auth work?", "back to main topic") without naming another project, you MUST set focus_doc_ids to [primaryDocId].
+  focus_doc_ids[0] is the primary topic — put the doc the user is asking about first (e.g. follow_up on QuizConnect → ["quizconnect"], not ["about-me", "quizconnect"]).
   If the user names 2+ projects in one message, use intent multi_project with ALL named projects in focus_doc_ids — not project_detail.
   If the user spans 2+ different docs/topics (e.g. education + work, bio + a project, compare non-project docs), use intent multi_doc with every relevant docId.
 </session_topic>`;

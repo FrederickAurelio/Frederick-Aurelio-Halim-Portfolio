@@ -1,3 +1,4 @@
+import { SuggestionTrailerFilter } from "@/lib/chat/suggestion-trailer";
 import { planRetrievalForTurn } from "@/lib/knowledge/plan-retrieval";
 import type { SessionRoutingState } from "@/lib/knowledge/session-routing-state";
 import { buildRagMessages } from "@/lib/knowledge/build-messages";
@@ -5,6 +6,7 @@ import {
   pickSuggestions,
   SUGGESTION_LIMIT_FOLLOW_UP,
 } from "@/lib/knowledge/pick-suggestions";
+import { validateSuggestions } from "@/lib/knowledge/validate-suggestions";
 import { detectReplyLanguage } from "@/lib/knowledge/refusal";
 import { retrieveWithPlan } from "@/lib/knowledge/retrieve";
 import { CHAT_ERROR_CODES } from "@/lib/chat/api-errors";
@@ -28,6 +30,7 @@ export type RagChatStreamOptions = StreamTransformHooks & {
   history: OpenRouterMessage[];
   userMessage: string;
   routingState: SessionRoutingState;
+  previousSuggestions?: string[];
   signal?: AbortSignal;
   shouldStop?: () => boolean | Promise<boolean>;
   onStreamPhase?: (phase: ChatStreamPhase) => void;
@@ -131,6 +134,19 @@ function emitStreamPhase(
   }
 }
 
+function appendVisibleTail(
+  tail: string,
+  assistantAnswer: string,
+  options: RagChatStreamOptions,
+  controller: ReadableStreamDefaultController<Uint8Array>,
+  encoder: TextEncoder,
+): string {
+  if (!tail) return assistantAnswer;
+  options.onContentDelta?.(tail);
+  safeEnqueue(controller, encoder, "content", { delta: tail });
+  return assistantAnswer + tail;
+}
+
 export function createRagChatStream(
   options: RagChatStreamOptions,
 ): ReadableStream<Uint8Array> {
@@ -211,12 +227,8 @@ export function createRagChatStream(
               .map((m) => m.content),
             options.userMessage,
           ];
-          const priorAssistantContext = [...options.history]
-            .reverse()
-            .find((m) => m.role === "assistant")
-            ?.content;
-          const retrievedChunkIds = retrieval.chunks.map((c) => c.id);
           let assistantAnswer = "";
+          const trailerFilter = new SuggestionTrailerFilter();
 
           emitStreamPhase(controller, encoder, "thinking", options.onStreamPhase);
 
@@ -266,29 +278,64 @@ export function createRagChatStream(
             emitSaved: false,
             signal: options.signal,
             shouldStop: options.shouldStop,
+            contentFilter: (delta) => trailerFilter.push(delta),
             onThinkingDelta: options.onThinkingDelta,
             onContentDelta: (delta) => {
               assistantAnswer += delta;
               options.onContentDelta?.(delta);
             },
             onGenerationEnd: async (reason) => {
-              if (reason === "complete" && assistantAnswer.trim()) {
-                const suggestionItems = pickSuggestions({
-                  mode: "follow_up",
-                  language,
-                  plan: retrieval.plan,
-                  retrievedChunkIds,
-                  userMessages,
-                  assistantContext: priorAssistantContext,
-                  assistantAnswer,
-                  max: SUGGESTION_LIMIT_FOLLOW_UP,
-                });
+              const shouldFinalizeTrailer =
+                reason === "complete" ||
+                reason === "aborted" ||
+                (reason === "error" && assistantAnswer.length > 0);
 
-                if (suggestionItems.length > 0) {
-                  options.onSuggestionsReady?.(suggestionItems);
-                  safeEnqueue(controller, encoder, "suggestions", {
-                    items: suggestionItems,
-                  });
+              if (shouldFinalizeTrailer) {
+                const trailerResult = trailerFilter.finalize();
+                assistantAnswer = appendVisibleTail(
+                  trailerResult.flushedTail,
+                  assistantAnswer,
+                  options,
+                  controller,
+                  encoder,
+                );
+
+                if (reason === "complete" && assistantAnswer.trim()) {
+                  let suggestionItems: string[] = [];
+
+                  if (retrieval.plan.intent === "off_topic") {
+                    suggestionItems = pickSuggestions({
+                      mode: "off_topic",
+                      language,
+                      userMessages,
+                      previousSuggestions: options.previousSuggestions,
+                      max: SUGGESTION_LIMIT_FOLLOW_UP,
+                    });
+                  } else if (trailerResult.markerFound) {
+                    suggestionItems = validateSuggestions({
+                      items: trailerResult.suggestions ?? [],
+                      userMessages,
+                      previousSuggestions: options.previousSuggestions,
+                      assistantAnswer,
+                      max: SUGGESTION_LIMIT_FOLLOW_UP,
+                    });
+                  } else {
+                    suggestionItems = pickSuggestions({
+                      mode: "fallback",
+                      language,
+                      plan: retrieval.plan,
+                      userMessages,
+                      previousSuggestions: options.previousSuggestions,
+                      max: SUGGESTION_LIMIT_FOLLOW_UP,
+                    });
+                  }
+
+                  if (suggestionItems.length > 0) {
+                    options.onSuggestionsReady?.(suggestionItems);
+                    safeEnqueue(controller, encoder, "suggestions", {
+                      items: suggestionItems,
+                    });
+                  }
                 }
               }
 

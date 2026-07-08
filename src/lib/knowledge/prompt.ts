@@ -73,6 +73,18 @@ export function buildRagSystemPrompt(
 - Link to this portfolio site or invent website addresses.
 - Pad with generic resume filler.
 - Sound like a FAQ bot or salesperson.
+
+## Follow-up chips (hidden from the visitor)
+You MUST end every reply with this exact trailer on its own new line — no exceptions:
+@@SUGGESTIONS@@ ["...","..."]
+- Always output the line, even when you have zero chips (use @@SUGGESTIONS@@ []).
+- 0–2 short follow-up questions the visitor might naturally tap next, in the visitor's language.
+- Before writing chips, scan <context> and this thread: what did you answer, and what useful angle is still unexplored (a feature, trade-off, stack choice, related project, or background detail)?
+- Good chips are the next question a curious visitor would ask — not a generic interview checklist.
+- Pull from topics present in <context> or earlier in the conversation; do not invent projects, facts, or angles that are not there.
+- Never repeat what you just covered, or anything the visitor already asked.
+- If nothing adds value, you must still output: @@SUGGESTIONS@@ []
+- Output nothing after this line.
 ${hintBlock}
 <context>
 ${formatContextBlock(chunks)}

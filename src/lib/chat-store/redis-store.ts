@@ -108,6 +108,25 @@ export function createRedisChatStore(): ChatStore {
       );
     },
 
+    async getRecentShownSuggestions(sessionId, maxAssistantTurns = 5) {
+      const timeline = timelineKey(sessionId);
+      const ids = await redis.zrevrange(timeline, 0, 49);
+      const messages = await loadSessionMessages(redis, sessionId, ids);
+      const suggestions: string[] = [];
+      let assistantTurns = 0;
+
+      for (const message of messages) {
+        if (message.role !== "assistant") continue;
+        if (message.suggestions?.length) {
+          suggestions.push(...message.suggestions);
+          assistantTurns += 1;
+          if (assistantTurns >= maxAssistantTurns) break;
+        }
+      }
+
+      return suggestions;
+    },
+
     async getSessionRoutingState(sessionId) {
       const raw = await redis.get(routingStateKey(sessionId));
       if (!raw) return { ...EMPTY_SESSION_ROUTING_STATE };

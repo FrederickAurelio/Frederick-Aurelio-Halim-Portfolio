@@ -20,6 +20,8 @@ export type GenerationEndReason = "complete" | "aborted" | "error";
 export type StreamTransformHooks = {
   onThinkingDelta?: (delta: string) => void;
   onContentDelta?: (delta: string) => void;
+  /** Strip hidden trailers or other non-user-visible content before enqueue. */
+  contentFilter?: (delta: string) => string;
   onSaved?: (payload: {
     userMessageId: string;
     assistantMessageId: string;
@@ -108,8 +110,11 @@ function processOpenRouterChunk(
 
   const content = chunk.choices?.[0]?.delta?.content;
   if (typeof content === "string" && content) {
-    hooks?.onContentDelta?.(content);
-    safeEnqueue(controller, encoder, "content", { delta: content });
+    const visible = hooks?.contentFilter?.(content) ?? content;
+    if (visible) {
+      hooks?.onContentDelta?.(visible);
+      safeEnqueue(controller, encoder, "content", { delta: visible });
+    }
   }
 
   return null;
