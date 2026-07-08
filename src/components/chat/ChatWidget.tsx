@@ -132,8 +132,13 @@ export default function ChatWidget() {
   ]);
 
   const suggestions = useMemo(
-    () => resolveDisplaySuggestions(messages, isLoading),
-    [messages, isLoading],
+    () =>
+      resolveDisplaySuggestions(
+        messages,
+        isLoading,
+        chat.initialSuggestions[language],
+      ),
+    [messages, isLoading, language],
   );
 
   const lastMessage = messages.at(-1);

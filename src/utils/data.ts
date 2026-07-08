@@ -402,6 +402,7 @@ export type ChatContent = {
   chatRetryLabel: LocalizedText;
   chatInputUnavailable: LocalizedText;
   chatDisclaimer: LocalizedText;
+  initialSuggestions: LocalizedText<string[]>;
 };
 
 export const chat: ChatContent = {
@@ -508,5 +509,9 @@ export const chat: ChatContent = {
   chatDisclaimer: {
     en: "Responses are AI-generated and may not always be accurate.",
     ch: "回复由 AI 生成，可能不完全准确。",
+  },
+  initialSuggestions: {
+    en: ["What should I look at first?", "What's your tech stack?"],
+    ch: ["我应该先看哪个项目？", "你的技术栈是什么？"],
   },
 };
