@@ -3,7 +3,7 @@ import type { ChatStreamCallbacks } from "@/lib/chat/consumeChatStream";
 import type { createStreamBatcher } from "@/lib/chat/batch-stream-updates";
 import type { ChatErrorCode } from "@/lib/chat/api-errors";
 import type { ChatMessage, ChatStatus } from "@/lib/chat/types";
-import { SUGGESTION_LIMIT_FOLLOW_UP } from "@/lib/knowledge/pick-suggestions";
+import { SUGGESTION_LIMIT_FOLLOW_UP } from "@/lib/knowledge/suggestion-limits";
 import { resolveChatErrorMessage } from "@/lib/chat/resolve-error-message";
 
 export type StreamBatcher = ReturnType<typeof createStreamBatcher>;

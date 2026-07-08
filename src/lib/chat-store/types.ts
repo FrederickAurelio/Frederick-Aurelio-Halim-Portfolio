@@ -40,10 +40,6 @@ export interface ChatStore extends GenerationLockOps, GenerationBufferOps {
     limit: number,
   ): Promise<PaginatedMessages>;
   getOpenRouterHistory(sessionId: string): Promise<OpenRouterMessage[]>;
-  getRecentShownSuggestions(
-    sessionId: string,
-    maxAssistantTurns?: number,
-  ): Promise<string[]>;
   getSessionRoutingState(sessionId: string): Promise<SessionRoutingState>;
   setSessionRoutingState(
     sessionId: string,

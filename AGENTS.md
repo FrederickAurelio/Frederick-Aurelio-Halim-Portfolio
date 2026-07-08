@@ -115,7 +115,7 @@ flowchart LR
 1. **Routing** — `planRetrievalForTurn`: navigator LLM picks intent + search queries; fallback heuristics if navigator fails; `session-routing-state` tracks multi-turn focus
 2. **Retrieving** — `retrieveWithPlan`: cosine similarity over precomputed embeddings in `index.json`
 3. **Thinking + answer** — `buildRagMessages` + OpenRouter stream; optional reasoning block
-4. **Suggestions** — LLM trailer chips emit as parsed; fallback/off-topic use `pickSuggestions` (fallback bank is score-gated); `SuggestionTrailerFilter` strips leaked suggestion JSON from answer tail
+4. **Suggestions** — `SuggestionTrailerFilter` parses `@@SUGGESTIONS@@` from answer content; valid trailer chips emit as parsed, otherwise `[]`
 
 **Session & storage:**
 
@@ -202,7 +202,7 @@ Access via `useLanguage()` → `content[language]` in client components.
 | Send / stream / stop | `src/hooks/useChat.ts`, `src/lib/chat/consumeChatStream.ts` |
 | RAG pipeline | `src/lib/chat/rag-chat-stream.ts` |
 | Retrieval tuning | `src/lib/knowledge/plan-retrieval.ts`, `retrieve.ts`, `enrich-retrieval-plan.ts` |
-| Suggestions | `gate-suggestions.ts`, `pick-suggestions.ts`, `suggestion-bank.ts`, `suggestion-trailer.ts` |
+| Suggestions | `suggestion-trailer.ts`, `suggestion-limits.ts`, `resolve-display-suggestions.ts` |
 | Prompt / tone | `src/lib/knowledge/prompt.ts`, `build-messages.ts` |
 | Storage / sessions | `src/lib/chat-store/`, `src/middleware.ts`, `src/lib/chat/session.ts` |
 | API routes | `src/app/api/chat/` |

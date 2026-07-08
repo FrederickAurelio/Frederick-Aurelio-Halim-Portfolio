@@ -2,11 +2,7 @@ import { SuggestionTrailerFilter } from "@/lib/chat/suggestion-trailer";
 import { planRetrievalForTurn } from "@/lib/knowledge/plan-retrieval";
 import type { SessionRoutingState } from "@/lib/knowledge/session-routing-state";
 import { buildRagMessages } from "@/lib/knowledge/build-messages";
-import {
-  pickSuggestions,
-  SUGGESTION_LIMIT_FOLLOW_UP,
-} from "@/lib/knowledge/pick-suggestions";
-import { detectReplyLanguage } from "@/lib/knowledge/refusal";
+import { SUGGESTION_LIMIT_FOLLOW_UP } from "@/lib/knowledge/suggestion-limits";
 import { retrieveWithPlan } from "@/lib/knowledge/retrieve";
 import { CHAT_ERROR_CODES } from "@/lib/chat/api-errors";
 import {
@@ -36,7 +32,6 @@ export type RagChatStreamOptions = StreamTransformHooks & {
   history: OpenRouterMessage[];
   userMessage: string;
   routingState: SessionRoutingState;
-  previousSuggestions?: string[];
   signal?: AbortSignal;
   shouldStop?: () => boolean | Promise<boolean>;
   onStreamPhase?: (phase: ChatStreamPhase) => void;
@@ -217,13 +212,6 @@ export function createRagChatStream(
             return;
           }
 
-          const language = detectReplyLanguage(options.userMessage);
-          const userMessages = [
-            ...options.history
-              .filter((m) => m.role === "user")
-              .map((m) => m.content),
-            options.userMessage,
-          ];
           let assistantAnswer = "";
           const trailerFilter = new SuggestionTrailerFilter();
 
@@ -300,37 +288,13 @@ export function createRagChatStream(
                 );
 
                 if (reason === "complete" && assistantAnswer.trim()) {
-                  let suggestionItems: string[] = [];
-                  const retrievedChunkIds = retrieval.chunks.map((chunk) => chunk.id);
-
-                  if (retrieval.plan.intent === "off_topic") {
-                    suggestionItems = pickSuggestions({
-                      mode: "off_topic",
-                      language,
-                      userMessages,
-                      previousSuggestions: options.previousSuggestions,
-                      max: SUGGESTION_LIMIT_FOLLOW_UP,
-                    });
-                  } else if (
-                    trailerResult.markerFound &&
-                    !trailerResult.parseFailed
-                  ) {
-                    suggestionItems = (trailerResult.suggestions ?? []).slice(
-                      0,
-                      SUGGESTION_LIMIT_FOLLOW_UP,
-                    );
-                  } else {
-                    suggestionItems = pickSuggestions({
-                      mode: "fallback",
-                      language,
-                      plan: retrieval.plan,
-                      userMessages,
-                      previousSuggestions: options.previousSuggestions,
-                      assistantAnswer,
-                      retrievedChunkIds,
-                      max: SUGGESTION_LIMIT_FOLLOW_UP,
-                    });
-                  }
+                  const suggestionItems =
+                    trailerResult.markerFound && !trailerResult.parseFailed
+                      ? (trailerResult.suggestions ?? []).slice(
+                          0,
+                          SUGGESTION_LIMIT_FOLLOW_UP,
+                        )
+                      : [];
 
                   options.onSuggestionsReady?.(suggestionItems);
                   emitSuggestions(controller, encoder, suggestionItems);

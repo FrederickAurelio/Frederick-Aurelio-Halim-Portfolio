@@ -26,7 +26,7 @@ import {
 } from "@/lib/chat/types";
 import { CHAT_ERROR_CODES } from "@/lib/chat/api-errors";
 import { randomId } from "@/lib/random-id";
-import { SUGGESTION_LIMIT_FOLLOW_UP } from "@/lib/knowledge/pick-suggestions";
+import { SUGGESTION_LIMIT_FOLLOW_UP } from "@/lib/knowledge/suggestion-limits";
 import { createAssistantStreamCallbacks } from "@/hooks/createAssistantStreamCallbacks";
 
 type UseChatErrorMessages = {

@@ -76,8 +76,6 @@ export async function POST(request: NextRequest) {
 
     const history = await store.getOpenRouterHistory(activeSessionId);
     const routingState = await store.getSessionRoutingState(activeSessionId);
-    const previousSuggestions =
-      await store.getRecentShownSuggestions(activeSessionId);
 
     await store.appendMessage(activeSessionId, {
       id: userMessageId,
@@ -120,7 +118,6 @@ export async function POST(request: NextRequest) {
         history,
         userMessage: content,
         routingState,
-        previousSuggestions,
         signal: streamSignal,
         shouldStop: () => store.isGenerationStopRequested(activeSessionId),
         onRoutingStateReady: (next) =>
