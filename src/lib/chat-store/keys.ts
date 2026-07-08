@@ -4,6 +4,9 @@ const DEFAULT_MESSAGE_TTL_SECONDS = 60 * 60 * 6; // 6 hours
 /** Safety TTL if generation never finishes (stop/crash). */
 export const GENERATION_LOCK_TTL_SECONDS = 60 * 5; // 5 minutes
 
+/** Keep buffer after lock release so GET reconnect can read final suggestions. */
+export const GENERATION_BUFFER_CLEAR_DELAY_MS = 1500;
+
 export function getMessageRetentionSeconds(): number {
   const raw = process.env.CHAT_MESSAGE_TTL_SECONDS;
   if (!raw) return DEFAULT_MESSAGE_TTL_SECONDS;

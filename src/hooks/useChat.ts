@@ -24,10 +24,10 @@ import {
   type ChatStatus,
   type StoredChatMessage,
 } from "@/lib/chat/types";
-import { CHAT_ERROR_CODES, type ChatErrorCode } from "@/lib/chat/api-errors";
-import { resolveChatErrorMessage } from "@/lib/chat/resolve-error-message";
+import { CHAT_ERROR_CODES } from "@/lib/chat/api-errors";
 import { randomId } from "@/lib/random-id";
 import { SUGGESTION_LIMIT_FOLLOW_UP } from "@/lib/knowledge/pick-suggestions";
+import { createAssistantStreamCallbacks } from "@/hooks/createAssistantStreamCallbacks";
 
 type UseChatErrorMessages = {
   notConfigured: string;
@@ -37,13 +37,6 @@ type UseChatErrorMessages = {
   generating: string;
   vercelTimeout: string;
 };
-
-function formatChatError(
-  messages: UseChatErrorMessages,
-  options: { code?: ChatErrorCode; message?: string; status?: number },
-): string {
-  return resolveChatErrorMessage(messages, options);
-}
 
 function toStoredMessage(message: ChatMessage): StoredChatMessage | null {
   if (message.role !== "user" && message.role !== "assistant") return null;
@@ -185,7 +178,9 @@ export function useChat(errorMessages: UseChatErrorMessages) {
       setStatus("streaming");
 
       const assistantId = assistantMessage.id;
-      let hasReceivedChunk = Boolean(assistantMessage.content || assistantMessage.reasoning);
+      const hasReceivedChunk = {
+        current: Boolean(assistantMessage.content || assistantMessage.reasoning),
+      };
 
       const updateAssistant = (
         updater: (message: ChatMessage) => ChatMessage,
@@ -211,7 +206,23 @@ export function useChat(errorMessages: UseChatErrorMessages) {
         await consumeChatStream(
           "/api/chat/generation/stream",
           { method: "GET" },
-          {
+          createAssistantStreamCallbacks({
+            updateAssistant,
+            setOptimisticMessages,
+            streamBatcher,
+            pendingSuggestionsRef,
+            hasReceivedChunk,
+            setStatus,
+            errorMessages,
+            isTargetAssistant: (message) => message.id === assistantId,
+            onFinalize: () => {
+              finalizeCompletedTurn(
+                queryClient,
+                setOptimisticMessages,
+                pendingSuggestionsRef,
+                new Set([assistantId]),
+              );
+            },
             onSaved: () => {
               // IDs already known from history
             },
@@ -223,114 +234,18 @@ export function useChat(errorMessages: UseChatErrorMessages) {
                 streamPhase: streamPhase ?? message.streamPhase,
               }));
             },
-            onRouting: () => {
-              updateAssistant((message) => ({
-                ...message,
-                streamPhase: "routing",
-              }));
-            },
-            onRetrieving: () => {
-              updateAssistant((message) => ({
-                ...message,
-                streamPhase: "retrieving",
-              }));
-            },
-            onPhase: (phase) => {
-              updateAssistant((message) => ({
-                ...message,
-                streamPhase: phase,
-              }));
-            },
-            onThinking: (delta) => {
-              if (!hasReceivedChunk) {
-                hasReceivedChunk = true;
-                setStatus("streaming");
-              }
-              streamBatcher.pushThinking(delta);
-              updateAssistant((message) => ({
-                ...message,
-                streamPhase: message.content ? "content" : "thinking",
-              }));
-            },
-            onContent: (delta) => {
-              if (!hasReceivedChunk) {
-                hasReceivedChunk = true;
-                setStatus("streaming");
-              }
-              streamBatcher.pushContent(delta);
-              updateAssistant((message) => ({
-                ...message,
-                streamPhase: "content",
-              }));
-            },
-            onSuggestions: (items) => {
-              pendingSuggestionsRef.current = items.slice(
-                0,
-                SUGGESTION_LIMIT_FOLLOW_UP,
-              );
-            },
-            onDone: () => {
-              streamBatcher.flushNow();
-              finalizeCompletedTurn(
-                queryClient,
-                setOptimisticMessages,
-                pendingSuggestionsRef,
-                new Set([assistantId]),
-              );
-            },
-            onError: (message, httpStatus, code) => {
-              streamBatcher.flushNow();
-
+            onErrorEarly: (message, httpStatus) => {
               if (httpStatus === 404 || message === NO_ACTIVE_GENERATION_CODE) {
                 pendingSuggestionsRef.current = null;
                 setOptimisticMessages([]);
                 void queryClient.invalidateQueries({
                   queryKey: CHAT_MESSAGES_QUERY_KEY,
                 });
-                return;
+                return true;
               }
-
-              const errorText = formatChatError(errorMessages, {
-                code,
-                message,
-                status: httpStatus,
-              });
-
-              let shouldFinalize = false;
-              setOptimisticMessages((prev) => {
-                const assistant = prev.find((m) => m.id === assistantId);
-                const hasPartial =
-                  Boolean(assistant?.content) ||
-                  Boolean(assistant?.reasoning) ||
-                  Boolean(pendingSuggestionsRef.current?.length);
-
-                if (assistant && hasPartial) {
-                  shouldFinalize = true;
-                  return prev;
-                }
-
-                return prev.map((messageState) =>
-                  messageState.id === assistantId
-                    ? {
-                        ...messageState,
-                        role: "error" as const,
-                        content: errorText,
-                        status: "error" as const,
-                      }
-                    : messageState,
-                );
-              });
-
-              if (shouldFinalize) {
-                finalizeCompletedTurn(
-                  queryClient,
-                  setOptimisticMessages,
-                  pendingSuggestionsRef,
-                  new Set([assistantId]),
-                );
-              }
+              return false;
             },
-          },
+          }),
         );
       } catch {
         streamBatcher.flushNow();
@@ -386,7 +301,7 @@ export function useChat(errorMessages: UseChatErrorMessages) {
       setStatus("submitting");
       pendingSuggestionsRef.current = null;
 
-      let hasReceivedChunk = false;
+      const hasReceivedChunk = { current: false };
       let serverUserId = tempUserId;
       let serverAssistantId = tempAssistantId;
 
@@ -447,135 +362,52 @@ export function useChat(errorMessages: UseChatErrorMessages) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ content: trimmed }),
           },
-          {
+          createAssistantStreamCallbacks({
+            updateAssistant,
+            setOptimisticMessages,
+            streamBatcher,
+            pendingSuggestionsRef,
+            hasReceivedChunk,
+            setStatus,
+            errorMessages,
+            isTargetAssistant: (message) =>
+              message.id === serverAssistantId || message.id === tempAssistantId,
+            onFinalize: finalizeSendTurn,
             onSaved: ({ userMessageId, assistantMessageId }) => {
               reconcileIds(userMessageId, assistantMessageId);
             },
-            onRouting: () => {
-              updateAssistant((message) => ({
-                ...message,
-                streamPhase: "routing",
-              }));
-            },
-            onRetrieving: () => {
-              updateAssistant((message) => ({
-                ...message,
-                streamPhase: "retrieving",
-              }));
-            },
-            onPhase: (phase) => {
-              updateAssistant((message) => ({
-                ...message,
-                streamPhase: phase,
-              }));
-            },
-            onThinking: (delta) => {
-              if (!hasReceivedChunk) {
-                hasReceivedChunk = true;
-                setStatus("streaming");
-              }
-
-              streamBatcher.pushThinking(delta);
-              updateAssistant((message) => ({
-                ...message,
-                streamPhase: message.content ? "content" : "thinking",
-              }));
-            },
-            onContent: (delta) => {
-              if (!hasReceivedChunk) {
-                hasReceivedChunk = true;
-                setStatus("streaming");
-              }
-
-              streamBatcher.pushContent(delta);
-              updateAssistant((message) => ({
-                ...message,
-                streamPhase: "content",
-              }));
-            },
-            onSuggestions: (items) => {
-              pendingSuggestionsRef.current = items.slice(
-                0,
-                SUGGESTION_LIMIT_FOLLOW_UP,
-              );
-            },
-            onDone: () => {
-              streamBatcher.flushNow();
-              finalizeSendTurn();
-            },
-            onError: (message, httpStatus, code) => {
-              streamBatcher.flushNow();
+            onErrorEarly: (message, httpStatus, code) => {
               const isGenerating =
                 httpStatus === 409 ||
                 code === CHAT_ERROR_CODES.GENERATION_IN_PROGRESS ||
                 message === GENERATION_IN_PROGRESS_CODE;
 
-              if (isGenerating) {
-                pendingSuggestionsRef.current = null;
-                setOptimisticMessages((prev) => {
-                  const withoutPair = prev.filter(
-                    (item) =>
-                      item.id !== tempUserId &&
-                      item.id !== tempAssistantId &&
-                      item.id !== serverUserId &&
-                      item.id !== serverAssistantId,
-                  );
+              if (!isGenerating) return false;
 
-                  return [
-                    ...withoutPair,
-                    {
-                      id: randomId(),
-                      role: "error" as const,
-                      content: errorMessages.generating,
-                      status: "error" as const,
-                      createdAt: Date.now(),
-                    },
-                  ];
-                });
-                return;
-              }
-
-              const errorText = formatChatError(errorMessages, {
-                code,
-                message,
-                status: httpStatus,
-              });
-
-              let shouldFinalize = false;
+              pendingSuggestionsRef.current = null;
               setOptimisticMessages((prev) => {
-                const assistant = prev.find((m) => m.id === serverAssistantId);
-                const hasPartial =
-                  Boolean(assistant?.content) ||
-                  Boolean(assistant?.reasoning) ||
-                  Boolean(pendingSuggestionsRef.current?.length);
+                const withoutPair = prev.filter(
+                  (item) =>
+                    item.id !== tempUserId &&
+                    item.id !== tempAssistantId &&
+                    item.id !== serverUserId &&
+                    item.id !== serverAssistantId,
+                );
 
-                if (assistant && hasPartial) {
-                  shouldFinalize = true;
-                  return prev;
-                }
-
-                return prev.map((messageState) => {
-                  if (
-                    messageState.id !== serverAssistantId &&
-                    messageState.id !== tempAssistantId
-                  ) {
-                    return messageState;
-                  }
-
-                  return {
-                    ...messageState,
+                return [
+                  ...withoutPair,
+                  {
+                    id: randomId(),
                     role: "error" as const,
-                    content: errorText,
+                    content: errorMessages.generating,
                     status: "error" as const,
-                  };
-                });
+                    createdAt: Date.now(),
+                  },
+                ];
               });
-
-              if (shouldFinalize) {
-                finalizeSendTurn();
-              }
+              return true;
             },
-          },
+          }),
         );
       } catch {
         streamBatcher.flushNow();

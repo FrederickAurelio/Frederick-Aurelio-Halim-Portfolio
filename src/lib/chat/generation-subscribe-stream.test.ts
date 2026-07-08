@@ -4,16 +4,14 @@ import { describe, it } from "node:test";
 import { createParser } from "eventsource-parser";
 
 import type { ChatStore } from "@/lib/chat-store";
-import type { GenerationBuffer, PaginatedMessages } from "@/lib/chat/types";
+import type { GenerationBuffer } from "@/lib/chat/types";
 import { createGenerationSubscribeStream } from "./generation-subscribe-stream";
 
 function createMockStore(options: {
   buffer: GenerationBuffer | null;
   lockedSequence: boolean[];
-  latestMessages: PaginatedMessages;
 }): ChatStore {
   let lockIndex = 0;
-  let buffer = options.buffer;
 
   return {
     isGenerationLocked: async () => {
@@ -21,8 +19,7 @@ function createMockStore(options: {
       lockIndex += 1;
       return locked;
     },
-    getGenerationBuffer: async () => buffer,
-    getLatestMessages: async () => options.latestMessages,
+    getGenerationBuffer: async () => options.buffer,
   } as unknown as ChatStore;
 }
 
@@ -65,34 +62,21 @@ async function readSubscribeEvents(
 }
 
 describe("createGenerationSubscribeStream", () => {
-  it("replays persisted suggestions before done when generation finishes", async () => {
-    const assistantMessageId = "assistant-1";
+  it("replays buffer suggestions before done when generation finishes", async () => {
     const buffer: GenerationBuffer = {
       userMessageId: "user-1",
-      assistantMessageId,
+      assistantMessageId: "assistant-1",
       content: "FXTrade is a dashboard.",
       reasoning: "",
       seq: 1,
       updatedAt: Date.now(),
       streamPhase: "content",
+      suggestions: ["Where does data come from?"],
     };
 
     const store = createMockStore({
       buffer,
       lockedSequence: [true, false],
-      latestMessages: {
-        messages: [
-          {
-            id: assistantMessageId,
-            role: "assistant",
-            content: "FXTrade is a dashboard.",
-            createdAt: Date.now(),
-            suggestions: ["Where does data come from?"],
-          },
-        ],
-        nextCursor: null,
-        retentionSeconds: 21_600,
-      },
     });
 
     const stream = createGenerationSubscribeStream({

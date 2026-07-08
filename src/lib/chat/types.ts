@@ -45,6 +45,8 @@ export type GenerationBuffer = {
   seq: number;
   updatedAt: number;
   streamPhase?: ChatStreamPhase;
+  /** Follow-up chips computed by POST; replayed on GET subscribe before done. */
+  suggestions?: string[];
 };
 
 export type ChatSyncEvent = {

@@ -1,24 +1,15 @@
 import type { ChatStore } from "@/lib/chat-store";
 import { getGenerationBufferPollMs } from "@/lib/chat-store/keys";
-import type { ChatStreamPhase, GenerationBuffer } from "@/lib/chat/types";
-import { CHAT_SSE_HEADERS } from "@/lib/openrouter/stream-transform";
-
-function encodeSseEvent(event: string, data: unknown): string {
-  return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-}
-
-function safeEnqueue(
-  controller: ReadableStreamDefaultController<Uint8Array>,
-  encoder: TextEncoder,
-  event: string,
-  data: unknown,
-): void {
-  try {
-    controller.enqueue(encoder.encode(encodeSseEvent(event, data)));
-  } catch {
-    // Client disconnected
-  }
-}
+import {
+  CHAT_SSE_HEADERS,
+  emitChatPhase,
+  emitContentDelta,
+  emitDone,
+  emitSuggestions,
+  emitThinkingDelta,
+  safeEnqueue,
+} from "@/lib/chat/sse";
+import type { GenerationBuffer } from "@/lib/chat/types";
 
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -38,24 +29,6 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
-function emitPhaseEvent(
-  controller: ReadableStreamDefaultController<Uint8Array>,
-  encoder: TextEncoder,
-  phase: ChatStreamPhase | undefined,
-): void {
-  if (phase === "routing" || phase === "retrieving") {
-    safeEnqueue(controller, encoder, phase, {});
-  }
-  if (
-    phase === "routing" ||
-    phase === "retrieving" ||
-    phase === "thinking" ||
-    phase === "content"
-  ) {
-    safeEnqueue(controller, encoder, "phase", { phase });
-  }
-}
-
 function emitBufferDeltas(
   controller: ReadableStreamDefaultController<Uint8Array>,
   encoder: TextEncoder,
@@ -66,12 +39,8 @@ function emitBufferDeltas(
   const thinkingDelta = buffer.reasoning.slice(lastReasoningLen);
   const contentDelta = buffer.content.slice(lastContentLen);
 
-  if (thinkingDelta) {
-    safeEnqueue(controller, encoder, "thinking", { delta: thinkingDelta });
-  }
-  if (contentDelta) {
-    safeEnqueue(controller, encoder, "content", { delta: contentDelta });
-  }
+  emitThinkingDelta(controller, encoder, thinkingDelta);
+  emitContentDelta(controller, encoder, contentDelta);
 
   return {
     lastReasoningLen: buffer.reasoning.length,
@@ -105,49 +74,15 @@ function finishSubscribeStream(
   buffer: GenerationBuffer | null,
   lastReasoningLen: number,
   lastContentLen: number,
-  options: {
-    sessionId: string;
-    store: ChatStore;
-    assistantMessageId: string | null;
-  },
-): Promise<void> {
+): void {
   emitTrailingBuffer(controller, encoder, buffer, lastReasoningLen, lastContentLen);
 
-  return emitPersistedSuggestions(controller, encoder, options).finally(() => {
-    safeEnqueue(controller, encoder, "done", {});
-    controller.close();
-  });
-}
-
-async function emitPersistedSuggestions(
-  controller: ReadableStreamDefaultController<Uint8Array>,
-  encoder: TextEncoder,
-  options: {
-    sessionId: string;
-    store: ChatStore;
-    assistantMessageId: string | null;
-  },
-): Promise<void> {
-  const assistantMessageId = options.assistantMessageId;
-  if (!assistantMessageId) return;
-
-  try {
-    const { messages } = await options.store.getLatestMessages(
-      options.sessionId,
-      20,
-    );
-    const assistant = messages.find(
-      (message) =>
-        message.id === assistantMessageId && message.role === "assistant",
-    );
-    if (assistant?.suggestions?.length) {
-      safeEnqueue(controller, encoder, "suggestions", {
-        items: assistant.suggestions,
-      });
-    }
-  } catch {
-    // Subscribe stream should still finish even if suggestion lookup fails.
+  if (buffer?.suggestions?.length) {
+    emitSuggestions(controller, encoder, buffer.suggestions);
   }
+
+  emitDone(controller, encoder);
+  controller.close();
 }
 
 type CreateSubscribeStreamOptions = {
@@ -193,9 +128,8 @@ export function createGenerationSubscribeStream(
           let lastReasoningLen = buffer.reasoning.length;
           let lastContentLen = buffer.content.length;
           let lastEmittedPhase = buffer.streamPhase;
-          let assistantMessageId = buffer.assistantMessageId;
 
-          emitPhaseEvent(controller, encoder, buffer.streamPhase);
+          emitChatPhase(controller, encoder, buffer.streamPhase);
 
           while (true) {
             if (signal?.aborted) break;
@@ -203,16 +137,12 @@ export function createGenerationSubscribeStream(
             const locked = await store.isGenerationLocked(sessionId);
             if (!locked) {
               const finalBuffer = await store.getGenerationBuffer(sessionId);
-              if (finalBuffer?.assistantMessageId) {
-                assistantMessageId = finalBuffer.assistantMessageId;
-              }
-              await finishSubscribeStream(
+              finishSubscribeStream(
                 controller,
                 encoder,
                 finalBuffer,
                 lastReasoningLen,
                 lastContentLen,
-                { sessionId, store, assistantMessageId },
               );
               return;
             }
@@ -223,23 +153,20 @@ export function createGenerationSubscribeStream(
             if (!updated) {
               const stillLocked = await store.isGenerationLocked(sessionId);
               if (!stillLocked) {
-                await finishSubscribeStream(
+                finishSubscribeStream(
                   controller,
                   encoder,
                   null,
                   lastReasoningLen,
                   lastContentLen,
-                  { sessionId, store, assistantMessageId },
                 );
                 return;
               }
               continue;
             }
 
-            assistantMessageId = updated.assistantMessageId;
-
             if (updated.streamPhase !== lastEmittedPhase) {
-              emitPhaseEvent(controller, encoder, updated.streamPhase);
+              emitChatPhase(controller, encoder, updated.streamPhase);
               lastEmittedPhase = updated.streamPhase;
             }
 

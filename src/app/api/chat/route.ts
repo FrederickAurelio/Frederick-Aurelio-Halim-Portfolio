@@ -7,16 +7,12 @@ import { GenerationBufferWriter } from "@/lib/chat/generation-buffer-writer";
 import { createRagChatStream } from "@/lib/chat/rag-chat-stream";
 import { SessionError, requireSessionId } from "@/lib/chat/session";
 import { prepareChatStore } from "@/lib/chat-store/api";
-import {
-  appendUpstashSyncCookieHeader,
-  upstashDonePayload,
-} from "@/lib/chat-store/upstash-sync.server";
-import { isUpstashProvider } from "@/lib/chat-store";
+import { upstashDonePayload } from "@/lib/chat-store/upstash-sync.server";
 import { mapChatRouteError } from "@/lib/chat/map-route-error";
 import { CHAT_ERROR_CODES } from "@/lib/chat/api-errors";
 import { attachVercelStreamDeadline } from "@/lib/chat/vercel-runtime";
+import { createChatSseResponse } from "@/lib/chat/create-chat-sse-response";
 import { getOpenRouterConfig } from "@/lib/openrouter/config";
-import { CHAT_SSE_HEADERS } from "@/lib/openrouter/stream-transform";
 import { GENERATION_IN_PROGRESS_CODE, type ChatApiRequest } from "@/lib/chat/types";
 
 /** RAG needs navigator + embeddings + answer stream — above Vercel Hobby's 10s default. */
@@ -114,16 +110,11 @@ export async function POST(request: NextRequest) {
         clearStreamDeadline?.();
         await releaseGeneration(activeSessionId);
         lockHeld = false;
-        await writer.clear();
+        writer.scheduleDeferredClear();
       }
     };
 
-    const streamHeaders = new Headers(CHAT_SSE_HEADERS);
-    if (isUpstashProvider()) {
-      appendUpstashSyncCookieHeader(streamHeaders, request);
-    }
-
-    return new Response(
+    return createChatSseResponse(
       createRagChatStream({
         savedPayload: { userMessageId, assistantMessageId },
         history,
@@ -145,18 +136,19 @@ export async function POST(request: NextRequest) {
         },
         onSuggestionsReady: (items) => {
           turnSuggestions = items;
+          void writer.setSuggestions(items);
         },
         onGenerationEnd: async () => {
           await persistGenerationEnd();
           return upstashDonePayload();
         },
       }),
-      { headers: streamHeaders },
+      request,
     );
   } catch (error) {
     clearStreamDeadline?.();
     if (bufferWriter) {
-      await bufferWriter.clear().catch(() => {});
+      bufferWriter.scheduleDeferredClear();
     }
     if (sessionId && lockHeld) {
       await releaseGeneration(sessionId);

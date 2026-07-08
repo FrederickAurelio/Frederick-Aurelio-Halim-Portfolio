@@ -22,6 +22,17 @@ function parseGenerationBuffer(raw: unknown): GenerationBuffer | null {
       typeof parsed.seq === "number" &&
       typeof parsed.updatedAt === "number"
     ) {
+      if (parsed.suggestions !== undefined) {
+        if (!Array.isArray(parsed.suggestions)) {
+          delete parsed.suggestions;
+        } else {
+          const cleaned = parsed.suggestions.filter(
+            (item): item is string => typeof item === "string" && item.trim().length > 0,
+          );
+          if (cleaned.length > 0) parsed.suggestions = cleaned;
+          else delete parsed.suggestions;
+        }
+      }
       return parsed;
     }
   } catch {
@@ -37,6 +48,7 @@ function serializeGenerationBuffer(buffer: GenerationBuffer): string {
 export function createIoredisGenerationBufferOps(redis: Redis): GenerationBufferOps {
   return {
     async initGenerationBuffer(sessionId, data) {
+      await redis.del(generationBufferKey(sessionId));
       const buffer: GenerationBuffer = {
         userMessageId: data.userMessageId,
         assistantMessageId: data.assistantMessageId,
@@ -83,6 +95,7 @@ export function createUpstashGenerationBufferOps(
 ): GenerationBufferOps {
   return {
     async initGenerationBuffer(sessionId, data) {
+      await redis.del(generationBufferKey(sessionId));
       const buffer: GenerationBuffer = {
         userMessageId: data.userMessageId,
         assistantMessageId: data.assistantMessageId,

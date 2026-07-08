@@ -18,8 +18,15 @@ import {
 import { createChatCompletionStream } from "@/lib/openrouter/client";
 import { REQUEST_TIMEOUT_MESSAGE } from "@/lib/openrouter/fetch-with-timeout";
 import {
-  pipeOpenRouterToChatStream,
+  emitChatPhase,
+  emitContentDelta,
+  emitDone,
+  emitSuggestions,
+  emitThinkingDelta,
   safeEnqueue,
+} from "@/lib/chat/sse";
+import {
+  pipeOpenRouterToChatStream,
   type GenerationEndReason,
   type StreamTransformHooks,
 } from "@/lib/openrouter/stream-transform";
@@ -118,21 +125,8 @@ async function finishAborted(
   const extra = await onGenerationEnd?.("aborted");
   const donePayload =
     extra && typeof extra === "object" ? extra : {};
-  safeEnqueue(controller, encoder, "done", donePayload);
+  emitDone(controller, encoder, donePayload);
   controller.close();
-}
-
-function emitStreamPhase(
-  controller: ReadableStreamDefaultController<Uint8Array>,
-  encoder: TextEncoder,
-  phase: ChatStreamPhase,
-  onStreamPhase?: (phase: ChatStreamPhase) => void,
-): void {
-  onStreamPhase?.(phase);
-  safeEnqueue(controller, encoder, "phase", { phase });
-  if (phase === "routing" || phase === "retrieving") {
-    safeEnqueue(controller, encoder, phase, {});
-  }
 }
 
 function appendVisibleTail(
@@ -144,7 +138,7 @@ function appendVisibleTail(
 ): string {
   if (!tail) return assistantAnswer;
   options.onContentDelta?.(tail);
-  safeEnqueue(controller, encoder, "content", { delta: tail });
+  emitContentDelta(controller, encoder, tail);
   return assistantAnswer + tail;
 }
 
@@ -176,7 +170,9 @@ export function createRagChatStream(
           }
 
           options.onStreamPhase?.("routing");
-          emitStreamPhase(controller, encoder, "routing", options.onStreamPhase);
+          emitChatPhase(controller, encoder, "routing", {
+            onPhase: options.onStreamPhase,
+          });
 
           const { plan, nextRoutingState } = await planRetrievalForTurn(
             options.history,
@@ -200,7 +196,9 @@ export function createRagChatStream(
           }
 
           options.onStreamPhase?.("retrieving");
-          emitStreamPhase(controller, encoder, "retrieving", options.onStreamPhase);
+          emitChatPhase(controller, encoder, "retrieving", {
+            onPhase: options.onStreamPhase,
+          });
 
           const retrieval = await retrieveWithPlan(
             plan,
@@ -231,7 +229,9 @@ export function createRagChatStream(
           let assistantAnswer = "";
           const trailerFilter = new SuggestionTrailerFilter();
 
-          emitStreamPhase(controller, encoder, "thinking", options.onStreamPhase);
+          emitChatPhase(controller, encoder, "thinking", {
+            onPhase: options.onStreamPhase,
+          });
 
           const upstream = await createChatCompletionStream({
             messages: buildRagMessages(
@@ -351,9 +351,7 @@ export function createRagChatStream(
 
                   if (suggestionItems.length > 0) {
                     options.onSuggestionsReady?.(suggestionItems);
-                    safeEnqueue(controller, encoder, "suggestions", {
-                      items: suggestionItems,
-                    });
+                    emitSuggestions(controller, encoder, suggestionItems);
                   }
                 }
               }

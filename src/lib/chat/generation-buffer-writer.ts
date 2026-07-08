@@ -1,5 +1,8 @@
 import type { ChatStore } from "@/lib/chat-store";
-import { getGenerationBufferFlushMs } from "@/lib/chat-store/keys";
+import {
+  GENERATION_BUFFER_CLEAR_DELAY_MS,
+  getGenerationBufferFlushMs,
+} from "@/lib/chat-store/keys";
 import type { ChatStreamPhase, GenerationBuffer } from "@/lib/chat/types";
 
 type GenerationBufferWriterMeta = {
@@ -10,6 +13,7 @@ type GenerationBufferWriterMeta = {
 export class GenerationBufferWriter {
   private content = "";
   private reasoning = "";
+  private suggestions: string[] | undefined;
   private streamPhase: ChatStreamPhase | undefined;
   private seq = 0;
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
@@ -63,6 +67,11 @@ export class GenerationBufferWriter {
     this.scheduleFlush();
   }
 
+  setSuggestions(items: string[]): void {
+    this.suggestions = items.length > 0 ? items : undefined;
+    void this.flushNow();
+  }
+
   async flushNow(): Promise<void> {
     if (this.flushTimer !== null) {
       clearTimeout(this.flushTimer);
@@ -71,13 +80,22 @@ export class GenerationBufferWriter {
     await this.enqueueWrite();
   }
 
-  async clear(): Promise<void> {
+  /** Drop Redis buffer after a grace period (GET reconnect reads final state). */
+  scheduleDeferredClear(
+    delayMs: number = GENERATION_BUFFER_CLEAR_DELAY_MS,
+  ): void {
+    void this.deferredClear(delayMs);
+  }
+
+  private async deferredClear(delayMs: number): Promise<void> {
     if (this.flushTimer !== null) {
       clearTimeout(this.flushTimer);
       this.flushTimer = null;
     }
     await this.writeChain;
-    await this.store.clearGenerationBuffer(this.sessionId);
+    setTimeout(() => {
+      void this.store.clearGenerationBuffer(this.sessionId).catch(() => {});
+    }, delayMs);
   }
 
   private scheduleFlush(): void {
@@ -104,6 +122,7 @@ export class GenerationBufferWriter {
       seq: this.seq,
       updatedAt: Date.now(),
       streamPhase: this.streamPhase,
+      suggestions: this.suggestions,
     };
     await this.store.setGenerationBuffer(this.sessionId, buffer);
   }

@@ -1,4 +1,9 @@
 import { createParser, type EventSourceMessage } from "eventsource-parser";
+import {
+  emitContentDelta,
+  emitThinkingDelta,
+  safeEnqueue,
+} from "@/lib/chat/sse";
 import { CHAT_ERROR_CODES } from "@/lib/chat/api-errors";
 import {
   isVercelFunctionTimeoutSignal,
@@ -9,11 +14,8 @@ import type {
   OpenRouterStreamChunk,
 } from "./types";
 
-export const CHAT_SSE_HEADERS = {
-  "Content-Type": "text/event-stream; charset=utf-8",
-  "Cache-Control": "no-cache, no-transform",
-  Connection: "keep-alive",
-} as const;
+export { CHAT_SSE_HEADERS } from "@/lib/chat/sse";
+export { safeEnqueue } from "@/lib/chat/sse";
 
 export type GenerationEndReason = "complete" | "aborted" | "error";
 
@@ -35,23 +37,6 @@ type TransformOptions = StreamTransformHooks & {
     reason: GenerationEndReason,
   ) => void | Promise<void | Record<string, unknown>>;
 };
-
-function encodeSseEvent(event: string, data: unknown): string {
-  return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-}
-
-export function safeEnqueue(
-  controller: ReadableStreamDefaultController<Uint8Array>,
-  encoder: TextEncoder,
-  event: string,
-  data: unknown,
-): void {
-  try {
-    controller.enqueue(encoder.encode(encodeSseEvent(event, data)));
-  } catch {
-    // Client disconnected — keep reading upstream and saving server-side.
-  }
-}
 
 /** Exported for unit tests. OpenRouter aliases reasoning ≈ reasoning_content; never combine. */
 export function extractThinkingDelta(
@@ -105,7 +90,7 @@ function processOpenRouterChunk(
   const thinking = extractThinkingDelta(chunk.choices);
   if (thinking) {
     hooks?.onThinkingDelta?.(thinking);
-    safeEnqueue(controller, encoder, "thinking", { delta: thinking });
+    emitThinkingDelta(controller, encoder, thinking);
   }
 
   const content = chunk.choices?.[0]?.delta?.content;
@@ -113,7 +98,7 @@ function processOpenRouterChunk(
     const visible = hooks?.contentFilter?.(content) ?? content;
     if (visible) {
       hooks?.onContentDelta?.(visible);
-      safeEnqueue(controller, encoder, "content", { delta: visible });
+      emitContentDelta(controller, encoder, visible);
     }
   }
 
