@@ -104,6 +104,15 @@ describe("emitSuggestions", () => {
     assert.equal(events[0].event, "suggestions");
     assert.deepEqual(events[0].data, { items: ["Chip one"] });
   });
+
+  it("encodes empty suggestions array", async () => {
+    const events = await collectSseEvents((controller, encoder) => {
+      emitSuggestions(controller, encoder, []);
+    });
+
+    assert.equal(events[0].event, "suggestions");
+    assert.deepEqual(events[0].data, { items: [] });
+  });
 });
 
 describe("safeEnqueue", () => {

@@ -48,7 +48,6 @@ export function emitSuggestions(
   encoder: TextEncoder,
   items: string[],
 ): void {
-  if (items.length === 0) return;
   safeEnqueue(controller, encoder, "suggestions", { items });
 }
 

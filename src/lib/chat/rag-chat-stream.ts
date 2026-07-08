@@ -349,10 +349,8 @@ export function createRagChatStream(
                     });
                   }
 
-                  if (suggestionItems.length > 0) {
-                    options.onSuggestionsReady?.(suggestionItems);
-                    emitSuggestions(controller, encoder, suggestionItems);
-                  }
+                  options.onSuggestionsReady?.(suggestionItems);
+                  emitSuggestions(controller, encoder, suggestionItems);
                 }
               }
 

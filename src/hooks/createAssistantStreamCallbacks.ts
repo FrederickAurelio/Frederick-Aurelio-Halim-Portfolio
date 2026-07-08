@@ -106,6 +106,10 @@ export function createAssistantStreamCallbacks(
       }));
     },
     onSuggestions: (items) => {
+      if (items.length === 0) {
+        pendingSuggestionsRef.current = null;
+        return;
+      }
       pendingSuggestionsRef.current = items.slice(0, SUGGESTION_LIMIT_FOLLOW_UP);
     },
     onDone: () => {

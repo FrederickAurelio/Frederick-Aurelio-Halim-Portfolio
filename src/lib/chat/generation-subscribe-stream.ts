@@ -77,9 +77,7 @@ function finishSubscribeStream(
 ): void {
   emitTrailingBuffer(controller, encoder, buffer, lastReasoningLen, lastContentLen);
 
-  if (buffer?.suggestions?.length) {
-    emitSuggestions(controller, encoder, buffer.suggestions);
-  }
+  emitSuggestions(controller, encoder, buffer?.suggestions ?? []);
 
   emitDone(controller, encoder);
   controller.close();
