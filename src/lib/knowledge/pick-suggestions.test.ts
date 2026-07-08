@@ -153,9 +153,25 @@ describe("pickSuggestions", () => {
         intent: "bio",
         focus_doc_ids: ["about-me"],
       }),
-      userMessages: ["Who are you?"],
+      userMessages: ["Are you from Indonesia?"],
     });
     assert.ok(items.some((s) => s.toLowerCase().includes("background")));
+  });
+
+  it("fallback suppresses chips after who are you with substantive answer", () => {
+    const items = pickSuggestions({
+      mode: "fallback",
+      language: "en",
+      plan: defaultRetrievalPlan({
+        intent: "bio",
+        focus_doc_ids: ["about-me"],
+        include_sections: ["at-a-glance"],
+      }),
+      userMessages: ["Who are you?"],
+      assistantAnswer:
+        "I'm Frederick, a frontend developer from Indonesia. I build web apps with React and Next.js.",
+    });
+    assert.equal(items.length, 0);
   });
 
   it("bank stays curated (not bloated)", async () => {

@@ -1,5 +1,6 @@
 import { SUGGESTION_BANK, type SuggestionCandidate } from "./suggestion-bank";
 import type { RetrievalPlan } from "./retrieval-plan";
+import { pickScoredFallbackChips } from "./gate-suggestions";
 
 export const SUGGESTION_LIMIT_COLD_START = 2;
 export const SUGGESTION_LIMIT_FOLLOW_UP = 2;
@@ -12,39 +13,13 @@ export type PickSuggestionsInput = {
   plan?: RetrievalPlan;
   userMessages: string[];
   previousSuggestions?: string[];
+  assistantAnswer?: string;
+  retrievedChunkIds?: string[];
   max?: number;
 };
 
-function normalizeText(text: string): string {
-  return text.toLowerCase().replace(/\s+/g, " ").trim();
-}
-
 function localize(candidate: SuggestionCandidate, language: "en" | "ch"): string {
   return candidate.text[language];
-}
-
-function messageMatchesCandidateText(
-  message: string,
-  candidate: SuggestionCandidate,
-): boolean {
-  const normalized = normalizeText(message);
-  if (!normalized) return false;
-  const en = normalizeText(candidate.text.en);
-  const ch = normalizeText(candidate.text.ch);
-  if (normalized.includes(en) || en.includes(normalized)) return true;
-  if (normalized.includes(ch) || ch.includes(normalized)) return true;
-  const words = en.split(" ").filter((w) => w.length > 4);
-  if (words.length >= 2 && words.every((w) => normalized.includes(w))) return true;
-  return false;
-}
-
-function isBlockedCandidate(
-  candidate: SuggestionCandidate,
-  userMessages: string[],
-  previousSuggestions: string[],
-): boolean {
-  const blocked = [...userMessages, ...previousSuggestions];
-  return blocked.some((text) => messageMatchesCandidateText(text, candidate));
 }
 
 function pickColdStart(language: "en" | "ch", max: number): string[] {
@@ -67,34 +42,18 @@ function pickOffTopic(language: "en" | "ch", max: number): string[] {
     .map((candidate) => localize(candidate, language));
 }
 
-function fallbackCandidatesForDoc(docId: string): SuggestionCandidate[] {
-  return SUGGESTION_BANK.filter(
-    (candidate) => candidate.kind === "fallback" && candidate.docId === docId,
-  );
-}
-
 function pickFallback(input: PickSuggestionsInput, max: number): string[] {
-  const primaryDocId = input.plan?.focus_doc_ids[0];
-  if (!primaryDocId) return [];
+  if (!input.plan) return [];
 
-  const previousSuggestions = input.previousSuggestions ?? [];
-  const results: string[] = [];
-  const seen = new Set<string>();
-
-  for (const candidate of fallbackCandidatesForDoc(primaryDocId)) {
-    if (isBlockedCandidate(candidate, input.userMessages, previousSuggestions)) {
-      continue;
-    }
-
-    const text = localize(candidate, input.language);
-    const key = normalizeText(text);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    results.push(text);
-    if (results.length >= max) break;
-  }
-
-  return results;
+  return pickScoredFallbackChips({
+    plan: input.plan,
+    userMessages: input.userMessages,
+    assistantAnswer: input.assistantAnswer,
+    retrievedChunkIds: input.retrievedChunkIds,
+    previousSuggestions: input.previousSuggestions,
+    language: input.language,
+    max,
+  });
 }
 
 export function pickSuggestions(input: PickSuggestionsInput): string[] {
