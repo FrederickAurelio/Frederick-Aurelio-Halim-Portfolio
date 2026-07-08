@@ -401,7 +401,7 @@ export type ChatContent = {
   chatErrorVercelTimeout: LocalizedText;
   chatRetryLabel: LocalizedText;
   chatInputUnavailable: LocalizedText;
-  historyRetention: LocalizedText;
+  chatDisclaimer: LocalizedText;
 };
 
 export const chat: ChatContent = {
@@ -505,8 +505,8 @@ export const chat: ChatContent = {
     en: "Chat is temporarily unavailable",
     ch: "聊天暂时不可用",
   },
-  historyRetention: {
-    en: "Chat history is kept for {hours} hours. Sending a message extends this.",
-    ch: "聊天记录保留 {hours} 小时，发送消息会延长保留时间。",
+  chatDisclaimer: {
+    en: "Responses are AI-generated and may not always be accurate.",
+    ch: "回复由 AI 生成，可能不完全准确。",
   },
 };

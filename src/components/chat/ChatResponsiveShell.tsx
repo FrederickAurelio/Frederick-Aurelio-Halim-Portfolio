@@ -30,8 +30,7 @@ type ChatResponsiveShellProps = {
   isLoadingHistory: boolean;
   showSuggestions: boolean;
   suggestions: string[];
-  retentionHours: number | null;
-  retentionLabel: string;
+  disclaimer: string;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   historyErrorTitle?: string;
@@ -57,8 +56,7 @@ export default function ChatResponsiveShell({
   isLoadingHistory,
   showSuggestions,
   suggestions,
-  retentionHours,
-  retentionLabel,
+  disclaimer,
   hasNextPage,
   isFetchingNextPage,
   historyErrorTitle,
@@ -86,8 +84,7 @@ export default function ChatResponsiveShell({
     isLoadingHistory,
     showSuggestions,
     suggestions,
-    retentionHours,
-    retentionLabel,
+    disclaimer,
     hasNextPage,
     isFetchingNextPage,
     historyErrorTitle,

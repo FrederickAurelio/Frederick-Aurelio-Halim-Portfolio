@@ -31,7 +31,6 @@ export default function ChatWidget() {
 
   const {
     storedPages,
-    retentionSeconds,
     isLoadingHistory,
     isRefetchingHistory,
     isHistoryError,
@@ -146,11 +145,6 @@ export default function ChatWidget() {
     (messages.length === 0 || lastMessage?.role === "assistant") &&
     suggestions.length > 0;
 
-  const retentionHours =
-    retentionSeconds !== null
-      ? Math.max(1, Math.round(retentionSeconds / 3600))
-      : null;
-
   const handleLoadOlder = useCallback(() => {
     void fetchNextPage();
   }, [fetchNextPage]);
@@ -169,8 +163,7 @@ export default function ChatWidget() {
       isLoadingHistory={isLoadingHistory || isRefetchingHistory}
       showSuggestions={showSuggestions}
       suggestions={suggestions}
-      retentionHours={retentionHours}
-      retentionLabel={chat.historyRetention[language]}
+      disclaimer={chat.chatDisclaimer[language]}
       hasNextPage={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}
       historyErrorTitle={isHistoryError ? chat.chatErrorLoadHistory[language] : undefined}
