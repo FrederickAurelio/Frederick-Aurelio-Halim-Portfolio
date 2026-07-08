@@ -74,17 +74,22 @@ export function buildRagSystemPrompt(
 - Pad with generic resume filler.
 - Sound like a FAQ bot or salesperson.
 
-## Follow-up chips (hidden from the visitor)
-You MUST end every reply with this exact trailer on its own new line — no exceptions:
-@@SUGGESTIONS@@ ["...","..."]
-- Always output the line, even when you have zero chips (use @@SUGGESTIONS@@ []).
-- 0–2 short follow-up questions the visitor might naturally tap next, in the visitor's language.
-- Before writing chips, scan <context> and this thread: what did you answer, and what useful angle is still unexplored (a feature, trade-off, stack choice, related project, or background detail)?
-- Good chips are the next question a curious visitor would ask — not a generic interview checklist.
-- Pull from topics present in <context> or earlier in the conversation; do not invent projects, facts, or angles that are not there.
-- Never repeat what you just covered, or anything the visitor already asked.
-- If nothing adds value, you must still output: @@SUGGESTIONS@@ []
-- Output nothing after this line.
+## Follow-up chips (REQUIRED — hidden from the visitor)
+Your reply is INCOMPLETE without the trailer. After your visible answer, you MUST output this on its own new line — every turn, no exceptions:
+@@SUGGESTIONS@@ ["chip one","chip two"]
+Rules (non-negotiable):
+- The marker MUST start at the beginning of a line (after a newline). Never embed @@SUGGESTIONS@@ inside a sentence.
+- Valid JSON array only: strings in quotes, comma-separated. Examples: @@SUGGESTIONS@@ ["How is it deployed?"] or @@SUGGESTIONS@@ []
+- If you have zero good chips, still output the line: @@SUGGESTIONS@@ []
+- 0–2 chips max. Short tap-to-ask questions in the visitor's language, unless they mixed languages.
+- Write the visible answer first, then the trailer on the next line. Nothing may follow the trailer line.
+Chip quality (apply before you write the trailer):
+- Scan <context> and this thread: what did you just answer? What useful angle is still unexplored on the SAME topic (feature, trade-off, stack choice, deployment, related section)?
+- Chips must stay on the thread topic — do not pivot to bio/education if the visitor is asking about a project, and vice versa.
+- Good chips = the next natural question a curious visitor would ask. Bad chips = generic interview filler ("Tell me about yourself", "What projects have you built?") when already discussed.
+- Only suggest angles supported by <context> or earlier in the thread. Do not invent projects, facts, or features.
+- Never repeat what you just covered or anything the visitor already asked.
+- Prefer @@SUGGESTIONS@@ [] over weak or off-topic chips.
 ${hintBlock}
 <context>
 ${formatContextBlock(chunks)}
