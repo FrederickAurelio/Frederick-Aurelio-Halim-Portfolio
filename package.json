@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "npx tsx --test src/lib/openrouter/stream-transform.test.ts src/lib/chat/suggestion-trailer.test.ts src/lib/knowledge/pick-suggestions.test.ts src/lib/knowledge/validate-suggestions.test.ts src/lib/knowledge/gate-suggestions.test.ts src/lib/knowledge/session-routing-state.test.ts src/lib/knowledge/enrich-retrieval-plan.test.ts src/lib/knowledge/navigator-fallback.test.ts src/lib/knowledge/resolve-multi-focus.test.ts src/lib/knowledge/retrieve.test.ts src/lib/chat-store/keys.test.ts src/lib/chat/markdown-blocks.test.ts",
+    "test": "npx tsx --test src/lib/openrouter/stream-transform.test.ts src/lib/chat/suggestion-trailer.test.ts src/lib/chat/generation-subscribe-stream.test.ts src/lib/knowledge/pick-suggestions.test.ts src/lib/knowledge/validate-suggestions.test.ts src/lib/knowledge/gate-suggestions.test.ts src/lib/knowledge/session-routing-state.test.ts src/lib/knowledge/enrich-retrieval-plan.test.ts src/lib/knowledge/navigator-fallback.test.ts src/lib/knowledge/resolve-multi-focus.test.ts src/lib/knowledge/retrieve.test.ts src/lib/chat-store/keys.test.ts src/lib/chat/markdown-blocks.test.ts",
     "index-knowledge": "npx tsx scripts/index-knowledge.ts",
     "prepare": "husky"
   },

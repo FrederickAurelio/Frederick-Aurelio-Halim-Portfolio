@@ -322,7 +322,10 @@ export function createRagChatStream(
                       previousSuggestions: options.previousSuggestions,
                       max: SUGGESTION_LIMIT_FOLLOW_UP,
                     });
-                  } else if (trailerResult.markerFound) {
+                  } else if (
+                    trailerResult.markerFound &&
+                    !trailerResult.parseFailed
+                  ) {
                     suggestionItems = gateFollowUpSuggestions(
                       validateSuggestions({
                         items: trailerResult.suggestions ?? [],

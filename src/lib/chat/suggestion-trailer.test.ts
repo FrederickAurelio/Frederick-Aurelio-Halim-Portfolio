@@ -22,6 +22,11 @@ describe("findTrailerMarkerIndex", () => {
     );
   });
 
+  it("accepts marker after leading spaces on the line", () => {
+    const text = `Answer.\n  ${SUGGESTION_TRAILER_MARKER} ["Chip"]`;
+    assert.equal(findTrailerMarkerIndex(text), text.indexOf(SUGGESTION_TRAILER_MARKER));
+  });
+
   it("matches marker at start of stream", () => {
     assert.equal(findTrailerMarkerIndex(`${SUGGESTION_TRAILER_MARKER} []`), 0);
   });
@@ -30,7 +35,7 @@ describe("findTrailerMarkerIndex", () => {
 describe("isPartialMarkerPrefix", () => {
   it("detects incomplete marker tails", () => {
     assert.equal(isPartialMarkerPrefix("@@SUGGE"), true);
-    assert.equal(isPartialMarkerPrefix("@"), false);
+    assert.equal(isPartialMarkerPrefix("@"), true);
     assert.equal(isPartialMarkerPrefix("hello"), false);
   });
 });
@@ -136,15 +141,42 @@ describe("SuggestionTrailerFilter", () => {
 
     const result = filter.finalize();
     assert.equal(result.markerFound, true);
+    assert.equal(result.parseFailed, false);
     assert.deepEqual(result.suggestions, []);
   });
 
-  it("does not treat invalid trailer JSON as unparsed (empty chips, not fallback)", () => {
+  it("does not treat invalid trailer JSON as explicit empty chips", () => {
     const filter = new SuggestionTrailerFilter();
     filter.push(`${SUGGESTION_TRAILER_MARKER} not valid json`);
 
     const result = filter.finalize();
     assert.equal(result.markerFound, true);
-    assert.deepEqual(result.suggestions, []);
+    assert.equal(result.parseFailed, true);
+    assert.equal(result.suggestions, null);
+  });
+
+  it("handles marker split one character at a time", () => {
+    const filter = new SuggestionTrailerFilter();
+    const full = `FXTrade dashboard.\n${SUGGESTION_TRAILER_MARKER} ["Where does data come from?"]`;
+    let visible = "";
+    for (const char of full) {
+      visible += filter.push(char);
+    }
+
+    assert.equal(visible, "FXTrade dashboard.\n");
+    const result = filter.finalize();
+    assert.deepEqual(result.suggestions, ["Where does data come from?"]);
+  });
+
+  it("strips marker when the line has leading spaces", () => {
+    const filter = new SuggestionTrailerFilter();
+    const visible = filter.push(
+      `FXTrade dashboard.\n  ${SUGGESTION_TRAILER_MARKER} ["Where does data come from?"]`,
+    );
+    assert.ok(visible.startsWith("FXTrade dashboard.\n"));
+    assert.ok(!visible.includes(SUGGESTION_TRAILER_MARKER));
+
+    const result = filter.finalize();
+    assert.deepEqual(result.suggestions, ["Where does data come from?"]);
   });
 });

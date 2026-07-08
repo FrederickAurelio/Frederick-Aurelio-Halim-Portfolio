@@ -105,10 +105,49 @@ function finishSubscribeStream(
   buffer: GenerationBuffer | null,
   lastReasoningLen: number,
   lastContentLen: number,
-): void {
+  options: {
+    sessionId: string;
+    store: ChatStore;
+    assistantMessageId: string | null;
+  },
+): Promise<void> {
   emitTrailingBuffer(controller, encoder, buffer, lastReasoningLen, lastContentLen);
-  safeEnqueue(controller, encoder, "done", {});
-  controller.close();
+
+  return emitPersistedSuggestions(controller, encoder, options).finally(() => {
+    safeEnqueue(controller, encoder, "done", {});
+    controller.close();
+  });
+}
+
+async function emitPersistedSuggestions(
+  controller: ReadableStreamDefaultController<Uint8Array>,
+  encoder: TextEncoder,
+  options: {
+    sessionId: string;
+    store: ChatStore;
+    assistantMessageId: string | null;
+  },
+): Promise<void> {
+  const assistantMessageId = options.assistantMessageId;
+  if (!assistantMessageId) return;
+
+  try {
+    const { messages } = await options.store.getLatestMessages(
+      options.sessionId,
+      20,
+    );
+    const assistant = messages.find(
+      (message) =>
+        message.id === assistantMessageId && message.role === "assistant",
+    );
+    if (assistant?.suggestions?.length) {
+      safeEnqueue(controller, encoder, "suggestions", {
+        items: assistant.suggestions,
+      });
+    }
+  } catch {
+    // Subscribe stream should still finish even if suggestion lookup fails.
+  }
 }
 
 type CreateSubscribeStreamOptions = {
@@ -154,6 +193,7 @@ export function createGenerationSubscribeStream(
           let lastReasoningLen = buffer.reasoning.length;
           let lastContentLen = buffer.content.length;
           let lastEmittedPhase = buffer.streamPhase;
+          let assistantMessageId = buffer.assistantMessageId;
 
           emitPhaseEvent(controller, encoder, buffer.streamPhase);
 
@@ -163,12 +203,16 @@ export function createGenerationSubscribeStream(
             const locked = await store.isGenerationLocked(sessionId);
             if (!locked) {
               const finalBuffer = await store.getGenerationBuffer(sessionId);
-              finishSubscribeStream(
+              if (finalBuffer?.assistantMessageId) {
+                assistantMessageId = finalBuffer.assistantMessageId;
+              }
+              await finishSubscribeStream(
                 controller,
                 encoder,
                 finalBuffer,
                 lastReasoningLen,
                 lastContentLen,
+                { sessionId, store, assistantMessageId },
               );
               return;
             }
@@ -179,17 +223,20 @@ export function createGenerationSubscribeStream(
             if (!updated) {
               const stillLocked = await store.isGenerationLocked(sessionId);
               if (!stillLocked) {
-                finishSubscribeStream(
+                await finishSubscribeStream(
                   controller,
                   encoder,
                   null,
                   lastReasoningLen,
                   lastContentLen,
+                  { sessionId, store, assistantMessageId },
                 );
                 return;
               }
               continue;
             }
+
+            assistantMessageId = updated.assistantMessageId;
 
             if (updated.streamPhase !== lastEmittedPhase) {
               emitPhaseEvent(controller, encoder, updated.streamPhase);

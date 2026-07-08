@@ -1,22 +1,28 @@
 export const SUGGESTION_TRAILER_MARKER = "@@SUGGESTIONS@@";
 
-/** Minimum suffix length before withholding a possible marker prefix. */
-const MIN_HOLDBACK_PREFIX_LEN = 2;
-
 export type TrailerFinalizeResult = {
-  /** True when @@SUGGESTIONS@@ appeared in the stream (even if JSON was invalid). */
+  /** True when @@SUGGESTIONS@@ appeared in the stream. */
   markerFound: boolean;
   /**
-   * Parsed chip labels when markerFound.
-   * null only when markerFound is false (no marker in stream).
+   * Parsed chip labels when markerFound and JSON was valid (including explicit []).
+   * null when no marker, or when marker was present but JSON could not be parsed.
    */
   suggestions: string[] | null;
+  /** True when marker was found but trailer JSON was non-empty and invalid. */
+  parseFailed: boolean;
   /** Safe visible text withheld during streaming — never a partial marker prefix. */
   flushedTail: string;
 };
 
 function isLineAnchoredMarker(text: string, index: number): boolean {
-  return index === 0 || text[index - 1] === "\n";
+  if (index === 0) return true;
+
+  let i = index - 1;
+  while (i >= 0 && (text[i] === " " || text[i] === "\t")) {
+    i -= 1;
+  }
+
+  return i < 0 || text[i] === "\n" || text[i] === "\r";
 }
 
 /** Last line-anchored @@SUGGESTIONS@@ in the buffer (ignores mid-line mentions). */
@@ -38,7 +44,7 @@ function markerPrefixHoldbackLength(text: string): number {
   const marker = SUGGESTION_TRAILER_MARKER;
   const max = Math.min(text.length, marker.length - 1);
 
-  for (let len = max; len >= MIN_HOLDBACK_PREFIX_LEN; len -= 1) {
+  for (let len = max; len >= 1; len -= 1) {
     const suffix = text.slice(-len);
     if (marker.startsWith(suffix)) return len;
   }
@@ -47,7 +53,7 @@ function markerPrefixHoldbackLength(text: string): number {
 }
 
 export function isPartialMarkerPrefix(text: string): boolean {
-  if (text.length < MIN_HOLDBACK_PREFIX_LEN) return false;
+  if (!text.length) return false;
   return SUGGESTION_TRAILER_MARKER.startsWith(text);
 }
 
@@ -120,13 +126,19 @@ export class SuggestionTrailerFilter {
       return {
         markerFound: false,
         suggestions: null,
+        parseFailed: false,
         flushedTail: safeFlushedTail(this.holdback),
       };
     }
 
+    const raw = this.trailerBuffer.trim();
+    const parsed = parseSuggestionTrailerPayload(raw);
+    const parseFailed = parsed === null && raw.length > 0;
+
     return {
       markerFound: true,
-      suggestions: parseSuggestionTrailerPayload(this.trailerBuffer) ?? [],
+      suggestions: parseFailed ? null : parsed,
+      parseFailed,
       flushedTail: "",
     };
   }
