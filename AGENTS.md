@@ -115,7 +115,7 @@ flowchart LR
 1. **Routing** — `planRetrievalForTurn`: navigator LLM picks intent + search queries; fallback heuristics if navigator fails; `session-routing-state` tracks multi-turn focus
 2. **Retrieving** — `retrieveWithPlan`: cosine similarity over precomputed embeddings in `index.json`
 3. **Thinking + answer** — `buildRagMessages` + OpenRouter stream; optional reasoning block
-4. **Suggestions** — `gateFollowUpSuggestions` → `pickSuggestions` → `validateSuggestions`; `SuggestionTrailerFilter` strips leaked suggestion JSON from answer tail
+4. **Suggestions** — LLM trailer chips emit as parsed; fallback/off-topic use `pickSuggestions` (fallback bank is score-gated); `SuggestionTrailerFilter` strips leaked suggestion JSON from answer tail
 
 **Session & storage:**
 

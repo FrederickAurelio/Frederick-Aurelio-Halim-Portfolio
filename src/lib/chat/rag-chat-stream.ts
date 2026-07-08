@@ -6,8 +6,6 @@ import {
   pickSuggestions,
   SUGGESTION_LIMIT_FOLLOW_UP,
 } from "@/lib/knowledge/pick-suggestions";
-import { validateSuggestions } from "@/lib/knowledge/validate-suggestions";
-import { gateFollowUpSuggestions } from "@/lib/knowledge/gate-suggestions";
 import { detectReplyLanguage } from "@/lib/knowledge/refusal";
 import { retrieveWithPlan } from "@/lib/knowledge/retrieve";
 import { CHAT_ERROR_CODES } from "@/lib/chat/api-errors";
@@ -304,15 +302,6 @@ export function createRagChatStream(
                 if (reason === "complete" && assistantAnswer.trim()) {
                   let suggestionItems: string[] = [];
                   const retrievedChunkIds = retrieval.chunks.map((chunk) => chunk.id);
-                  const gatingInput = {
-                    plan: retrieval.plan,
-                    userMessages,
-                    assistantAnswer,
-                    retrievedChunkIds,
-                    previousSuggestions: options.previousSuggestions,
-                    language,
-                    max: SUGGESTION_LIMIT_FOLLOW_UP,
-                  };
 
                   if (retrieval.plan.intent === "off_topic") {
                     suggestionItems = pickSuggestions({
@@ -326,15 +315,9 @@ export function createRagChatStream(
                     trailerResult.markerFound &&
                     !trailerResult.parseFailed
                   ) {
-                    suggestionItems = gateFollowUpSuggestions(
-                      validateSuggestions({
-                        items: trailerResult.suggestions ?? [],
-                        userMessages,
-                        previousSuggestions: options.previousSuggestions,
-                        assistantAnswer,
-                        max: SUGGESTION_LIMIT_FOLLOW_UP,
-                      }),
-                      gatingInput,
+                    suggestionItems = (trailerResult.suggestions ?? []).slice(
+                      0,
+                      SUGGESTION_LIMIT_FOLLOW_UP,
                     );
                   } else {
                     suggestionItems = pickSuggestions({
