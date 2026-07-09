@@ -1,20 +1,14 @@
-import { resolvePrimaryDocId } from "./resolve-doc-id";
-import { hasMultiDocQuestion } from "./resolve-multi-focus";
-import {
-  defaultRetrievalPlan,
-  type RetrievalIntent,
-  type RetrievalPlan,
-} from "./retrieval-plan";
+import { loadKnowledgeMap } from "./load-knowledge-map";
+import { findDocIdsInText, resolvePrimaryDocId } from "./resolve-doc-id";
+import type { RetrievalPlan } from "./retrieval-plan";
 
 export type SessionRoutingState = {
   primaryDocId: string | null;
-  lastIntent: RetrievalIntent | null;
   updatedAt: number;
 };
 
 export const EMPTY_SESSION_ROUTING_STATE: SessionRoutingState = {
   primaryDocId: null,
-  lastIntent: null,
   updatedAt: 0,
 };
 
@@ -52,8 +46,9 @@ export function isResumeTopicPhrase(message: string): boolean {
 export function isVagueFollowUp(message: string): boolean {
   const trimmed = message.trim();
   if (!trimmed || isCasualNoise(trimmed)) return false;
-  if (hasMultiDocQuestion(trimmed, "")) return false;
   if (resolvePrimaryDocId(trimmed, "")) return false;
+  if (findDocIdsInText(trimmed).length >= 2) return false;
+  if (isResumeTopicPhrase(trimmed)) return true;
   return VAGUE_ASPECT_PATTERN.test(trimmed);
 }
 
@@ -61,53 +56,15 @@ export function formatSessionTopicForPrompt(state: SessionRoutingState): string 
   const doc = state.primaryDocId ?? "none";
   return `<session_topic>
   primaryDocId: ${doc}
-  note: "main topic" / vague follow-ups refer to primaryDocId unless the user names a different project.
-  If primaryDocId is set and the user asks a vague follow-up ("what stack?", "how does auth work?", "back to main topic") without naming another project, you MUST set focus_doc_ids to [primaryDocId].
-  focus_doc_ids[0] is the primary topic — put the doc the user is asking about first (e.g. follow_up on QuizConnect → ["quizconnect"], not ["about-me", "quizconnect"]).
-  If the user names 2+ projects in one message, use intent multi_project with ALL named projects in focus_doc_ids — not project_detail.
-  If the user spans 2+ different docs/topics (e.g. education + work, bio + a project, compare non-project docs), use intent multi_doc with every relevant docId.
+  note: Vague follow-ups ("what stack?", "how does auth work?", "back to main topic") refer to primaryDocId unless the user names a different project or topic.
+  When primaryDocId is set and the user asks a vague follow-up without naming another doc, put that doc in preferDocId / prefer_doc_ids and write search queries about it.
+  If the user names 2+ topics in one message, emit one topics[] entry per area — do not mash them into a single query.
 </session_topic>`;
 }
 
-/** Safety net: fill empty focus from sticky session topic (never overrides planner focus). */
-export function applySessionRoutingToPlan(
-  plan: RetrievalPlan,
-  currentMessage: string,
-  session: SessionRoutingState,
-): RetrievalPlan {
-  const message = currentMessage.trim();
-
-  if (isCasualNoise(message)) return plan;
-  if (isPersonalTopicMessage(message)) return plan;
-  if (hasMultiDocQuestion(message, "")) return plan;
-  if (resolvePrimaryDocId(message, "")) return plan;
-  if (plan.focus_doc_ids.length > 0) return plan;
-  if (!session.primaryDocId) return plan;
-  if (
-    plan.intent === "list_projects" ||
-    plan.intent === "recommend_project" ||
-    plan.intent === "multi_project" ||
-    plan.intent === "multi_doc"
-  ) {
-    return plan;
-  }
-  if (plan.intent === "off_topic" && !isVagueFollowUp(message) && !isResumeTopicPhrase(message)) {
-    return plan;
-  }
-  if (!isVagueFollowUp(message) && !isResumeTopicPhrase(message)) return plan;
-
-  if (process.env.RAG_LOG_SESSION_APPLY === "1") {
-    console.debug("[rag] session apply", {
-      primaryDocId: session.primaryDocId,
-      message,
-    });
-  }
-
-  return defaultRetrievalPlan({
-    ...plan,
-    intent: "follow_up",
-    focus_doc_ids: [session.primaryDocId],
-  });
+export function docTitleForId(docId: string): string | undefined {
+  return loadKnowledgeMap().sources.find((source) => source.docId === docId)
+    ?.title;
 }
 
 export function computeNextRoutingState(
@@ -118,96 +75,45 @@ export function computeNextRoutingState(
   const now = Date.now();
   const message = currentMessage.trim();
 
-  if (plan.intent === "pivot_other") {
-    return {
-      primaryDocId: null,
-      lastIntent: plan.intent,
-      updatedAt: now,
-    };
-  }
-
-  if (isCasualNoise(message) || plan.intent === "off_topic") {
+  if (isCasualNoise(message) || plan.off_topic) {
     return {
       ...previous,
-      lastIntent: plan.intent,
       updatedAt: now,
     };
   }
 
-  if (plan.intent === "recommend_project") {
-    return {
-      primaryDocId: "quizconnect",
-      lastIntent: plan.intent,
-      updatedAt: now,
-    };
-  }
-
-  if (plan.intent === "list_projects") {
-    return {
-      primaryDocId: "projects-overview",
-      lastIntent: plan.intent,
-      updatedAt: now,
-    };
-  }
-
-  if (plan.intent === "multi_project") {
-    return {
-      primaryDocId: plan.focus_doc_ids[0] ?? previous.primaryDocId,
-      lastIntent: plan.intent,
-      updatedAt: now,
-    };
-  }
-
-  if (plan.intent === "multi_doc") {
-    return {
-      primaryDocId: plan.focus_doc_ids[0] ?? previous.primaryDocId,
-      lastIntent: plan.intent,
-      updatedAt: now,
-    };
-  }
-
-  if (plan.intent === "bio" || plan.intent === "experience") {
-    const explicitProject = resolvePrimaryDocId(message, "");
-    if (!explicitProject) {
-      return {
-        primaryDocId:
-          plan.focus_doc_ids[0] ??
-          (plan.intent === "experience" ? "work-experience" : "about-me"),
-        lastIntent: plan.intent,
-        updatedAt: now,
-      };
+  if (plan.exclude_doc_ids.length > 0 && plan.prefer_doc_ids.length === 0) {
+    const excluded = new Set(plan.exclude_doc_ids);
+    if (previous.primaryDocId && excluded.has(previous.primaryDocId)) {
+      return { primaryDocId: null, updatedAt: now };
     }
-  }
-
-  if (isPersonalTopicMessage(message) && !resolvePrimaryDocId(message, "")) {
-    return {
-      primaryDocId: plan.focus_doc_ids[0] ?? "about-me",
-      lastIntent: plan.intent,
-      updatedAt: now,
-    };
   }
 
   const explicit = resolvePrimaryDocId(message, "");
   if (explicit) {
-    return {
-      primaryDocId: explicit,
-      lastIntent: plan.intent,
-      updatedAt: now,
-    };
+    return { primaryDocId: explicit, updatedAt: now };
   }
 
-  const focus = plan.focus_doc_ids[0];
-  if (focus) {
-    return {
-      primaryDocId: focus,
-      lastIntent: plan.intent,
-      updatedAt: now,
-    };
+  if (isPersonalTopicMessage(message) && !explicit) {
+    const fromPlan =
+      plan.prefer_doc_ids[0] ??
+      plan.topics.find((topic) => topic.preferDocId)?.preferDocId ??
+      "about-me";
+    return { primaryDocId: fromPlan, updatedAt: now };
+  }
+
+  const fromPrefer = plan.prefer_doc_ids[0];
+  if (fromPrefer) {
+    return { primaryDocId: fromPrefer, updatedAt: now };
+  }
+
+  const fromTopic = plan.topics.find((topic) => topic.preferDocId)?.preferDocId;
+  if (fromTopic) {
+    return { primaryDocId: fromTopic, updatedAt: now };
   }
 
   return {
     ...previous,
-    lastIntent: plan.intent,
     updatedAt: now,
   };
 }
@@ -220,16 +126,17 @@ export function parseSessionRoutingState(raw: unknown): SessionRoutingState {
     typeof obj.primaryDocId === "string" && obj.primaryDocId.trim()
       ? obj.primaryDocId.trim()
       : null;
-  const lastIntent =
-    typeof obj.lastIntent === "string" ? (obj.lastIntent as RetrievalIntent) : null;
   const updatedAt =
     typeof obj.updatedAt === "number" && Number.isFinite(obj.updatedAt)
       ? obj.updatedAt
       : 0;
 
-  return { primaryDocId, lastIntent, updatedAt };
+  return { primaryDocId, updatedAt };
 }
 
 export function serializeSessionRoutingState(state: SessionRoutingState): string {
-  return JSON.stringify(state);
+  return JSON.stringify({
+    primaryDocId: state.primaryDocId,
+    updatedAt: state.updatedAt,
+  });
 }

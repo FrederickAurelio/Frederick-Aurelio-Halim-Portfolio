@@ -1,12 +1,10 @@
-import { getOpenRouterConfig, getRagMaxContextChunks, getRagTopK } from "@/lib/openrouter/config";
+import { getOpenRouterConfig, getRagMaxContextChunks } from "@/lib/openrouter/config";
 import { createEmbedding } from "@/lib/openrouter/embeddings";
-import type { OpenRouterMessage } from "@/lib/openrouter/types";
 
 import { cosineSimilarity } from "./cosine";
-import { loadKnowledgeMap } from "./load-knowledge-map";
 import { loadKnowledgeIndex } from "./load-index";
 import { buildRagSystemPrompt } from "./prompt";
-import type { RetrievalPlan } from "./retrieval-plan";
+import type { RetrievalPlan, RetrievalTopic } from "./retrieval-plan";
 import type { KnowledgeChunkRecord, RetrievedChunk } from "./types";
 
 export type RetrievalResult = {
@@ -16,22 +14,18 @@ export type RetrievalResult = {
   plan: RetrievalPlan;
 };
 
-const LIST_PROJECTS_CAP = 6;
-const RECOMMEND_PROJECT_CAP = 7;
-const INCLUDED_SECTION_SCORE = 0.92;
+const PER_TOPIC_TOP_K = 2;
+const TOP_UP_SCORE = 0.85;
 
-/** Match exact section id or numbered suffix (e.g. tech-stack → 4-tech-stack). */
-function sectionMatches(sectionId: string, requested: string): boolean {
-  return (
-    sectionId === requested ||
-    sectionId.endsWith(`-${requested}`) ||
-    requested.endsWith(`-${sectionId}`)
-  );
-}
+const GLANCE_SECTION_IDS = [
+  "at-a-glance",
+  "overview",
+  "mufy-at-a-glance",
+  "where-to-start",
+] as const;
 
 type ScoredChunk = RetrievedChunk & {
   docId: string;
-  docType: string;
   sectionId: string;
 };
 
@@ -42,223 +36,127 @@ function toRetrieved(chunk: ScoredChunk): RetrievedChunk {
     section: chunk.section,
     text: chunk.text,
     score: chunk.score,
+    topicLabel: chunk.topicLabel,
   };
 }
 
-function filterChunks(
+function excludeCorpus(
   chunks: KnowledgeChunkRecord[],
-  plan: RetrievalPlan,
+  excludeDocIds: string[],
 ): KnowledgeChunkRecord[] {
-  let filtered = chunks;
-
-  if (plan.exclude_doc_ids.length > 0) {
-    const excluded = new Set(plan.exclude_doc_ids);
-    filtered = filtered.filter((chunk) => !excluded.has(chunk.docId));
-  }
-
-  if (plan.focus_doc_ids.length > 0) {
-    const focused = new Set(plan.focus_doc_ids);
-    const inFocus = filtered.filter((chunk) => focused.has(chunk.docId));
-    if (inFocus.length > 0) filtered = inFocus;
-  }
-
-  return filtered;
+  if (excludeDocIds.length === 0) return chunks;
+  const excluded = new Set(excludeDocIds);
+  return chunks.filter((chunk) => !excluded.has(chunk.docId));
 }
 
-function fetchListProjectsChunks(
+function focusCorpus(
   chunks: KnowledgeChunkRecord[],
+  preferDocIds: string[],
 ): KnowledgeChunkRecord[] {
-  const projectDocIds = loadKnowledgeMap()
-    .sources.filter((source) => source.type === "project")
-    .map((source) => source.docId);
-
-  const results: KnowledgeChunkRecord[] = [];
-  const seen = new Set<string>();
-
-  for (const chunk of chunks) {
-    if (chunk.docId === "projects-overview" && chunk.sectionId === "overview") {
-      if (!seen.has(chunk.id)) {
-        seen.add(chunk.id);
-        results.push(chunk);
-      }
-    }
-  }
-
-  for (const docId of projectDocIds) {
-    const atAGlance = chunks
-      .filter(
-        (chunk) =>
-          chunk.docId === docId &&
-          chunk.sectionId === "at-a-glance" &&
-          !chunk.id.includes("-part-"),
-      )
-      .concat(
-        chunks.filter(
-          (chunk) =>
-            chunk.docId === docId &&
-            chunk.sectionId === "at-a-glance" &&
-            chunk.id.includes("-part-"),
-        ),
-      );
-
-    const pick = atAGlance[0];
-    if (pick && !seen.has(pick.id)) {
-      seen.add(pick.id);
-      results.push(pick);
-    }
-  }
-
-  return results.slice(0, LIST_PROJECTS_CAP);
+  if (preferDocIds.length === 0) return chunks;
+  const focused = new Set(preferDocIds);
+  const inFocus = chunks.filter((chunk) => focused.has(chunk.docId));
+  return inFocus.length > 0 ? inFocus : chunks;
 }
 
-function pickFirstChunk(
-  chunks: KnowledgeChunkRecord[],
-  docId: string,
-  sectionId: string,
-): KnowledgeChunkRecord | undefined {
-  const primary = chunks.find(
-    (chunk) =>
-      chunk.docId === docId &&
-      sectionMatches(chunk.sectionId, sectionId) &&
-      !chunk.id.includes("-part-"),
-  );
-  if (primary) return primary;
-  return chunks.find(
-    (chunk) => chunk.docId === docId && sectionMatches(chunk.sectionId, sectionId),
-  );
-}
-
-function fetchRecommendProjectChunks(
-  chunks: KnowledgeChunkRecord[],
-): KnowledgeChunkRecord[] {
-  const results: KnowledgeChunkRecord[] = [];
-  const seen = new Set<string>();
-
-  const push = (chunk: KnowledgeChunkRecord | undefined) => {
-    if (chunk && !seen.has(chunk.id)) {
-      seen.add(chunk.id);
-      results.push(chunk);
-    }
-  };
-
-  for (const sectionId of [
-    "where-to-start",
-    "why-flagship",
-    "project-scale",
-    "overview",
-  ]) {
-    push(pickFirstChunk(chunks, "projects-overview", sectionId));
-  }
-
-  for (const sectionId of ["at-a-glance", "tech-stack", "problem-purpose"]) {
-    push(pickFirstChunk(chunks, "quizconnect", sectionId));
-  }
-
-  return results.slice(0, RECOMMEND_PROJECT_CAP);
-}
-
-function fetchMultiDocChunks(
-  chunks: KnowledgeChunkRecord[],
-  plan: RetrievalPlan,
-): KnowledgeChunkRecord[] {
-  const docIds = plan.focus_doc_ids.slice(0, 4);
-  const sections =
-    plan.include_sections.length > 0 ? plan.include_sections : ["at-a-glance"];
-
-  const results: KnowledgeChunkRecord[] = [];
-  const seen = new Set<string>();
-
-  for (const docId of docIds) {
-    for (const sectionId of sections) {
-      const chunk = pickFirstChunk(chunks, docId, sectionId);
-      if (chunk && !seen.has(chunk.id)) {
-        seen.add(chunk.id);
-        results.push(chunk);
-      }
-    }
-  }
-
-  return results;
-}
-
-function fetchIncludedSections(
-  chunks: KnowledgeChunkRecord[],
-  plan: RetrievalPlan,
+function scoreTopK(
+  corpus: KnowledgeChunkRecord[],
+  vector: number[],
+  topK: number,
+  topicLabel: string,
 ): ScoredChunk[] {
-  if (plan.include_sections.length === 0) return [];
-
-  const sectionSet = new Set(plan.include_sections);
-  const matchesIncludedSection = (sectionId: string) =>
-    [...sectionSet].some((requested) => sectionMatches(sectionId, requested));
-  const focusSet =
-    plan.focus_doc_ids.length > 0 ? new Set(plan.focus_doc_ids) : null;
-  const excludeSet = new Set(plan.exclude_doc_ids);
-  const seen = new Set<string>();
-  const results: ScoredChunk[] = [];
-
-  if (
-    !focusSet &&
-    plan.include_sections.length > 0 &&
-    (plan.intent === "follow_up" || plan.intent === "project_detail")
-  ) {
-    return results;
-  }
-
-  for (const chunk of chunks) {
-    if (excludeSet.has(chunk.docId)) continue;
-    if (focusSet && !focusSet.has(chunk.docId)) continue;
-    if (!matchesIncludedSection(chunk.sectionId)) continue;
-    if (seen.has(chunk.id)) continue;
-
-    seen.add(chunk.id);
-    results.push({
+  return corpus
+    .map((chunk) => ({
       id: chunk.id,
       source: chunk.source,
       section: chunk.section,
       text: chunk.text,
       docId: chunk.docId,
-      docType: chunk.docType,
       sectionId: chunk.sectionId,
-      score: INCLUDED_SECTION_SCORE,
-    });
-  }
-
-  return results;
+      score: cosineSimilarity(vector, chunk.vector),
+      topicLabel,
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topK);
 }
 
-function mergeScoredChunks(
-  deterministic: ScoredChunk[],
-  semantic: ScoredChunk[],
+export function mergeTopicResults(
+  perTopic: ScoredChunk[][],
   cap: number,
 ): ScoredChunk[] {
   const byId = new Map<string, ScoredChunk>();
 
-  for (const chunk of deterministic) {
-    byId.set(chunk.id, chunk);
-  }
-
-  for (const chunk of semantic) {
-    const existing = byId.get(chunk.id);
-    if (!existing || chunk.score > existing.score) {
-      byId.set(chunk.id, chunk);
+  for (const group of perTopic) {
+    for (const chunk of group) {
+      const existing = byId.get(chunk.id);
+      if (!existing || chunk.score > existing.score) {
+        byId.set(chunk.id, chunk);
+      }
     }
   }
 
   return [...byId.values()].sort((a, b) => b.score - a.score).slice(0, cap);
 }
 
-function effectiveChunkCap(plan: RetrievalPlan, baseTopK: number): number {
-  const maxChunks = getRagMaxContextChunks();
+function sectionLooksLikeGlance(sectionId: string): boolean {
+  return GLANCE_SECTION_IDS.some(
+    (id) =>
+      sectionId === id ||
+      sectionId.endsWith(`-${id}`) ||
+      id.endsWith(`-${sectionId}`),
+  );
+}
 
-  if (plan.intent === "multi_project" || plan.intent === "multi_doc") {
-    const docs = Math.max(plan.focus_doc_ids.length, 1);
-    const sections = Math.max(plan.include_sections.length, 1);
-    return Math.min(maxChunks, docs * sections + 2);
+export function pickGlanceChunk(
+  chunks: KnowledgeChunkRecord[],
+  docId: string,
+): KnowledgeChunkRecord | undefined {
+  const inDoc = chunks.filter((chunk) => chunk.docId === docId);
+  const glance = inDoc.find(
+    (chunk) =>
+      sectionLooksLikeGlance(chunk.sectionId) && !chunk.id.includes("-part-"),
+  );
+  if (glance) return glance;
+  const glancePart = inDoc.find((chunk) =>
+    sectionLooksLikeGlance(chunk.sectionId),
+  );
+  if (glancePart) return glancePart;
+  return inDoc.find((chunk) => !chunk.id.includes("-part-")) ?? inDoc[0];
+}
+
+export function applyEmptyTopicTopUp(
+  merged: ScoredChunk[],
+  topics: RetrievalTopic[],
+  corpus: KnowledgeChunkRecord[],
+  cap: number,
+): ScoredChunk[] {
+  const result = [...merged];
+  const seen = new Set(result.map((chunk) => chunk.id));
+
+  for (const topic of topics) {
+    const preferDocId = topic.preferDocId;
+    if (!preferDocId) continue;
+
+    const hasDoc = result.some((chunk) => chunk.docId === preferDocId);
+    if (hasDoc) continue;
+
+    const glance = pickGlanceChunk(corpus, preferDocId);
+    if (!glance || seen.has(glance.id)) continue;
+
+    seen.add(glance.id);
+    result.push({
+      id: glance.id,
+      source: glance.source,
+      section: glance.section,
+      text: glance.text,
+      docId: glance.docId,
+      sectionId: glance.sectionId,
+      score: TOP_UP_SCORE,
+      topicLabel: topic.label,
+    });
   }
 
-  const queryBoost = Math.min(plan.search_queries.length, 3);
-  const sectionBoost = Math.min(plan.include_sections.length, 4);
-  return Math.min(maxChunks, baseTopK + queryBoost + Math.floor(sectionBoost / 2));
+  return result.sort((a, b) => b.score - a.score).slice(0, cap);
 }
 
 async function isCancelled(
@@ -274,47 +172,15 @@ async function isCancelled(
   }
 }
 
-async function searchSemantic(
-  corpus: KnowledgeChunkRecord[],
-  queries: string[],
-  topK: number,
-  signal?: AbortSignal,
-  shouldStop?: () => boolean | Promise<boolean>,
-): Promise<ScoredChunk[]> {
-  const uniqueQueries = [...new Set(queries.map((q) => q.trim()).filter(Boolean))];
-  if (uniqueQueries.length === 0) return [];
-
-  if (await isCancelled(signal, shouldStop)) {
-    throw new DOMException("Aborted", "AbortError");
-  }
-
-  const embeddings = await createEmbedding(uniqueQueries, signal);
-  const byId = new Map<string, ScoredChunk>();
-
-  for (const queryEmbedding of embeddings) {
-    const scored = corpus
-      .map((chunk) => ({
-        id: chunk.id,
-        source: chunk.source,
-        section: chunk.section,
-        text: chunk.text,
-        docId: chunk.docId,
-        docType: chunk.docType,
-        sectionId: chunk.sectionId,
-        score: cosineSimilarity(queryEmbedding.vector, chunk.vector),
-      }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, topK);
-
-    for (const chunk of scored) {
-      const existing = byId.get(chunk.id);
-      if (!existing || chunk.score > existing.score) {
-        byId.set(chunk.id, chunk);
-      }
-    }
-  }
-
-  return [...byId.values()].sort((a, b) => b.score - a.score).slice(0, topK);
+function preferIdsForTopic(
+  topic: RetrievalTopic,
+  plan: RetrievalPlan,
+): string[] {
+  const ids = [
+    ...(topic.preferDocId ? [topic.preferDocId] : []),
+    ...plan.prefer_doc_ids,
+  ];
+  return [...new Set(ids)];
 }
 
 export async function retrieveWithPlan(
@@ -335,66 +201,56 @@ export async function retrieveWithPlan(
     );
   }
 
-  const topK = getRagTopK();
-  const chunkCap = effectiveChunkCap(plan, topK);
-  const corpus = filterChunks(index.chunks, plan);
+  const maxChunks = Math.min(getRagMaxContextChunks(), 12);
+  const baseCorpus = excludeCorpus(index.chunks, plan.exclude_doc_ids);
 
-  let scored: ScoredChunk[] = [];
-
-  if (plan.intent === "list_projects") {
-    scored = fetchListProjectsChunks(index.chunks).map((chunk) => ({
-      id: chunk.id,
-      source: chunk.source,
-      section: chunk.section,
-      text: chunk.text,
-      docId: chunk.docId,
-      docType: chunk.docType,
-      sectionId: chunk.sectionId,
-      score: 1,
-    }));
-  } else if (plan.intent === "recommend_project") {
-    scored = fetchRecommendProjectChunks(index.chunks).map((chunk) => ({
-      id: chunk.id,
-      source: chunk.source,
-      section: chunk.section,
-      text: chunk.text,
-      docId: chunk.docId,
-      docType: chunk.docType,
-      sectionId: chunk.sectionId,
-      score: 1,
-    }));
-  } else if (plan.intent === "multi_project" || plan.intent === "multi_doc") {
-    scored = fetchMultiDocChunks(index.chunks, plan).map((chunk) => ({
-      id: chunk.id,
-      source: chunk.source,
-      section: chunk.section,
-      text: chunk.text,
-      docId: chunk.docId,
-      docType: chunk.docType,
-      sectionId: chunk.sectionId,
-      score: 1,
-    }));
-  } else if (plan.intent !== "off_topic") {
-    const queries =
-      plan.search_queries.length > 0 ? plan.search_queries : [userMessage.trim()];
-    const included = fetchIncludedSections(index.chunks, plan);
-    let semantic: ScoredChunk[] = [];
-    try {
-      semantic = await searchSemantic(
-        corpus,
-        queries,
-        topK,
-        signal,
-        shouldStop,
-      );
-    } catch {
-      // Embeddings timed out or failed — proceed with navigator-included sections only.
-    }
-    scored = mergeScoredChunks(included, semantic, chunkCap);
+  if (plan.off_topic || plan.topics.length === 0) {
+    return {
+      chunks: [],
+      maxScore: 0,
+      systemPrompt: buildRagSystemPrompt([], userMessage, plan.answer_hint),
+      plan,
+    };
   }
 
-  const chunks = scored.map(toRetrieved);
-  const maxScore = scored[0]?.score ?? 0;
+  const queries = plan.topics.map((topic) => topic.query);
+  let embeddings: { vector: number[] }[] = [];
+  try {
+    embeddings = await createEmbedding(queries, signal);
+  } catch {
+    embeddings = [];
+  }
+
+  const perTopic: ScoredChunk[][] = [];
+
+  for (let i = 0; i < plan.topics.length; i += 1) {
+    const topic = plan.topics[i];
+    const vector = embeddings[i]?.vector;
+    if (!vector) {
+      perTopic.push([]);
+      continue;
+    }
+
+    const prefer = preferIdsForTopic(topic, plan);
+    let hits = scoreTopK(
+      focusCorpus(baseCorpus, prefer),
+      vector,
+      PER_TOPIC_TOP_K,
+      topic.label,
+    );
+
+    if (hits.length === 0 && prefer.length > 0) {
+      hits = scoreTopK(baseCorpus, vector, PER_TOPIC_TOP_K, topic.label);
+    }
+
+    perTopic.push(hits);
+  }
+
+  let merged = mergeTopicResults(perTopic, maxChunks);
+  merged = applyEmptyTopicTopUp(merged, plan.topics, baseCorpus, maxChunks);
+
+  const chunks = merged.map(toRetrieved);
+  const maxScore = chunks[0]?.score ?? 0;
 
   return {
     chunks,
@@ -402,14 +258,4 @@ export async function retrieveWithPlan(
     systemPrompt: buildRagSystemPrompt(chunks, userMessage, plan.answer_hint),
     plan,
   };
-}
-
-/** @deprecated Use planRetrievalForTurn + retrieveWithPlan from rag-chat-stream */
-export async function retrieveKnowledge(
-  _history: OpenRouterMessage[],
-  currentMessage: string,
-): Promise<RetrievalResult> {
-  const { fallbackRetrievalPlan } = await import("./navigator-fallback");
-  const plan = fallbackRetrievalPlan([], currentMessage);
-  return retrieveWithPlan(plan, currentMessage);
 }

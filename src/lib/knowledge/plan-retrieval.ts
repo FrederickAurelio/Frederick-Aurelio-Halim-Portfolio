@@ -1,17 +1,18 @@
 import type { OpenRouterMessage } from "@/lib/openrouter/types";
 
-import {
-  enrichRetrievalPlanHeavy,
-  enrichRetrievalPlanLight,
-} from "./enrich-retrieval-plan";
-import { fallbackRetrievalPlan } from "./navigator-fallback";
+import { loadKnowledgeMap } from "./load-knowledge-map";
 import { callNavigatorLlm } from "./navigator";
 import {
-  applySessionRoutingToPlan,
+  finalizePlan,
+  simpleFallbackPlan,
+  type RetrievalPlan,
+} from "./retrieval-plan";
+import {
   computeNextRoutingState,
+  docTitleForId,
+  isVagueFollowUp,
   type SessionRoutingState,
 } from "./session-routing-state";
-import { defaultRetrievalPlan, type RetrievalPlan } from "./retrieval-plan";
 
 export type PlanRetrievalResult = {
   plan: RetrievalPlan;
@@ -19,36 +20,13 @@ export type PlanRetrievalResult = {
   source: "navigator" | "fallback";
 };
 
-function normalizeNavigatorPlan(plan: RetrievalPlan, currentMessage: string): RetrievalPlan {
-  if (
-    plan.intent === "list_projects" ||
-    plan.intent === "recommend_project" ||
-    plan.intent === "multi_project" ||
-    plan.intent === "multi_doc" ||
-    plan.intent === "off_topic"
-  ) {
-    return defaultRetrievalPlan({
-      ...plan,
-      search_queries: [],
-    });
-  }
-
-  if (plan.search_queries.length === 0) {
-    return defaultRetrievalPlan({
-      ...plan,
-      search_queries: [currentMessage.trim()],
-    });
-  }
-
-  return plan;
-}
-
 export async function planRetrievalForTurn(
   history: OpenRouterMessage[],
   currentMessage: string,
   routingState: SessionRoutingState,
   signal?: AbortSignal,
 ): Promise<PlanRetrievalResult> {
+  const map = loadKnowledgeMap();
   const navigator = await callNavigatorLlm(
     history,
     currentMessage,
@@ -56,29 +34,28 @@ export async function planRetrievalForTurn(
     signal,
   );
 
-  if (navigator.ok) {
-    const normalized = normalizeNavigatorPlan(navigator.plan, currentMessage);
-    const withSession = applySessionRoutingToPlan(
-      normalized,
-      currentMessage,
-      routingState,
-    );
-    const plan = enrichRetrievalPlanLight(withSession, currentMessage, history);
-    const nextRoutingState = computeNextRoutingState(
-      routingState,
-      plan,
-      currentMessage,
-    );
-    return { plan, nextRoutingState, source: "navigator" };
-  }
+  const rawPlan = navigator.ok
+    ? navigator.plan
+    : simpleFallbackPlan(currentMessage, routingState.primaryDocId);
 
-  const fallbackPlan = fallbackRetrievalPlan(history, currentMessage);
-  const heavy = enrichRetrievalPlanHeavy(fallbackPlan, history, currentMessage);
-  const plan = applySessionRoutingToPlan(heavy, currentMessage, routingState);
+  const plan = finalizePlan(rawPlan, {
+    message: currentMessage,
+    primaryDocId: routingState.primaryDocId,
+    map,
+    applySticky: true,
+    isVagueFollowUp,
+    docTitle: docTitleForId,
+  });
+
   const nextRoutingState = computeNextRoutingState(
     routingState,
     plan,
     currentMessage,
   );
-  return { plan, nextRoutingState, source: "fallback" };
+
+  return {
+    plan,
+    nextRoutingState,
+    source: navigator.ok ? "navigator" : "fallback",
+  };
 }

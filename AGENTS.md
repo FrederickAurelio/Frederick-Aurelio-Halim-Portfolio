@@ -112,8 +112,8 @@ flowchart LR
 
 **Per-turn pipeline** (`createRagChatStream`):
 
-1. **Routing** — `planRetrievalForTurn`: navigator LLM picks intent + search queries; fallback heuristics if navigator fails; `session-routing-state` tracks multi-turn focus
-2. **Retrieving** — `retrieveWithPlan`: cosine similarity over precomputed embeddings in `index.json`
+1. **Routing** — `planRetrievalForTurn`: navigator LLM emits per-topic `search` queries (`topics[]`); on failure, simple fallback embeds the user message (+ sticky preferDoc if any); sticky session fills vague follow-ups
+2. **Retrieving** — `retrieveWithPlan`: batch-embed each topic query, keep per-topic top hits, merge/dedupe, empty-topic glance top-up from `index.json`
 3. **Thinking + answer** — `buildRagMessages` + OpenRouter stream; optional reasoning block
 4. **Suggestions** — `SuggestionTrailerFilter` parses `@@SUGGESTIONS@@` from answer content; valid trailer chips emit as parsed, otherwise `[]`
 
@@ -201,7 +201,7 @@ Access via `useLanguage()` → `content[language]` in client components.
 | UI / UX | `src/components/chat/`, `data.ts` → `chat` |
 | Send / stream / stop | `src/hooks/useChat.ts`, `src/lib/chat/consumeChatStream.ts` |
 | RAG pipeline | `src/lib/chat/rag-chat-stream.ts` |
-| Retrieval tuning | `src/lib/knowledge/plan-retrieval.ts`, `retrieve.ts`, `enrich-retrieval-plan.ts` |
+| Retrieval tuning | `src/lib/knowledge/plan-retrieval.ts`, `navigator.ts`, `retrieve.ts`, `retrieval-plan.ts` |
 | Suggestions | `suggestion-trailer.ts`, `suggestion-limits.ts`, `resolve-display-suggestions.ts` |
 | Prompt / tone | `src/lib/knowledge/prompt.ts`, `build-messages.ts` |
 | Storage / sessions | `src/lib/chat-store/`, `src/middleware.ts`, `src/lib/chat/session.ts` |
@@ -223,7 +223,7 @@ See `.env.example`. Key vars:
 | `OPENROUTER_API_KEY` | Required for chat + indexing |
 | `OPENROUTER_MODEL` | Chat model (default `deepseek/deepseek-v4-flash`) |
 | `OPENROUTER_EMBEDDING_MODEL` | Embeddings (default `qwen/qwen3-embedding-8b`) |
-| `RAG_TOP_K`, `RAG_MAX_CONTEXT_CHUNKS` | Retrieval tuning |
+| `RAG_MAX_CONTEXT_CHUNKS` | Max chunks in LLM 2 context (retrieve also caps at 12) |
 | `CHAT_STORE_PROVIDER` | `redis` (VPS) or `upstash` (Vercel) |
 | `REDIS_URL` | Self-hosted Redis |
 | `UPSTASH_REDIS_REST_URL/TOKEN` | Upstash on Vercel |
@@ -278,9 +278,8 @@ npm run index-knowledge  # rebuild embeddings from docs/ (needs OPENROUTER_API_K
 
 - `"Update hero copy in data.ts — here's the new text: …"`
 - `"Add bullets to docs/nextjs-fxtrade.md, then re-index"`
-- `"Fix suggestion gating when user asks about two projects at once"`
 - `"Chat drawer doesn't reopen on mobile after stop — check useChatOpenState"`
-- `"Tune RAG_TOP_K — retrieval misses QuizConnect questions"`
+- `"Tune navigator topics / per-topic retrieve — multi-project context thin"`
 
 ---
 

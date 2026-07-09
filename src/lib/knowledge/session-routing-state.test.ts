@@ -1,17 +1,20 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { loadKnowledgeMap } from "./load-knowledge-map";
+import { finalizePlan, defaultRetrievalPlan } from "./retrieval-plan";
 import {
-  applySessionRoutingToPlan,
   computeNextRoutingState,
-  EMPTY_SESSION_ROUTING_STATE,
+  docTitleForId,
   isCasualNoise,
   isResumeTopicPhrase,
   isVagueFollowUp,
+  parseSessionRoutingState,
 } from "./session-routing-state";
-import { defaultRetrievalPlan } from "./retrieval-plan";
 
-describe("session-routing-state", () => {
+const map = loadKnowledgeMap();
+
+describe("session-routing-state helpers", () => {
   it("isCasualNoise matches hai/lol", () => {
     assert.equal(isCasualNoise("hai"), true);
     assert.equal(isCasualNoise("lol"), true);
@@ -20,181 +23,131 @@ describe("session-routing-state", () => {
 
   it("isVagueFollowUp matches stack questions without project name", () => {
     assert.equal(isVagueFollowUp("what stack?"), true);
-    assert.equal(isVagueFollowUp("tell me about QuizConnect"), false);
-  });
-
-  it("applySessionRouting fills focus from sticky on vague follow-up", () => {
-    const plan = defaultRetrievalPlan({ intent: "general", focus_doc_ids: [] });
-    const session = { primaryDocId: "quizconnect", lastIntent: null, updatedAt: 0 };
-    const result = applySessionRoutingToPlan(plan, "what stack?", session);
-    assert.deepEqual(result.focus_doc_ids, ["quizconnect"]);
-    assert.equal(result.intent, "follow_up");
-  });
-
-  it("applySessionRouting does not fire on casual noise", () => {
-    const plan = defaultRetrievalPlan({ intent: "off_topic" });
-    const session = { primaryDocId: "quizconnect", lastIntent: null, updatedAt: 0 };
-    const result = applySessionRoutingToPlan(plan, "hai", session);
-    assert.deepEqual(result.focus_doc_ids, []);
-    assert.equal(result.intent, "off_topic");
-  });
-
-  it("applySessionRouting does not override existing focus", () => {
-    const plan = defaultRetrievalPlan({
-      intent: "project_detail",
-      focus_doc_ids: ["memories"],
-    });
-    const session = { primaryDocId: "quizconnect", lastIntent: null, updatedAt: 0 };
-    const result = applySessionRoutingToPlan(plan, "what stack?", session);
-    assert.deepEqual(result.focus_doc_ids, ["memories"]);
-  });
-
-  it("applySessionRouting respects explicit project in message", () => {
-    const plan = defaultRetrievalPlan({ intent: "general", focus_doc_ids: [] });
-    const session = { primaryDocId: "quizconnect", lastIntent: null, updatedAt: 0 };
-    const result = applySessionRoutingToPlan(
-      plan,
-      "tell me about Memories",
-      session,
-    );
-    assert.deepEqual(result.focus_doc_ids, []);
-  });
-
-  it("computeNextRoutingState keeps sticky on off_topic", () => {
-    const prev = { primaryDocId: "quizconnect", lastIntent: null, updatedAt: 0 };
-    const next = computeNextRoutingState(
-      prev,
-      defaultRetrievalPlan({ intent: "off_topic" }),
-      "hai",
-    );
-    assert.equal(next.primaryDocId, "quizconnect");
-  });
-
-  it("computeNextRoutingState updates from plan focus", () => {
-    const next = computeNextRoutingState(
-      EMPTY_SESSION_ROUTING_STATE,
-      defaultRetrievalPlan({
-        intent: "project_detail",
-        focus_doc_ids: ["quizconnect"],
-      }),
-      "tell me about QuizConnect",
-    );
-    assert.equal(next.primaryDocId, "quizconnect");
+    assert.equal(isVagueFollowUp("how does auth work?"), true);
+    assert.equal(isVagueFollowUp("QuizConnect stack"), false);
   });
 
   it("isResumeTopicPhrase matches back to main topic", () => {
-    assert.equal(
-      isResumeTopicPhrase("back to main topic what's stack?"),
-      true,
-    );
+    assert.equal(isResumeTopicPhrase("back to the main topic"), true);
+    assert.equal(isResumeTopicPhrase("hello"), false);
+  });
+});
+
+describe("sticky via finalizePlan", () => {
+  it("fills preferDocId from sticky on vague follow-up", () => {
+    const plan = finalizePlan(defaultRetrievalPlan({ topics: [] }), {
+      message: "what stack?",
+      primaryDocId: "quizconnect",
+      map,
+      isVagueFollowUp,
+      docTitle: docTitleForId,
+    });
+
+    assert.equal(plan.topics[0]?.preferDocId, "quizconnect");
+    assert.match(plan.topics[0]?.query ?? "", /QuizConnect|quizconnect/i);
   });
 
-  it("simulates QuizConnect then noise then what stack via sticky", () => {
-    let session = computeNextRoutingState(
-      EMPTY_SESSION_ROUTING_STATE,
+  it("does not sticky on casual noise path (finalize still needs a query)", () => {
+    assert.equal(isVagueFollowUp("hai"), false);
+    const plan = finalizePlan(defaultRetrievalPlan({ topics: [] }), {
+      message: "hai",
+      primaryDocId: "quizconnect",
+      map,
+      isVagueFollowUp,
+      docTitle: docTitleForId,
+    });
+    assert.equal(plan.topics[0]?.query, "hai");
+    assert.equal(plan.topics[0]?.preferDocId, undefined);
+  });
+
+  it("does not apply sticky when user names two projects", () => {
+    assert.equal(
+      isVagueFollowUp("QuizConnect and Memories stack"),
+      false,
+    );
+  });
+});
+
+describe("computeNextRoutingState", () => {
+  it("keeps sticky on off_topic", () => {
+    const next = computeNextRoutingState(
+      { primaryDocId: "quizconnect", updatedAt: 0 },
+      defaultRetrievalPlan({ off_topic: true }),
+      "what's the weather",
+    );
+    assert.equal(next.primaryDocId, "quizconnect");
+  });
+
+  it("updates from prefer_doc_ids", () => {
+    const next = computeNextRoutingState(
+      { primaryDocId: null, updatedAt: 0 },
       defaultRetrievalPlan({
-        intent: "project_detail",
-        focus_doc_ids: ["quizconnect"],
+        prefer_doc_ids: ["memories"],
+        topics: [
+          { label: "memories", query: "Memories app", preferDocId: "memories" },
+        ],
+      }),
+      "tell me about Memories",
+    );
+    assert.equal(next.primaryDocId, "memories");
+  });
+
+  it("sets sticky from explicit project name", () => {
+    const next = computeNextRoutingState(
+      { primaryDocId: "memories", updatedAt: 0 },
+      defaultRetrievalPlan({
+        topics: [{ label: "general", query: "QuizConnect features" }],
       }),
       "tell me about QuizConnect",
     );
-    assert.equal(session.primaryDocId, "quizconnect");
-
-    session = computeNextRoutingState(
-      session,
-      defaultRetrievalPlan({ intent: "off_topic" }),
-      "hai",
-    );
-    assert.equal(session.primaryDocId, "quizconnect");
-
-    session = computeNextRoutingState(
-      session,
-      defaultRetrievalPlan({ intent: "off_topic" }),
-      "lol",
-    );
-    assert.equal(session.primaryDocId, "quizconnect");
-
-    const plan = applySessionRoutingToPlan(
-      defaultRetrievalPlan({ intent: "general", focus_doc_ids: [] }),
-      "what stack?",
-      session,
-    );
-    assert.deepEqual(plan.focus_doc_ids, ["quizconnect"]);
+    assert.equal(next.primaryDocId, "quizconnect");
   });
 
-  it("simulates resume phrase after noise", () => {
-    const session = {
-      primaryDocId: "quizconnect",
-      lastIntent: "off_topic" as const,
-      updatedAt: 1,
-    };
-    const plan = applySessionRoutingToPlan(
-      defaultRetrievalPlan({ intent: "general", focus_doc_ids: [] }),
-      "back to main topic what's stack?",
-      session,
-    );
-    assert.deepEqual(plan.focus_doc_ids, ["quizconnect"]);
-  });
-
-  it("computeNextRoutingState clears on pivot_other", () => {
-    const prev = { primaryDocId: "quizconnect", lastIntent: null, updatedAt: 0 };
+  it("clears sticky when excluded primary and no new prefer", () => {
     const next = computeNextRoutingState(
-      prev,
-      defaultRetrievalPlan({ intent: "pivot_other", exclude_doc_ids: ["quizconnect"] }),
+      { primaryDocId: "quizconnect", updatedAt: 0 },
+      defaultRetrievalPlan({
+        exclude_doc_ids: ["quizconnect"],
+        topics: [
+          {
+            label: "other",
+            query: "other portfolio projects",
+          },
+        ],
+      }),
       "another project",
     );
     assert.equal(next.primaryDocId, null);
   });
 
-  it("does not apply sticky when user names two projects", () => {
-    const plan = defaultRetrievalPlan({ intent: "general", focus_doc_ids: [] });
-    const session = { primaryDocId: "quizconnect", lastIntent: null, updatedAt: 0 };
-    const result = applySessionRoutingToPlan(
-      plan,
-      "tech stack for QuizConnect and Memories",
-      session,
-    );
-    assert.deepEqual(result.focus_doc_ids, []);
-  });
-
-  it("multi_doc sets sticky to first focus doc", () => {
-    const prev = { primaryDocId: null, lastIntent: null, updatedAt: 0 };
-    const plan = defaultRetrievalPlan({
-      intent: "multi_doc",
-      focus_doc_ids: ["about-me", "work-experience"],
-    });
+  it("personal country question sticks to about-me", () => {
     const next = computeNextRoutingState(
-      prev,
-      plan,
-      "chronologically from uni and work",
-    );
-    assert.equal(next.primaryDocId, "about-me");
-    assert.equal(next.lastIntent, "multi_doc");
-  });
-
-  it("does not apply sticky session on personal country question", () => {
-    const plan = defaultRetrievalPlan({ intent: "general", focus_doc_ids: [] });
-    const session = {
-      primaryDocId: "nextjs-fxtrade",
-      lastIntent: "project_detail" as const,
-      updatedAt: 0,
-    };
-    const message =
-      "so you both work and study in china? is there any other country you work or study at?";
-    const result = applySessionRoutingToPlan(plan, message, session);
-    assert.deepEqual(result.focus_doc_ids, []);
-    assert.notEqual(result.focus_doc_ids[0], "nextjs-fxtrade");
-  });
-
-  it("bio intent clears project sticky when user pivots to personal topic", () => {
-    const next = computeNextRoutingState(
-      { primaryDocId: "nextjs-fxtrade", lastIntent: "project_detail", updatedAt: 0 },
+      { primaryDocId: "nextjs-fxtrade", updatedAt: 0 },
       defaultRetrievalPlan({
-        intent: "bio",
-        focus_doc_ids: ["about-me"],
+        topics: [
+          {
+            label: "bio",
+            query: "countries lived",
+            preferDocId: "about-me",
+          },
+        ],
+        prefer_doc_ids: ["about-me"],
       }),
-      "so you both work and study in china? is there any other country?",
+      "which countries have you lived in?",
     );
     assert.equal(next.primaryDocId, "about-me");
+  });
+});
+
+describe("parseSessionRoutingState", () => {
+  it("ignores legacy lastIntent field", () => {
+    const state = parseSessionRoutingState({
+      primaryDocId: "quizconnect",
+      lastIntent: "project_detail",
+      updatedAt: 123,
+    });
+    assert.equal(state.primaryDocId, "quizconnect");
+    assert.equal(state.updatedAt, 123);
+    assert.equal("lastIntent" in state, false);
   });
 });

@@ -22,6 +22,7 @@ export type RetrievedChunk = {
   section: string;
   text: string;
   score: number;
+  topicLabel?: string;
 };
 
 export type RagFrontmatter = {

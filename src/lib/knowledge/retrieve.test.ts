@@ -1,125 +1,147 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { retrieveWithPlan } from "./retrieve";
-import { defaultRetrievalPlan } from "./retrieval-plan";
+import { loadKnowledgeIndex } from "./load-index";
+import {
+  applyEmptyTopicTopUp,
+  mergeTopicResults,
+  pickGlanceChunk,
+} from "./retrieve";
+import type { RetrievalTopic } from "./retrieval-plan";
 
-describe("retrieveWithPlan multi_project", () => {
-  it("fetches tech-stack chunk per focused project", async () => {
-    const plan = defaultRetrievalPlan({
-      intent: "multi_project",
-      focus_doc_ids: ["quizconnect", "memories"],
-      include_sections: ["tech-stack"],
-      search_queries: [],
-    });
-
-    const result = await retrieveWithPlan(
-      plan,
-      "tech stack for QuizConnect and Memories",
+describe("mergeTopicResults", () => {
+  it("keeps per-topic hits and dedupes by best score", () => {
+    const merged = mergeTopicResults(
+      [
+        [
+          {
+            id: "a",
+            source: "docs/a.md",
+            section: "A",
+            text: "a",
+            docId: "about-me",
+            sectionId: "education",
+            score: 0.9,
+            topicLabel: "edu",
+          },
+          {
+            id: "shared",
+            source: "docs/a.md",
+            section: "S",
+            text: "s",
+            docId: "about-me",
+            sectionId: "at-a-glance",
+            score: 0.5,
+            topicLabel: "edu",
+          },
+        ],
+        [
+          {
+            id: "shared",
+            source: "docs/a.md",
+            section: "S",
+            text: "s",
+            docId: "about-me",
+            sectionId: "at-a-glance",
+            score: 0.8,
+            topicLabel: "work",
+          },
+          {
+            id: "b",
+            source: "docs/b.md",
+            section: "B",
+            text: "b",
+            docId: "work-experience",
+            sectionId: "mufy-at-a-glance",
+            score: 0.7,
+            topicLabel: "work",
+          },
+        ],
+      ],
+      10,
     );
 
-    assert.equal(result.plan.intent, "multi_project");
-    assert.ok(result.chunks.length >= 2);
-
-    const docIds = new Set(
-      result.chunks.map((chunk) => {
-        const match = chunk.id.match(/^([^#]+)#/);
-        return match?.[1] ?? "";
-      }),
-    );
-
-    assert.ok(docIds.has("quizconnect") || result.chunks.some((c) => c.source.includes("QuizConnect")));
-    assert.ok(docIds.has("memories") || result.chunks.some((c) => c.source.includes("Memories")));
-
-    const combined = result.chunks.map((c) => c.text).join("\n");
-    assert.match(combined, /Socket\.IO|BullMQ|MongoDB/i);
-    assert.match(combined, /Konva|Next\.js/i);
+    assert.equal(merged.length, 3);
+    const shared = merged.find((chunk) => chunk.id === "shared");
+    assert.equal(shared?.score, 0.8);
+    assert.ok(merged.some((chunk) => chunk.id === "a"));
+    assert.ok(merged.some((chunk) => chunk.id === "b"));
   });
 
-  it("fetches four tech-stack chunks for all showcase projects", async () => {
-    const plan = defaultRetrievalPlan({
-      intent: "multi_project",
-      focus_doc_ids: [
-        "quizconnect",
-        "memories",
-        "nextjs-fxtrade",
-        "promis-conveyor-chain",
-      ],
-      include_sections: ["tech-stack"],
-      search_queries: [],
-    });
+  it("caps total chunks so one topic cannot dominate forever", () => {
+    const topicA = Array.from({ length: 5 }, (_, i) => ({
+      id: `a-${i}`,
+      source: "docs/a.md",
+      section: "A",
+      text: "a",
+      docId: "about-me",
+      sectionId: "education",
+      score: 1 - i * 0.01,
+      topicLabel: "edu",
+    }));
+    const topicB = Array.from({ length: 5 }, (_, i) => ({
+      id: `b-${i}`,
+      source: "docs/b.md",
+      section: "B",
+      text: "b",
+      docId: "work-experience",
+      sectionId: "mufy-stack",
+      score: 0.5 - i * 0.01,
+      topicLabel: "work",
+    }));
 
-    const result = await retrieveWithPlan(plan, "tech stack for all four projects");
-    assert.ok(result.chunks.length >= 4);
+    const merged = mergeTopicResults([topicA, topicB], 4);
+    assert.equal(merged.length, 4);
   });
 });
 
-describe("retrieveWithPlan multi_doc", () => {
-  it("fetches education and mufy-at-a-glance for timeline question", async () => {
-    const plan = defaultRetrievalPlan({
-      intent: "multi_doc",
-      focus_doc_ids: ["about-me", "work-experience"],
-      include_sections: ["education", "background", "mufy-at-a-glance"],
-      search_queries: [],
-    });
-
-    const result = await retrieveWithPlan(
-      plan,
-      "chronologically from uni and list all work time",
-    );
-
-    assert.equal(result.plan.intent, "multi_doc");
-    assert.ok(result.chunks.length >= 2);
-
-    const combined = result.chunks.map((c) => c.text).join("\n");
-    assert.match(combined, /Zhejiang|浙江科技|2026/i);
-    assert.match(combined, /Mufy|May 2025|June 2026/i);
+describe("empty-topic top-up against index", () => {
+  it("picks a glance chunk for a preferDocId", () => {
+    const index = loadKnowledgeIndex();
+    const glance = pickGlanceChunk(index.chunks, "quizconnect");
+    assert.ok(glance);
+    assert.equal(glance!.docId, "quizconnect");
+    assert.match(glance!.sectionId, /at-a-glance|overview/i);
   });
 
-  it("fetches chunks for work plus two projects", async () => {
-    const plan = defaultRetrievalPlan({
-      intent: "multi_doc",
-      focus_doc_ids: ["work-experience", "quizconnect", "memories"],
-      include_sections: ["mufy-at-a-glance", "at-a-glance"],
-      search_queries: [],
-    });
+  it("adds glance top-up when preferDoc has zero hits", () => {
+    const index = loadKnowledgeIndex();
+    const topics: RetrievalTopic[] = [
+      {
+        label: "quizconnect",
+        query: "QuizConnect stack",
+        preferDocId: "quizconnect",
+      },
+      {
+        label: "memories",
+        query: "Memories stack",
+        preferDocId: "memories",
+      },
+    ];
 
-    const result = await retrieveWithPlan(
-      plan,
-      "work experience and QuizConnect and Memories",
+    const onlyQuiz = [
+      {
+        id: "quizconnect#4-tech-stack",
+        source: "docs/quizconnect.md",
+        section: "Tech stack",
+        text: "stack",
+        docId: "quizconnect",
+        sectionId: "4-tech-stack",
+        score: 0.9,
+        topicLabel: "quizconnect",
+      },
+    ];
+
+    const topped = applyEmptyTopicTopUp(
+      onlyQuiz,
+      topics,
+      index.chunks,
+      12,
     );
 
-    assert.ok(result.chunks.length >= 3);
-    const combined = result.chunks.map((c) => c.text).join("\n");
-    assert.match(combined, /Mufy/i);
-    assert.match(combined, /Socket\.IO|quiz/i);
-    assert.match(combined, /Konva|scrapbook/i);
-  });
-
-  it("fetches education, work, and flagship for timeline plus biggest project", async () => {
-    const plan = defaultRetrievalPlan({
-      intent: "multi_doc",
-      focus_doc_ids: ["about-me", "work-experience", "quizconnect"],
-      include_sections: [
-        "education",
-        "background",
-        "mufy-at-a-glance",
-        "mufy-responsibilities",
-        "why-flagship",
-        "at-a-glance",
-      ],
-      search_queries: [],
-    });
-
-    const result = await retrieveWithPlan(
-      plan,
-      "chronologically from uni, all work time, then biggest project",
-    );
-
-    assert.ok(result.chunks.length >= 3);
-    const combined = result.chunks.map((c) => c.text).join("\n");
-    assert.match(combined, /Zhejiang|浙江科技|2026/i);
-    assert.match(combined, /Mufy|May 2025/i);
-    assert.match(combined, /QuizConnect|Socket\.IO|BullMQ/i);
+    assert.ok(topped.some((chunk) => chunk.docId === "quizconnect"));
+    assert.ok(topped.some((chunk) => chunk.docId === "memories"));
+    const memories = topped.find((chunk) => chunk.docId === "memories");
+    assert.equal(memories?.topicLabel, "memories");
   });
 });

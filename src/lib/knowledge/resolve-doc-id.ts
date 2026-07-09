@@ -55,7 +55,7 @@ export function findProjectDocIdsInText(text: string): string[] {
 
 /**
  * Pick one docId for focus: current message (incl. fuzzy + "now about X") beats broad context.
- * Returns null when multiple projects are named — use resolveMultiProjectFocus instead.
+ * Returns null when multiple projects are named.
  */
 export function resolvePrimaryDocId(
   message: string,

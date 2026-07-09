@@ -17,14 +17,6 @@ export function getOpenRouterConfig(): OpenRouterConfig | null {
   };
 }
 
-export function getRagTopK(): number {
-  const raw = process.env.RAG_TOP_K;
-  if (!raw) return 6;
-  const parsed = Number.parseInt(raw, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) return 6;
-  return parsed;
-}
-
 export function getRagMaxContextChunks(): number {
   return parsePositiveInt(process.env.RAG_MAX_CONTEXT_CHUNKS, 16);
 }
@@ -46,7 +38,3 @@ export function getRagNavigatorMaxAssistantChars(): number {
   return parsePositiveInt(process.env.RAG_NAVIGATOR_MAX_ASSISTANT_CHARS, 1500);
 }
 
-/** Recent chat messages used by enrich rules / doc resolution (default 4). */
-export function getRagEnrichContextMessages(): number {
-  return parsePositiveInt(process.env.RAG_ENRICH_CONTEXT_MESSAGES, 4);
-}
