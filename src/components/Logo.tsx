@@ -26,9 +26,9 @@ export default function Logo({ logo }: LogoProps) {
             <line x1="18" x2="18.01" y1="11" y2="11" />
             <rect width="20" height="12" x="2" y="6" rx="2" />
           </svg>
-          <h1 className="cursor-default text-3xl font-semibold text-[#d8cdef]">
+          <h2 className="cursor-default text-3xl font-semibold text-[#d8cdef]">
             <span className="text-[#a48fff]">Quiz</span>Connect
-          </h1>
+          </h2>
         </div>
       )}
       {logo === "memories" && (

@@ -46,9 +46,9 @@ export default function Experience() {
           >
             <div className="flex flex-col gap-1 md:flex-row md:items-baseline md:justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-sky-800 md:text-xl">
+                <h3 className="text-lg font-semibold text-sky-800 md:text-xl">
                   {job.role[language]}
-                </h2>
+                </h3>
                 {job.url ? (
                   <a
                     href={job.url}

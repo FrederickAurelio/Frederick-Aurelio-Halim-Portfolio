@@ -41,7 +41,7 @@ export default function Footer() {
       <img
         className="h-32 w-32 rounded-full object-cover"
         src="/avatar.jpg"
-        alt="avatar"
+        alt="Frederick Aurelio Halim"
       />
       <p className="mt-4 flex h-full w-full items-end justify-center p-2 text-sm text-slate-400 md:text-base">
         Copyright &copy; {copyrightYear} Frederick Aurelio Halim

@@ -24,6 +24,7 @@ export default function JsonLd() {
         jobTitle: SITE_JOB_TITLE,
         email: SITE_EMAIL,
         url: SITE_URL,
+        image: absoluteUrl("/avatar.jpg"),
         sameAs: [SITE_GITHUB],
         knowsAbout: SITE_SKILLS,
         alumniOf: {

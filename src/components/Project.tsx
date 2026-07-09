@@ -18,9 +18,9 @@ export default function Project({ project }: ProjectProps) {
         src={project.img}
         alt={project.title[language]}
       />
-      <h2 className="my-2 text-xl font-semibold text-sky-900">
+      <h3 className="my-2 text-xl font-semibold text-sky-900">
         {project.title[language]}
-      </h2>
+      </h3>
       <p className="text-justify text-sm text-sky-950 lg:text-base">
         {project.desc[language]}
       </p>
