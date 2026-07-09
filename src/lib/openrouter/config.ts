@@ -29,14 +29,6 @@ export function getRagMaxContextChunks(): number {
   return parsePositiveInt(process.env.RAG_MAX_CONTEXT_CHUNKS, 16);
 }
 
-export function getRagMinScore(): number {
-  const raw = process.env.RAG_MIN_SCORE;
-  if (!raw) return 0.32;
-  const parsed = Number.parseFloat(raw);
-  if (!Number.isFinite(parsed) || parsed < 0) return 0.32;
-  return parsed;
-}
-
 function parsePositiveInt(raw: string | undefined, fallback: number): number {
   if (!raw) return fallback;
   const parsed = Number.parseInt(raw, 10);

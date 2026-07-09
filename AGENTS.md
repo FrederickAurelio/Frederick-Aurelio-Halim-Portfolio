@@ -223,7 +223,7 @@ See `.env.example`. Key vars:
 | `OPENROUTER_API_KEY` | Required for chat + indexing |
 | `OPENROUTER_MODEL` | Chat model (default `deepseek/deepseek-v4-flash`) |
 | `OPENROUTER_EMBEDDING_MODEL` | Embeddings (default `qwen/qwen3-embedding-8b`) |
-| `RAG_TOP_K`, `RAG_MIN_SCORE`, `RAG_MAX_CONTEXT_CHUNKS` | Retrieval tuning |
+| `RAG_TOP_K`, `RAG_MAX_CONTEXT_CHUNKS` | Retrieval tuning |
 | `CHAT_STORE_PROVIDER` | `redis` (VPS) or `upstash` (Vercel) |
 | `REDIS_URL` | Self-hosted Redis |
 | `UPSTASH_REDIS_REST_URL/TOKEN` | Upstash on Vercel |
@@ -280,7 +280,7 @@ npm run index-knowledge  # rebuild embeddings from docs/ (needs OPENROUTER_API_K
 - `"Add bullets to docs/nextjs-fxtrade.md, then re-index"`
 - `"Fix suggestion gating when user asks about two projects at once"`
 - `"Chat drawer doesn't reopen on mobile after stop — check useChatOpenState"`
-- `"Tune RAG_MIN_SCORE — retrieval misses QuizConnect questions"`
+- `"Tune RAG_TOP_K — retrieval misses QuizConnect questions"`
 
 ---
 

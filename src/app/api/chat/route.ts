@@ -40,7 +40,10 @@ export async function POST(request: NextRequest) {
     const content = body.content?.trim() ?? "";
 
     if (!content) {
-      return NextResponse.json({ error: "Message is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Message is required", code: CHAT_ERROR_CODES.GENERIC },
+        { status: 400 },
+      );
     }
 
     const userMessageId = crypto.randomUUID();

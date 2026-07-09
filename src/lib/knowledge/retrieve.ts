@@ -1,4 +1,4 @@
-import { getOpenRouterConfig, getRagMaxContextChunks, getRagTopK, getRagMinScore } from "@/lib/openrouter/config";
+import { getOpenRouterConfig, getRagMaxContextChunks, getRagTopK } from "@/lib/openrouter/config";
 import { createEmbedding } from "@/lib/openrouter/embeddings";
 import type { OpenRouterMessage } from "@/lib/openrouter/types";
 
@@ -12,7 +12,6 @@ import type { KnowledgeChunkRecord, RetrievedChunk } from "./types";
 export type RetrievalResult = {
   chunks: RetrievedChunk[];
   maxScore: number;
-  shouldRefuse: boolean;
   systemPrompt: string;
   plan: RetrievalPlan;
 };
@@ -318,16 +317,6 @@ async function searchSemantic(
   return [...byId.values()].sort((a, b) => b.score - a.score).slice(0, topK);
 }
 
-function evaluateRefusal(
-  _plan: RetrievalPlan,
-  _chunks: RetrievedChunk[],
-  _maxScore: number,
-  _minScore: number,
-): boolean {
-  // Always let the answer model respond — it handles gaps and off-topic in its own words.
-  return false;
-}
-
 export async function retrieveWithPlan(
   plan: RetrievalPlan,
   userMessage: string,
@@ -347,7 +336,6 @@ export async function retrieveWithPlan(
   }
 
   const topK = getRagTopK();
-  const minScore = getRagMinScore();
   const chunkCap = effectiveChunkCap(plan, topK);
   const corpus = filterChunks(index.chunks, plan);
 
@@ -407,15 +395,11 @@ export async function retrieveWithPlan(
 
   const chunks = scored.map(toRetrieved);
   const maxScore = scored[0]?.score ?? 0;
-  const shouldRefuse = evaluateRefusal(plan, chunks, maxScore, minScore);
 
   return {
-    chunks: shouldRefuse ? [] : chunks,
+    chunks,
     maxScore,
-    shouldRefuse,
-    systemPrompt: shouldRefuse
-      ? ""
-      : buildRagSystemPrompt(chunks, userMessage, plan.answer_hint),
+    systemPrompt: buildRagSystemPrompt(chunks, userMessage, plan.answer_hint),
     plan,
   };
 }

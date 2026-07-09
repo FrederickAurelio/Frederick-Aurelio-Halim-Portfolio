@@ -23,8 +23,6 @@ import {
   type RetrievalPlan,
 } from "./retrieval-plan";
 
-const NAVIGATOR_TIMEOUT_MS = 8_000;
-
 const NAVIGATOR_SYSTEM = `You are the retrieval navigator for Frederick Aurelio Halim's portfolio chatbot.
 Your job is to read the conversation and output a JSON retrieval plan — not an answer to the user.
 
@@ -202,20 +200,10 @@ export async function callNavigatorLlm(
   routingState: SessionRoutingState,
   signal?: AbortSignal,
 ): Promise<NavigatorLlmResult> {
-  const timeoutController = new AbortController();
-  const onAbort = () => timeoutController.abort();
-  signal?.addEventListener("abort", onAbort);
-
-  const timeoutId = setTimeout(() => timeoutController.abort(), NAVIGATOR_TIMEOUT_MS);
-
-  const combinedSignal = signal
-    ? AbortSignal.any([signal, timeoutController.signal])
-    : timeoutController.signal;
-
   try {
     const response = await createChatCompletion({
       messages: buildNavigatorMessages(history, currentMessage, routingState),
-      signal: combinedSignal,
+      signal,
       jsonMode: true,
       temperature: 0.2,
       maxTokens: 500,
@@ -236,8 +224,5 @@ export async function callNavigatorLlm(
     return { ok: true, plan: parsed };
   } catch {
     return { ok: false };
-  } finally {
-    clearTimeout(timeoutId);
-    signal?.removeEventListener("abort", onAbort);
   }
 }

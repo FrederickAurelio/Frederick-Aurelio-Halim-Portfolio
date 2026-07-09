@@ -162,7 +162,6 @@ export function createRagChatStream(
             return;
           }
 
-          options.onStreamPhase?.("routing");
           emitChatPhase(controller, encoder, "routing", {
             onPhase: options.onStreamPhase,
           });
@@ -188,7 +187,6 @@ export function createRagChatStream(
             return;
           }
 
-          options.onStreamPhase?.("retrieving");
           emitChatPhase(controller, encoder, "retrieving", {
             onPhase: options.onStreamPhase,
           });

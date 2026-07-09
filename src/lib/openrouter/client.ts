@@ -45,7 +45,8 @@ export async function createChatCompletion(params: {
       reasoning: { effort: reasoningEffort },
     }),
     signal: params.signal,
-    timeoutMs: 30_000,
+    // Same budget as embeddings — navigator is the only caller today.
+    timeoutMs: 45_000,
   });
 }
 
