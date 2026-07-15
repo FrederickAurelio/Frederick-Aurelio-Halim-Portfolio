@@ -42,6 +42,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "husky": "^9.1.7",
+    "prettier": "^3.9.5",
+    "prettier-plugin-tailwindcss": "^0.8.0",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.6",
     "typescript": "^5"
