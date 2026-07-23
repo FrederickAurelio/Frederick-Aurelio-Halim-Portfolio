@@ -1,5 +1,6 @@
 services:
   app:
+    image: portfolio-app:latest
     build:
       context: .
       args:
@@ -36,6 +37,11 @@ services:
       timeout: 5s
       retries: 3
       start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   redis:
     image: redis:7-alpine
@@ -48,6 +54,11 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   web:
     image: nginx:alpine
@@ -59,6 +70,8 @@ services:
     depends_on:
       app:
         condition: service_healthy
-
-# volumes:
-#   mongo_data:    # uncomment when adding DB later
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
