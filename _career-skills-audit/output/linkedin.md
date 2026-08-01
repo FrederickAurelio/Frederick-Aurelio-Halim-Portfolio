@@ -39,7 +39,7 @@ https://github.com/FrederickAurelio
 ## Experience — Mufy AI
 
 **Title:** Frontend Developer  
-**Company:** Mufy AI (杭州智聊思远互联网科技有限公司)  
+**Company:** Mufy AI  
 **Location:** Hangzhou, China · On-site  
 **Dates:** May 2025 – June 2026  
 **Media:** https://chat.mufy.ai/

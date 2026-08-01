@@ -18,7 +18,7 @@ Frontend Developer with a CS degree (2026) and ~1 year develop React/TypeScript 
 
 ## Professional Experience
 
-### Frontend Developer | Mufy AI (杭州智聊思远互联网科技有限公司)
+### Frontend Developer | Mufy AI
 Hangzhou, China | 05/2025 – 06/2026  
 Product: https://chat.mufy.ai/
 

@@ -19,7 +19,6 @@ rag:
 Frederick Aurelio Halim worked as a Frontend Developer at [Mufy AI](https://chat.mufy.ai/) in Hangzhou, China (May 2025 – June 2026).
 - **Role:** Frontend Developer.
 - **Company (product):** [Mufy AI](https://chat.mufy.ai/) — AI roleplay chat app.
-- **Company (legal name):** 杭州智聊思远互联网科技有限公司.
 - **Live product:** https://chat.mufy.ai/
 - **Location:** Hangzhou, China · On-site.
 - **Period:** May 2025 to June 2026.
