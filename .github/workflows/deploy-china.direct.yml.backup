@@ -1,0 +1,47 @@
+# Direct-build backup (build on VPS).
+# Active workflow is deploy-china.yml (GHCR: build on GitHub, pull on VPS).
+# To swap back: copy this file over deploy-china.yml and delete docker-compose.ci.yml usage.
+name: Deploy to China VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 30m
+          script: |
+            set -e
+            cd ~/Frederick-Aurelio-Halim-Portfolio
+            git fetch origin
+            git reset --hard origin/main
+
+            if docker image inspect portfolio-app:latest >/dev/null 2>&1; then
+              docker tag portfolio-app:latest portfolio-app:previous
+            fi
+
+            docker compose -f docker-compose.yml up -d --build
+
+            docker images --format '{{.Repository}}:{{.Tag}}' portfolio-app | while read -r ref; do
+              case "$ref" in
+                *:latest|*:previous) ;;
+                *) docker rmi "$ref" || true ;;
+              esac
+            done
+            docker image prune -f
+            docker container prune -f
+            docker builder prune -f --keep-storage 2GB

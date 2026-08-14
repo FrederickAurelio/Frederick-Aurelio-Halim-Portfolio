@@ -1,0 +1,4 @@
+# GHCR overlay — IMAGE_APP is set by the deploy workflow (ghcr.io/<owner>/portfolio-app:latest).
+services:
+  app:
+    image: ${IMAGE_APP}
