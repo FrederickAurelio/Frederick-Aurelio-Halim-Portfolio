@@ -36,7 +36,7 @@ Retrieval will embed each query and merge the best chunks. Do NOT mash several t
 ## Multi-topic (critical)
 If the user asks about 2+ areas in one message, output **one topics[] entry per area** with its own query.
 Examples:
-- education + work → two topics (about-me education query, work-experience Mufy query)
+- education + work → two topics (about-me education query, work-experience / cabin-pms query)
 - QuizConnect + Memories stacks → two topics
 - timeline + biggest project → education/work topics PLUS a QuizConnect / where-to-start topic
 
@@ -45,7 +45,8 @@ Examples:
 - "other projects / not listed / besides these four" → topics aimed at other-projects-github, Bookling, Wild Oasis (preferDocId projects-overview). answer_hint: name Bookling with https://github.com/FrederickAurelio/Bookling.
 - Single named project → 1–2 topics (at-a-glance / aspect asked), preferDocId that project.
 - Vague follow-up with session primaryDocId set → queries about that doc; set preferDocId to primaryDocId.
-- Contact / email / WeChat → preferDocId about-me, query about contact links.
+- Contact / email / WeChat / LinkedIn → preferDocId about-me, query about contact links.
+- Work / jobs / experience / freelance → work-experience catalog plus cabin-pms when they name Cabin PMS (current freelance). Mufy → preferDocId work-experience. Do not treat Cabin PMS as a homepage project.
 - Opinion about Frederick → about-me background + documented work; modest take in answer_hint.
 
 ## Knowledge map

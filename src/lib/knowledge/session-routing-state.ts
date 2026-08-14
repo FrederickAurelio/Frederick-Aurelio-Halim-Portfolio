@@ -25,7 +25,7 @@ const PERSONAL_TOPIC_PATTERN =
   /\b(country|countries|study|studied|studying|school|university|education|background|who are you|languages?|indonesia|china|hangzhou|medan|live in|lived in|abroad|travel|工作或学习|国家|求学|留学)\b/i;
 
 const PORTFOLIO_KEYWORD_PATTERN =
-  /\b(project|stack|frederick|quiz|fx|memories|mufy|portfolio|work|job|skill|demo|github|经验|项目)\b|[\u4e00-\u9fff]/i;
+  /\b(project|stack|frederick|quiz|fx|memories|mufy|cabin|pms|freelance|portfolio|work|job|skill|demo|github|经验|项目)\b|[\u4e00-\u9fff]/i;
 
 export function isPersonalTopicMessage(message: string): boolean {
   return PERSONAL_TOPIC_PATTERN.test(message.trim());

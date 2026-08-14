@@ -16,9 +16,10 @@ Frederick Aurelio Halim (林健昌) is a frontend and full-stack developer from 
 - **Name:** Frederick Aurelio Halim.
 - **Chinese name:** 林健昌.
 - **Origin:** From Medan, Sumatera Utara, Indonesia. Indonesian nationality.
-- **What I do:** Frontend developer who also works full-stack. Mostly React, Next.js, and Express. Comfortable across the whole stack: building the interface, wiring up the API and auth, then shipping it.
+- **What I do:** Frontend developer who also works full-stack. Mostly React, Next.js, Express, and NestJS. Comfortable across the whole stack: building the interface, wiring up the API and auth, then shipping it.
+- **Current work:** Paid freelance Full-Stack Developer on Cabin PMS (July 2026 – Present) — staff PMS for cabin/apartment hospitality. Live: http://120.26.45.50:8080. Details in `cabin-pms`. Previous: Frontend Developer at Mufy, Hangzhou (May 2025 – June 2026). Details in `work-experience`.
 - **Current status:** Open to frontend / full-stack roles.
-- **Primary stack:** React, Next.js, Express, TypeScript, MongoDB, Supabase.
+- **Primary stack:** React, Next.js, Express, NestJS, TypeScript, PostgreSQL, MongoDB, Supabase.
 
 ## 2. Background & story
 <!-- rag-section: background -->
@@ -55,7 +56,7 @@ Allowed contact details only — do not invent others.
 - **Email:** frederick.ah88@gmail.com
 - **GitHub:** https://github.com/FrederickAurelio — full list of public repos (including smaller uni/learning projects not on this portfolio).
 - **WeChat:** QR code on this page (no URL).
-- **LinkedIn:** not listed yet.
+- **LinkedIn:** https://linkedin.com/in/frederickaurelio-halim
 - **Portfolio URL:** do not give one — the visitor is already on this site. Never invent domains (e.g. frederickhalim.com). Project demos use the live/repo links in each project doc.
 
 ## 7. Reference copy (from the live portfolio)

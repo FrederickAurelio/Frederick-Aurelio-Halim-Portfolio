@@ -17,7 +17,7 @@ Promis Conveyor Chain is a marketing website for an Indonesian conveyor-chain co
 - **Category:** Static marketing site — no backend or database.
 - **Status:** Live on Vercel.
 - **Repo:** https://github.com/FrederickAurelio/promis-web
-- **Live demo:** https://promis-web.vercel.app/
+- **Live site:** https://www.promischain.id/
 
 ## 2. Problem & purpose
 <!-- rag-section: 2-problem-purpose -->

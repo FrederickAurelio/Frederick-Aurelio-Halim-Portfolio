@@ -59,7 +59,7 @@ export default function TechStack() {
                 alt={stack.name}
                 src={stack.path}
               />
-              <p className="absolute left-0 right-0 top-[85px] text-xs capitalize text-sky-800 opacity-0 duration-200 group-hover:opacity-100 md:top-[130px] md:text-base">
+              <p className="absolute left-0 right-0 top-[85px] text-xs text-sky-800 opacity-0 duration-200 group-hover:opacity-100 md:top-[130px] md:text-base">
                 {stack.name}
               </p>
             </div>

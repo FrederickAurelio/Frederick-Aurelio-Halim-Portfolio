@@ -20,7 +20,9 @@ const TOP_UP_SCORE = 0.85;
 const GLANCE_SECTION_IDS = [
   "at-a-glance",
   "overview",
+  "catalog",
   "mufy-at-a-glance",
+  "cabin-at-a-glance",
   "where-to-start",
 ] as const;
 

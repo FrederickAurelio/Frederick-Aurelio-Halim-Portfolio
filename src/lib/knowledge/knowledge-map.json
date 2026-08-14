@@ -24,6 +24,27 @@
       ]
     },
     {
+      "docId": "cabin-pms",
+      "type": "experience",
+      "title": "Cabin PMS",
+      "aliases": [
+        "Cabin PMS",
+        "freelance",
+        "hospitality PMS",
+        "property management"
+      ],
+      "sourceFile": "docs/cabin-pms.md",
+      "sections": [
+        "introduction",
+        "cabin-at-a-glance",
+        "2-problem-purpose",
+        "3-features",
+        "4-tech-stack",
+        "5-architecture",
+        "6-not-built"
+      ]
+    },
+    {
       "docId": "memories",
       "type": "project",
       "title": "Memories",
@@ -142,7 +163,8 @@
         "4-tech-stack",
         "5-architecture",
         "6-notable-technical-decisions-trade-offs",
-        "7-interesting-hard-problems-solved"
+        "7-interesting-hard-problems-solved",
+        "8-load-test"
       ]
     },
     {
@@ -158,13 +180,16 @@
       "sourceFile": "docs/work-experience.md",
       "sections": [
         "introduction",
-        "mufy-ai-frontend-developer",
+        "catalog",
+        "mufy-frontend-developer",
         "mufy-at-a-glance",
         "mufy-product",
-        "mufy-responsibilities",
-        "mufy-features",
-        "mufy-stack",
-        "mufy-resume-bullets"
+        "mufy-shipped",
+        "mufy-consumer",
+        "mufy-commerce",
+        "mufy-quality",
+        "mufy-second-client",
+        "mufy-stack"
       ]
     }
   ]

@@ -10,6 +10,7 @@ const FUZZY_DOC_HINTS: { pattern: RegExp; docId: string }[] = [
   { pattern: /quiz\s*connect|quizconnect|quizzconnect/i, docId: "quizconnect" },
   { pattern: /promis|conveyor/i, docId: "promis-conveyor-chain" },
   { pattern: /memories|scrapbook|konva/i, docId: "memories" },
+  { pattern: /cabin\s*pms|hospitality\s*pms|property\s*management/i, docId: "cabin-pms" },
 ];
 
 const ABOUT_CLAUSE_PATTERN = /\b(?:now|what)\s+about\s+([^?.!,\n]+)/i;

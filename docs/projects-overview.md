@@ -17,9 +17,9 @@ Frederick Aurelio Halim has four portfolio projects documented here:
 - **QuizConnect** (`quizconnect`) — Real-time multiplayer quiz platform with WebSockets, LLM-assisted quiz generation, and live hosting. Stack: React SPA, Express, Socket.IO, BullMQ. **Docker Compose on a VPS** with **GitHub Actions auto-deploy** on push to `main`. Live: http://120.26.45.50:3221/
 - **Memories** (`memories`) — Digital scrapbook/collage app on a Konva canvas with sharing and friendship privacy. Stack: Next.js + Express API. In-development demo (localhost in repo).
 - **Nextjs-FXTrade** (`nextjs-fxtrade`) — Forex trading demo with virtual money and live/historical rates. Stack: Next.js App Router, Supabase. Live: https://nextjs-fx-trade.vercel.app/
-- **Promis Conveyor Chain** (`promis-conveyor-chain`) — Indonesian marketing site for a conveyor-chain company. Stack: Next.js App Router. Live: https://promis-web.vercel.app/
+- **Promis Conveyor Chain** (`promis-conveyor-chain`) — Indonesian marketing site for a conveyor-chain company. Stack: Next.js App Router. Live: https://www.promischain.id/
 
-For biographical info see `about-me`. For work experience see `work-experience` (Mufy AI — https://chat.mufy.ai/).
+For biographical info see `about-me`. For work experience see `work-experience` (Mufy — https://chat.mufy.ai/) and `cabin-pms` (Cabin PMS freelance — http://120.26.45.50:8080). Cabin PMS is paid Experience, not a fifth showcase project on this page.
 
 ## 2. Where to start
 <!-- rag-section: where-to-start -->

@@ -14,6 +14,7 @@ rag:
 <!-- rag-section: at-a-glance -->
 QuizConnect is a real-time multiplayer quiz platform by Frederick Aurelio Halim.
 - **Summary:** Users create and host live quiz games with shareable codes. Players join, answer timed questions in synchronized phases, and see a live leaderboard. After a game, history is saved for review — including LLM-generated explanations and session analytics.
+- **Load test:** A live room was run with **100 concurrent Socket.IO guest clients**. Each created a session, joined by game code, stayed connected, and submitted answers on every question. Do not invent a max-room design limit or typical quiz length beyond this test.
 - **Category:** Full-stack web app — React SPA, Express API, Socket.IO, BullMQ worker.
 - **Status:** Active prototype — live on a VPS, deployed via GitHub Actions.
 - **Repo:** https://github.com/FrederickAurelio/QuizConnect
@@ -86,3 +87,10 @@ Monorepo: `frontend/` (React SPA) + `backend/` (Express + Socket.IO + in-process
 - **Speed-based scoring via Redis atomics** — order bonus from a decrementing per-question counter.
 - **Guest→user history migration** on registration without blocking signup.
 - **Push-to-deploy pipeline** — containerized stack + GitHub Actions SSH deploy so WebSocket games and BullMQ timers run on a real server, not only in dev.
+
+## 8. Load test
+<!-- rag-section: 8-load-test -->
+Frederick load-tested a live QuizConnect room with **100 concurrent Socket.IO guest clients**.
+- Each client created a session, joined by game code, stayed connected, and submitted answers on every question.
+- This is a test Frederick actually ran — not a designed max capacity, not “100 bots” as a vague slogan, and not a typical class size.
+- Do not invent other player counts, questions-per-quiz averages, or production traffic numbers.

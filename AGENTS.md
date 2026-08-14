@@ -62,7 +62,7 @@ src/
     openrouter/                # LLM + embedding client, stream transform
   middleware.ts                # chat session cookie (`CHAT_SESSION_COOKIE`)
 docs/                          # ★ RAG source markdown
-  about-me.md, work-experience.md, projects-overview.md
+  about-me.md, work-experience.md, cabin-pms.md, projects-overview.md
   nextjs-fxtrade.md, quizconnect.md, promis-conveyor-chain.md, memories.md
 public/                        # images, icons, avatar, fonts
 scripts/

@@ -31,10 +31,10 @@ export const SITE_KEYWORDS = [
 export const SITE_SKILLS = [
   "React",
   "Next.js",
-  "Express",
   "TypeScript",
+  "NestJS",
+  "PostgreSQL",
   "MongoDB",
-  "Supabase",
 ];
 
 export const SITE_OG_IMAGE = "/opengraph-image";
