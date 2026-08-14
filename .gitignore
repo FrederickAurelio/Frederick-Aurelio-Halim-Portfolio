@@ -34,6 +34,11 @@ yarn-error.log*
 .env*
 !.env.example
 
+# Local resume / career working files (not part of the site)
+_resume/
+_career-skills-audit/
+.cursor/rules/resume.mdc
+
 # vercel
 .vercel
 
