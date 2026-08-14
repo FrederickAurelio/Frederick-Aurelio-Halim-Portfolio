@@ -69,7 +69,6 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 6h
-          script_stop: true
           envs: GHCR_TOKEN
           script: |
             set -e
@@ -94,13 +93,8 @@ jobs:
             docker compose -f docker-compose.yml -f docker-compose.ci.yml pull
             docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
 
-            docker images --format '{{.Repository}}:{{.Tag}}' "$APP" | while read -r ref; do
-              case "$ref" in
-                *:latest|*:previous) ;;
-                *) docker rmi "$ref" || true ;;
-              esac
-            done
-            docker rmi portfolio-app:latest portfolio-app:previous 2>/dev/null || true
+            docker images "$APP" | awk 'NR>1 && $2!="latest" && $2!="previous" {print $1 ":" $2}' | xargs -r docker rmi || true
+            docker rmi portfolio-app:latest portfolio-app:previous || true
             docker image prune -f
             docker container prune -f
             docker logout ghcr.io || true

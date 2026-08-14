@@ -36,12 +36,7 @@ jobs:
 
             docker compose -f docker-compose.yml up -d --build
 
-            docker images --format '{{.Repository}}:{{.Tag}}' portfolio-app | while read -r ref; do
-              case "$ref" in
-                *:latest|*:previous) ;;
-                *) docker rmi "$ref" || true ;;
-              esac
-            done
+            docker images portfolio-app | awk 'NR>1 && $2!="latest" && $2!="previous" {print $1 ":" $2}' | xargs -r docker rmi || true
             docker image prune -f
             docker container prune -f
             docker builder prune -f --keep-storage 2GB
