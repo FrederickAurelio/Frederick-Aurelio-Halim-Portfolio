@@ -11,6 +11,7 @@ const FUZZY_DOC_HINTS: { pattern: RegExp; docId: string }[] = [
   { pattern: /promis|conveyor/i, docId: "promis-conveyor-chain" },
   { pattern: /memories|scrapbook|konva/i, docId: "memories" },
   { pattern: /cabin\s*pms|hospitality\s*pms|property\s*management/i, docId: "cabin-pms" },
+  { pattern: /tech\s*stack|skill list|技术栈/i, docId: "tech-stack" },
 ];
 
 const ABOUT_CLAUSE_PATTERN = /\b(?:now|what)\s+about\s+([^?.!,\n]+)/i;

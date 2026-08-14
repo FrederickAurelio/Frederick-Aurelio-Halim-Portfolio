@@ -168,6 +168,29 @@
       ]
     },
     {
+      "docId": "tech-stack",
+      "type": "catalog",
+      "title": "Tech Stack",
+      "aliases": [
+        "tech stack",
+        "skills",
+        "skill list",
+        "技术栈",
+        "技能"
+      ],
+      "sourceFile": "docs/tech-stack.md",
+      "sections": [
+        "introduction",
+        "at-a-glance",
+        "languages",
+        "frontend",
+        "backend",
+        "infra",
+        "experience",
+        "projects"
+      ]
+    },
+    {
       "docId": "work-experience",
       "type": "experience",
       "title": "Work Experience",

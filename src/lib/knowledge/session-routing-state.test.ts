@@ -25,6 +25,7 @@ describe("session-routing-state helpers", () => {
     assert.equal(isVagueFollowUp("what stack?"), true);
     assert.equal(isVagueFollowUp("how does auth work?"), true);
     assert.equal(isVagueFollowUp("QuizConnect stack"), false);
+    assert.equal(isVagueFollowUp("What's your tech stack?"), false);
   });
 
   it("isResumeTopicPhrase matches back to main topic", () => {
@@ -136,6 +137,24 @@ describe("computeNextRoutingState", () => {
       "which countries have you lived in?",
     );
     assert.equal(next.primaryDocId, "about-me");
+  });
+
+  it("overall tech stack sticks to tech-stack", () => {
+    const next = computeNextRoutingState(
+      { primaryDocId: "quizconnect", updatedAt: 0 },
+      defaultRetrievalPlan({
+        topics: [
+          {
+            label: "skills",
+            query: "Frederick tech stack",
+            preferDocId: "tech-stack",
+          },
+        ],
+        prefer_doc_ids: ["tech-stack"],
+      }),
+      "What's your tech stack?",
+    );
+    assert.equal(next.primaryDocId, "tech-stack");
   });
 });
 

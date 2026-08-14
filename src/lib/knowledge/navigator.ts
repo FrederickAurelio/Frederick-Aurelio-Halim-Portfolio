@@ -46,6 +46,7 @@ Examples:
 - Single named project → 1–2 topics (at-a-glance / aspect asked), preferDocId that project.
 - Vague follow-up with session primaryDocId set → queries about that doc; set preferDocId to primaryDocId.
 - Contact / email / WeChat / LinkedIn → preferDocId about-me, query about contact links.
+- Skills / tech stack / 技术栈 (overall tools, not one named project) → preferDocId tech-stack. A named project's stack → that project's doc.
 - Work / jobs / experience / freelance → work-experience catalog plus cabin-pms when they name Cabin PMS (current freelance). Mufy → preferDocId work-experience. Do not treat Cabin PMS as a homepage project.
 - Opinion about Frederick → about-me background + documented work; modest take in answer_hint.
 

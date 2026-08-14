@@ -19,7 +19,7 @@ Frederick Aurelio Halim (林健昌) is a frontend and full-stack developer from 
 - **What I do:** Frontend developer who also works full-stack. Mostly React, Next.js, Express, and NestJS. Comfortable across the whole stack: building the interface, wiring up the API and auth, then shipping it.
 - **Current work:** Paid freelance Full-Stack Developer on Cabin PMS (July 2026 – Present) — staff PMS for cabin/apartment hospitality. Live: http://120.26.45.50:8080. Details in `cabin-pms`. Previous: Frontend Developer at Mufy, Hangzhou (May 2025 – June 2026). Details in `work-experience`.
 - **Current status:** Open to frontend / full-stack roles.
-- **Primary stack:** React, Next.js, Express, NestJS, TypeScript, PostgreSQL, MongoDB, Supabase.
+- **Primary stack:** TypeScript, JavaScript, React, Next.js, Express, NestJS, Prisma, PostgreSQL, MongoDB. Details in `tech-stack`.
 
 ## 2. Background & story
 <!-- rag-section: background -->
