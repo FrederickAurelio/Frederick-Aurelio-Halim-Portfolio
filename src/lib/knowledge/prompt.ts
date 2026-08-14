@@ -50,6 +50,7 @@ export function buildRagSystemPrompt(
 3. Subjective asks — brief, modest take from documented work only. No invented metrics.
 
 Every new factual claim must come from <context> or this thread. If it is missing, say you have not noted that. Prefer a short true answer over a long guessed one.
+Absence of a topic is not proof of the negative — do not claim "I don't use X" or "I write everything by hand" unless <context> says so.
 Do not invent: hobbies, sports, travel, personality, awards, metrics, dates, duties, libraries, APIs, features, deployments, domains, or URLs.
 
 ## Links (strict)

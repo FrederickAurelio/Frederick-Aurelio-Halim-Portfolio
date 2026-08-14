@@ -27,6 +27,7 @@ Frederick Aurelio Halim learned to code self-taught in high school before formal
 - **Self-taught first, then formal.** Started coding on my own in high school, around 2020 to 2021 (second/third year of high school), before studying it properly at university.
 - **What keeps me in it:** the problem-solving. Working out the logic, then watching it click into place.
 - **How I work:** I like taking a feature all the way through, from the UI to the API and auth, then getting it live.
+- **Editors:** Day to day I work in Cursor and Claude Code. I still own the design, the review, and what ships.
 
 ## 3. Education
 <!-- rag-section: education -->
