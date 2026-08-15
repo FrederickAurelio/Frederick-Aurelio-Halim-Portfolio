@@ -9,11 +9,11 @@ Read this first; Cursor loads `.cursor/rules/` for in-session enforcement.
 
 Frederick Aurelio Halim's personal portfolio — bilingual (EN / 中文), GSAP-animated single-page site with an embedded **RAG chat widget** (OpenRouter LLM + vector retrieval over `docs/`).
 
-| | |
-|---|---|
-| **Intl** | https://frederick-aurelio-halim.vercel.app/ |
-| **China (VPS)** | http://120.26.45.50/ |
-| **Stack** | Next.js 16, React 19, TypeScript, Tailwind 4, GSAP, TanStack Query, OpenRouter, Redis/Upstash |
+|                 |                                                                                               |
+| --------------- | --------------------------------------------------------------------------------------------- |
+| **Intl**        | https://frederick-aurelio-halim.vercel.app/                                                   |
+| **China (VPS)** | http://120.26.45.50/                                                                          |
+| **Stack**       | Next.js 16, React 19, TypeScript, Tailwind 4, GSAP, TanStack Query, OpenRouter, Redis/Upstash |
 
 Two subsystems share one Next.js app:
 
@@ -77,11 +77,11 @@ docker-compose.dev-db.yml      # local Redis only
 
 ## Content sources
 
-| Layer | Where | Used by |
-|-------|--------|---------|
-| **Static UI** | `src/utils/data.ts` | Section components, project cards, case studies |
-| **Chat UI strings** | `data.ts` → `chat` export | ChatWidget labels, errors, placeholders |
-| **Chat knowledge** | `docs/*.md` → `index.json` + `knowledge-map.json` | RAG retrieval + navigator |
+| Layer               | Where                                             | Used by                                         |
+| ------------------- | ------------------------------------------------- | ----------------------------------------------- |
+| **Static UI**       | `src/utils/data.ts`                               | Section components, project cards, case studies |
+| **Chat UI strings** | `data.ts` → `chat` export                         | ChatWidget labels, errors, placeholders         |
+| **Chat knowledge**  | `docs/*.md` → `index.json` + `knowledge-map.json` | RAG retrieval + navigator                       |
 
 Keep facts aligned across all three. After editing `docs/`, run `npm run index-knowledge`.
 
@@ -133,10 +133,10 @@ flowchart LR
 
 ## Cursor rules (`.cursor/rules/`)
 
-| Rule file | When it applies |
-|-----------|-----------------|
-| `portfolio-context.mdc` | Always — project context and workflow |
-| `portfolio-code.mdc` | Editing `src/**/*.{ts,tsx}` — patterns and conventions |
+| Rule file               | When it applies                                        |
+| ----------------------- | ------------------------------------------------------ |
+| `portfolio-context.mdc` | Always — project context and workflow                  |
+| `portfolio-code.mdc`    | Editing `src/**/*.{ts,tsx}` — patterns and conventions |
 
 ---
 
@@ -161,14 +161,14 @@ flowchart LR
 
 **Show what you built and why — not adjectives.**
 
-| Section | Format |
-|---------|--------|
-| Hero | `I build [what] with [stack].` — plain, ~120 chars, no years in the hook |
-| About | 2–4 short paragraphs, first person, one human detail |
-| Project card | 1–2 sentences: who it's for, what it does, stack |
-| Case study | Problem → decision/trade-off → result; uneven bullets |
-| Experience | Role · Company · dates · 1–3 impact bullets each |
-| Skills | Grouped categories, no % bars |
+| Section      | Format                                                                   |
+| ------------ | ------------------------------------------------------------------------ |
+| Hero         | `I build [what] with [stack].` — plain, ~120 chars, no years in the hook |
+| About        | 2–4 short paragraphs, first person, one human detail                     |
+| Project card | 1–2 sentences: who it's for, what it does, stack                         |
+| Case study   | Problem → decision/trade-off → result; uneven bullets                    |
+| Experience   | Role · Company · dates · 1–3 impact bullets each                         |
+| Skills       | Grouped categories, no % bars                                            |
 
 **Bilingual:** same facts in both languages. 中文: first person (我), no 官方腔, avoid 赋能/无缝体验/此外/综上所述.
 
@@ -179,37 +179,42 @@ flowchart LR
 ## Code guidelines
 
 ### Static sections
+
 1. Add types + data to `src/utils/data.ts`
 2. Create or update `src/components/sections/YourSection.tsx`
 3. Import in `src/app/page.tsx`
 4. Add navbar entry in `hero[language].navbar` with matching section `id`
 
 ### Bilingual content
+
 ```ts
 title: { en: "English text", ch: "中文文本" }
 ```
+
 Access via `useLanguage()` → `content[language]` in client components.
 
 ### GSAP
+
 - Import from `@/lib/gsap-client`
 - Use `useGSAP` in section components
 
 ### Chat changes — where to look
 
-| Task | Start here |
-|------|------------|
-| UI / UX | `src/components/chat/`, `data.ts` → `chat` |
-| Send / stream / stop | `src/hooks/useChat.ts`, `src/lib/chat/consumeChatStream.ts` |
-| RAG pipeline | `src/lib/chat/rag-chat-stream.ts` |
-| Retrieval tuning | `src/lib/knowledge/plan-retrieval.ts`, `navigator.ts`, `retrieve.ts`, `retrieval-plan.ts` |
-| Suggestions | `suggestion-trailer.ts`, `suggestion-limits.ts`, `resolve-display-suggestions.ts` |
-| Prompt / tone | `src/lib/knowledge/prompt.ts`, `build-messages.ts` |
-| Storage / sessions | `src/lib/chat-store/`, `src/middleware.ts`, `src/lib/chat/session.ts` |
-| API routes | `src/app/api/chat/` |
+| Task                 | Start here                                                                                |
+| -------------------- | ----------------------------------------------------------------------------------------- |
+| UI / UX              | `src/components/chat/`, `data.ts` → `chat`                                                |
+| Send / stream / stop | `src/hooks/useChat.ts`, `src/lib/chat/consumeChatStream.ts`                               |
+| RAG pipeline         | `src/lib/chat/rag-chat-stream.ts`                                                         |
+| Retrieval tuning     | `src/lib/knowledge/plan-retrieval.ts`, `navigator.ts`, `retrieve.ts`, `retrieval-plan.ts` |
+| Suggestions          | `suggestion-trailer.ts`, `suggestion-limits.ts`, `resolve-display-suggestions.ts`         |
+| Prompt / tone        | `src/lib/knowledge/prompt.ts`, `build-messages.ts`                                        |
+| Storage / sessions   | `src/lib/chat-store/`, `src/middleware.ts`, `src/lib/chat/session.ts`                     |
+| API routes           | `src/app/api/chat/`                                                                       |
 
 After logic changes: `npm run test`. After doc changes: `npm run index-knowledge`.
 
 ### Images
+
 - Assets in `public/`; reference as `/filename.png` in data
 
 ---
@@ -218,18 +223,18 @@ After logic changes: `npm run test`. After doc changes: `npm run index-knowledge
 
 See `.env.example`. Key vars:
 
-| Var | Purpose |
-|-----|---------|
-| `OPENROUTER_API_KEY` | Required for chat + indexing |
-| `OPENROUTER_MODEL` | Chat model (default `deepseek/deepseek-v4-flash`) |
-| `OPENROUTER_EMBEDDING_MODEL` | Embeddings (default `qwen/qwen3-embedding-8b`) |
-| `RAG_MAX_CONTEXT_CHUNKS` | Max chunks in LLM 2 context (retrieve also caps at 12) |
-| `CHAT_STORE_PROVIDER` | `redis` (VPS) or `upstash` (Vercel) |
-| `REDIS_URL` | Self-hosted Redis |
-| `UPSTASH_REDIS_REST_URL/TOKEN` | Upstash on Vercel |
-| `CHAT_MESSAGE_TTL_SECONDS` | Message retention (default 21600 = 6h) |
-| `NEXT_PUBLIC_SITE_URL` | Canonical URL for SEO |
-| `NEXT_PUBLIC_FONT_CDN` | `global` for Google Fonts CDN outside China |
+| Var                            | Purpose                                                |
+| ------------------------------ | ------------------------------------------------------ |
+| `OPENROUTER_API_KEY`           | Required for chat + indexing                           |
+| `OPENROUTER_MODEL`             | Chat model (default `deepseek/deepseek-v4-flash-0731`) |
+| `OPENROUTER_EMBEDDING_MODEL`   | Embeddings (default `qwen/qwen3-embedding-8b`)         |
+| `RAG_MAX_CONTEXT_CHUNKS`       | Max chunks in LLM 2 context (retrieve also caps at 12) |
+| `CHAT_STORE_PROVIDER`          | `redis` (VPS) or `upstash` (Vercel)                    |
+| `REDIS_URL`                    | Self-hosted Redis                                      |
+| `UPSTASH_REDIS_REST_URL/TOKEN` | Upstash on Vercel                                      |
+| `CHAT_MESSAGE_TTL_SECONDS`     | Message retention (default 21600 = 6h)                 |
+| `NEXT_PUBLIC_SITE_URL`         | Canonical URL for SEO                                  |
+| `NEXT_PUBLIC_FONT_CDN`         | `global` for Google Fonts CDN outside China            |
 
 Chat returns 503 when `OPENROUTER_API_KEY` is missing.
 
@@ -283,4 +288,4 @@ npm run index-knowledge  # rebuild embeddings from docs/ (needs OPENROUTER_API_K
 
 ---
 
-*Last updated: July 2026*
+_Last updated: July 2026_

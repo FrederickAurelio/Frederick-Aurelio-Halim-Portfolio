@@ -1,6 +1,6 @@
 import type { OpenRouterConfig } from "./types";
 
-const DEFAULT_MODEL = "deepseek/deepseek-v4-flash";
+const DEFAULT_MODEL = "deepseek/deepseek-v4-flash-0731";
 const DEFAULT_EMBEDDING_MODEL = "qwen/qwen3-embedding-8b";
 
 export function getOpenRouterConfig(): OpenRouterConfig | null {
@@ -37,4 +37,3 @@ export function getRagNavigatorTurnPairs(): number {
 export function getRagNavigatorMaxAssistantChars(): number {
   return parsePositiveInt(process.env.RAG_NAVIGATOR_MAX_ASSISTANT_CHARS, 1500);
 }
-
