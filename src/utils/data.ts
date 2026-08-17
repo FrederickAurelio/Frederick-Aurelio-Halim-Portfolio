@@ -230,7 +230,7 @@ export const projects = {
     {
       img: "/quizconnect.png",
       refMore: "#quizconnect",
-      refSite: "http://120.26.45.50:3221/",
+      refSite: "https://quizconnect.online/",
       title: {
         en: "QuizConnect (Web App) - React / Express",
         ch: "QuizConnect（网页应用）- React / Express",

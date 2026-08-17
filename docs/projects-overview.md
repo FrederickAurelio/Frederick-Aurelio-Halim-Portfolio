@@ -14,7 +14,7 @@ rag:
 <!-- rag-section: overview -->
 Frederick Aurelio Halim has four portfolio projects documented here:
 
-- **QuizConnect** (`quizconnect`) — Real-time multiplayer quiz platform with WebSockets, LLM-assisted quiz generation, and live hosting. Stack: React SPA, Express, Socket.IO, BullMQ. **Docker Compose on a VPS** with **GitHub Actions auto-deploy** on push to `main`. Live: http://120.26.45.50:3221/
+- **QuizConnect** (`quizconnect`) — Real-time multiplayer quiz platform with WebSockets, LLM-assisted quiz generation, and live hosting. Stack: React SPA, Express, Socket.IO, BullMQ. **Docker Compose on a VPS** with **GitHub Actions auto-deploy** on push to `main`. Live: https://quizconnect.online/
 - **Memories** (`memories`) — Digital scrapbook/collage app on a Konva canvas with sharing and friendship privacy. Stack: Next.js + Express API. In-development demo (localhost in repo).
 - **Nextjs-FXTrade** (`nextjs-fxtrade`) — Forex trading demo with virtual money and live/historical rates. Stack: Next.js App Router, Supabase. Live: https://nextjs-fx-trade.vercel.app/
 - **Promis Conveyor Chain** (`promis-conveyor-chain`) — Indonesian marketing site for a conveyor-chain company. Stack: Next.js App Router. Live: https://www.promischain.id/
@@ -26,7 +26,7 @@ For biographical info see `about-me`. For work experience see `work-experience` 
 **If someone asks what to look at first, the best starting point is QuizConnect.**
 
 - **Repo:** https://github.com/FrederickAurelio/QuizConnect
-- **Live demo:** http://120.26.45.50:3221/
+- **Live demo:** https://quizconnect.online/
 - **Why start here:** Largest scope in the portfolio — WebSockets multiplayer, BullMQ workers, LLM features, plus real **ops**: full stack containerized with Docker Compose (MongoDB, Redis, Node API, Nginx) and **CI/CD** that SSH-deploys to a VPS on every push to `main`.
 - **Good second looks:** Nextjs-FXTrade (polished deployed demo, Supabase + charts) or Memories (deep canvas/editor work) depending on whether they care about fintech UI or creative tooling.
 
@@ -38,7 +38,7 @@ QuizConnect is the most developed project in Frederick's portfolio — by featur
 - Full-stack: React SPA, Express REST API, MongoDB, Socket.IO real-time game phases, BullMQ worker.
 - Real-time multiplayer: synchronized Cooldown → Question → Result phases, live leaderboard, game codes.
 - LLM integration: quiz generation from PDF/text, answer explanations, session analytics.
-- **Docker & deploy:** `docker compose` runs MongoDB, Redis, backend, and Nginx (SPA + `/api` + `/socket.io` proxy). GitHub Actions SSHes into the VPS, pulls `main`, and runs `docker compose up -d --build` — push-to-deploy without manual steps. Live at http://120.26.45.50:3221/
+- **Docker & deploy:** `docker compose` runs MongoDB, Redis, backend, and Nginx (SPA + `/api` + `/socket.io` proxy). GitHub Actions SSHes into the VPS, pulls `main`, and runs `docker compose up -d --build` — push-to-deploy without manual steps. Live at https://quizconnect.online/
 
 **What it shows about Frederick:**
 - Can own a feature end-to-end — UI, API, WebSockets, queues, AI hooks, **containerization, and deployment pipeline**.

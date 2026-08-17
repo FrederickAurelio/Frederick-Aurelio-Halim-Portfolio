@@ -18,7 +18,7 @@ QuizConnect is a real-time multiplayer quiz platform by Frederick Aurelio Halim.
 - **Category:** Full-stack web app — React SPA, Express API, Socket.IO, BullMQ worker.
 - **Status:** Active prototype — live on a VPS, deployed via GitHub Actions.
 - **Repo:** https://github.com/FrederickAurelio/QuizConnect
-- **Live demo:** http://120.26.45.50:3221/ (Docker Compose stack on VPS)
+- **Live demo:** https://quizconnect.online/ (Docker Compose stack on VPS)
 
 ## 2. Problem & purpose
 <!-- rag-section: 2-problem-purpose -->
