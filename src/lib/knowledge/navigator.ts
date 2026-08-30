@@ -48,7 +48,7 @@ Examples:
 - Contact / email / WeChat / LinkedIn → preferDocId about-me, query about contact links.
 - Skills / tech stack / 技术栈 (overall tools, not one named project) → preferDocId tech-stack. A named project's stack → that project's doc.
 - Cursor / Claude Code / AI coding tools / vibe coding / how he writes code → preferDocId about-me, query how Frederick works with editors. Keep that separate from "exploring AI agents" (product/agents). Do not hint that he writes everything by hand.
-- Work / jobs / experience / freelance → work-experience catalog plus cabin-pms when they name Cabin PMS (current freelance). Mufy → preferDocId work-experience. Do not treat Cabin PMS as a homepage project.
+- Work / jobs / experience / freelance → work-experience catalog plus cabin-pms when they name Cabin PMS (most recent freelance, July–August 2026). Mufy → preferDocId work-experience. Do not treat Cabin PMS as a homepage project.
 - Opinion about Frederick → about-me background + documented work; modest take in answer_hint.
 
 ## Knowledge map

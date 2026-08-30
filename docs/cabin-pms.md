@@ -15,7 +15,7 @@ rag:
 Cabin PMS is a staff property-management system Frederick Aurelio Halim built as paid freelance.
 - **Role:** Freelance Full-Stack Developer.
 - **Product:** Cabin PMS — staff desk for cabin/apartment hospitality. Print the product name, not the legal client.
-- **Period:** July 2026 – Present.
+- **Period:** July 2026 – August 2026.
 - **Location:** Indonesia · Remote.
 - **Repo:** https://github.com/FrederickAurelio/property-management-system
 - **Live:** none — do not print a live/demo URL.

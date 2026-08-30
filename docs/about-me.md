@@ -17,7 +17,7 @@ Frederick Aurelio Halim (林健昌) is a frontend and full-stack developer from 
 - **Chinese name:** 林健昌.
 - **Origin:** From Medan, Sumatera Utara, Indonesia. Indonesian nationality.
 - **What I do:** Frontend developer who also works full-stack. Mostly React, Next.js, Express, and NestJS. Comfortable across the whole stack: building the interface, wiring up the API and auth, then shipping it.
-- **Current work:** Paid freelance Full-Stack Developer on Cabin PMS (July 2026 – Present) — staff PMS for cabin/apartment hospitality. Repo: https://github.com/FrederickAurelio/property-management-system. No live/demo URL. Details in `cabin-pms`. Previous: Frontend Developer at Mufy, Hangzhou (May 2025 – June 2026). Details in `work-experience`.
+- **Recent work:** Paid freelance Full-Stack Developer on Cabin PMS (July 2026 – August 2026) — staff PMS for cabin/apartment hospitality. Repo: https://github.com/FrederickAurelio/property-management-system. No live/demo URL. Details in `cabin-pms`. Previous: Frontend Developer at Mufy, Hangzhou (May 2025 – June 2026). Details in `work-experience`.
 - **Current status:** Open to frontend / full-stack roles.
 - **Primary stack:** TypeScript, JavaScript, React, Next.js, Express, NestJS, Prisma, PostgreSQL, MongoDB. Details in `tech-stack`.
 

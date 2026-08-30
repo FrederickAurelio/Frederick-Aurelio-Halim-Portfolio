@@ -135,7 +135,7 @@ export const experience: ExperienceContent = {
       company: { en: "Cabin PMS", ch: "Cabin PMS" },
       url: "https://github.com/FrederickAurelio/property-management-system",
       location: { en: "Indonesia · Remote", ch: "印尼 · 远程" },
-      period: { en: "July 2026 to Present", ch: "2026年7月 至今" },
+      period: { en: "July 2026 to August 2026", ch: "2026年7月至8月" },
       summary: {
         en: "Staff property management system for cabin and apartment hospitality (walk-in and online-travel-agency desks).",
         ch: "给民宿和公寓前台用的物业管理系统（散客台和线上旅行社 / OTA 台）。",
