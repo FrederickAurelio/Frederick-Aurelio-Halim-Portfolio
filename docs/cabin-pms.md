@@ -17,8 +17,8 @@ Cabin PMS is a staff property-management system Frederick Aurelio Halim built as
 - **Product:** Cabin PMS — staff desk for cabin/apartment hospitality. Print the product name, not the legal client.
 - **Period:** July 2026 – Present.
 - **Location:** Indonesia · Remote.
-- **Live:** http://120.26.45.50:8080 — in production. Never print credentials.
-- **Repo:** private (client work). Do not invent a GitHub URL.
+- **Repo:** https://github.com/FrederickAurelio/property-management-system
+- **Live:** none — do not print a live/demo URL.
 - **Scale:** 100+ units.
 - **Who it's for:** Front desk and property staff, not guests booking in a browser.
 - **Solo:** Frederick wrote the code.
@@ -80,4 +80,4 @@ Honest gaps — do not claim these shipped:
 - Channel Manager integration.
 - Guest-facing public booking (Phase 2 is scaffold only).
 
-Repo stays private. Live URL is http://120.26.45.50:8080 with no credentials in this chat.
+Repo: https://github.com/FrederickAurelio/property-management-system. No live/demo URL.

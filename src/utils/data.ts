@@ -133,7 +133,7 @@ export const experience: ExperienceContent = {
     {
       role: { en: "Freelance Full-Stack Developer", ch: "自由职业全栈开发" },
       company: { en: "Cabin PMS", ch: "Cabin PMS" },
-      url: "http://120.26.45.50:8080",
+      url: "https://github.com/FrederickAurelio/property-management-system",
       location: { en: "Indonesia · Remote", ch: "印尼 · 远程" },
       period: { en: "July 2026 to Present", ch: "2026年7月 至今" },
       summary: {

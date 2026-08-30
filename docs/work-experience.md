@@ -16,12 +16,12 @@ rag:
 <!-- rag-section: catalog -->
 Frederick Aurelio Halim has two paid roles, newest first. Cabin PMS is current freelance client work. Mufy is previous employer product work. Neither is a homepage project card — QuizConnect, Memories, FXTrade, and Promis are documented separately.
 
-| Role | Product | When | Where | Live |
+| Role | Product | When | Where | Link |
 |---|---|---|---|---|
-| Freelance Full-Stack Developer | Cabin PMS | July 2026 – Present | Indonesia · Remote | http://120.26.45.50:8080 |
-| Frontend Developer | Mufy | May 2025 – June 2026 | Hangzhou, China · On-site | https://chat.mufy.ai/ |
+| Freelance Full-Stack Developer | Cabin PMS | July 2026 – Present | Indonesia · Remote | Repo: https://github.com/FrederickAurelio/property-management-system (no live URL) |
+| Frontend Developer | Mufy | May 2025 – June 2026 | Hangzhou, China · On-site | Live: https://chat.mufy.ai/ |
 
-- **Cabin PMS:** Staff property-management system for cabin/apartment hospitality (nightly, monthly, yearly stays; walk-in and OTA desks; on-site money). Paid freelance. Repo is private. Full write-up: `cabin-pms`.
+- **Cabin PMS:** Staff property-management system for cabin/apartment hospitality (nightly, monthly, yearly stays; walk-in and OTA desks; on-site money). Paid freelance. Repo: https://github.com/FrederickAurelio/property-management-system. No live/demo URL. Full write-up: `cabin-pms`.
 - **Mufy:** Consumer AI roleplay chat with UGC creators. Frontend on the public web app. This file covers that job.
 - **Not these:** QuizConnect, Memories, FXTrade, and Promis are personal / portfolio projects, not jobs.
 
