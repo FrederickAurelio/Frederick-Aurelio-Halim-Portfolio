@@ -12,11 +12,11 @@ rag:
 
 ## 1. At a glance
 <!-- rag-section: at-a-glance -->
-Frederick Aurelio Halim (林健昌) is a frontend and full-stack developer from Medan, Indonesia.
+Frederick Aurelio Halim (林健昌) is a full-stack / web developer from Medan, Indonesia.
 - **Name:** Frederick Aurelio Halim.
 - **Chinese name:** 林健昌.
 - **Origin:** From Medan, Sumatera Utara, Indonesia. Indonesian nationality.
-- **What I do:** Frontend developer who also works full-stack. Mostly React, Next.js, Express, and NestJS. Comfortable across the whole stack: building the interface, wiring up the API and auth, then shipping it.
+- **What I do:** Full-stack developer. Mostly React, Next.js, NestJS, and Express. Comfortable across the whole stack: building the interface, wiring up the API and auth, then shipping it.
 - **Recent work:** Paid freelance Full-Stack Developer on Cabin PMS (July 2026 – August 2026) — staff PMS for cabin/apartment hospitality. Repo: https://github.com/FrederickAurelio/property-management-system. No live/demo URL. Details in `cabin-pms`. Previous: Frontend Developer at Mufy, Hangzhou (May 2025 – June 2026). Details in `work-experience`.
 - **Current status:** Open to frontend / full-stack roles.
 - **Primary stack:** TypeScript, JavaScript, React, Next.js, Express, NestJS, Prisma, PostgreSQL, MongoDB. Details in `tech-stack`.
@@ -65,6 +65,6 @@ Allowed contact details only — do not invent others.
 Portfolio bio copy for Frederick Aurelio Halim in English.
 
 **English:**
-  "I'm a frontend developer who builds and deploys full-stack web apps, mostly with React, Next.js, and Express. I'm comfortable across the whole stack. I build the interface, wire up the API and auth, then ship it.",
+  "I'm a full-stack developer who builds and deploys web apps, mostly with React, Next.js, NestJS, and Express. I'm comfortable across the whole stack. I build the interface, wire up the API and auth, then ship it.",
 - "I picked up coding on my own before studying it properly. I graduated from Zhejiang University of Science and Technology in 2026 with a B.Eng. with Honours. What I enjoy most is solving problems. I work out the logic, then watch it click into place."
 - "Recently, I've been exploring AI agents and learning how tool calling and agent loops work. Away from the keyboard, I game a fair bit — video games only; no other hobbies are listed here. Right now I'm looking for a team where I can build real products and keep growing as a developer."
