@@ -28,7 +28,7 @@ Frederick Aurelio Halim works in TypeScript and JavaScript across the stack: Rea
 ## 3. Frontend
 <!-- rag-section: frontend -->
 - **React** — UI library across jobs and projects.
-- **Next.js** — App Router apps (Memories, Nextjs-FXTrade, Promis, this portfolio).
+- **Next.js** — App Router apps (Memories, Nextjs-FXTrade, Promis, this portfolio including the RAG chat).
 - **Vite** — SPA builds (Cabin PMS staff UI, Mufy, QuizConnect).
 - **React Router** — client routing on Vite SPAs (Mufy, QuizConnect).
 - **TanStack Query** — server state and data fetching.
@@ -44,15 +44,16 @@ Frederick Aurelio Halim works in TypeScript and JavaScript across the stack: Rea
 - **Prisma** — ORM on Cabin PMS with PostgreSQL.
 - **PostgreSQL** — Cabin PMS; also Supabase Postgres on Nextjs-FXTrade.
 - **MongoDB** — QuizConnect and Memories.
-- **Redis** — QuizConnect (lobby state, BullMQ).
+- **Redis** — QuizConnect (lobby state, BullMQ). This portfolio's chat store on the China VPS (Upstash on Vercel).
 - **Socket.IO** — QuizConnect live rooms.
+- **OpenRouter** — LLM + embeddings for this portfolio's RAG chat (`portfolio-chat`) and QuizConnect's quiz AI features.
 
 ## 5. Infra
 <!-- rag-section: infra -->
 - **Docker Compose** — app + Redis/Postgres/Mongo/Nginx on VPS deploys.
 - **Nginx** — reverse proxy in front of those stacks.
 - **GitHub Actions** — CI/CD, SSH deploy to VPS.
-- **Vercel** — Next.js deploys (Nextjs-FXTrade, Promis, this portfolio's international site).
+- **Vercel** — Next.js deploys (Nextjs-FXTrade, Promis, this portfolio's international site). Portfolio chat on Vercel Hobby is capped at 60s; the China VPS Docker deploy allows longer streams (`portfolio-chat`).
 
 ## 6. Experience
 <!-- rag-section: experience -->
@@ -65,3 +66,4 @@ Frederick Aurelio Halim works in TypeScript and JavaScript across the stack: Rea
 - **Memories** (`memories`): Next.js, React, Konva, Express, MongoDB, GitHub OAuth.
 - **Nextjs-FXTrade** (`nextjs-fxtrade`): Next.js, Supabase, TanStack Query, GSAP. Live on Vercel.
 - **Promis Conveyor Chain** (`promis-conveyor-chain`): Next.js, Tailwind CSS. Live on Vercel.
+- **This portfolio's RAG chat** (`portfolio-chat`): Next.js API routes, OpenRouter (LLM + embeddings), cosine retrieval over markdown notes, Redis or Upstash, SSE. Repo: https://github.com/FrederickAurelio/Frederick-Aurelio-Halim-Portfolio

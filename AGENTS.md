@@ -63,7 +63,7 @@ src/
   middleware.ts                # chat session cookie (`CHAT_SESSION_COOKIE`)
 docs/                          # ★ RAG source markdown
   about-me.md, tech-stack.md, work-experience.md, cabin-pms.md, projects-overview.md
-  nextjs-fxtrade.md, quizconnect.md, promis-conveyor-chain.md, memories.md
+  nextjs-fxtrade.md, quizconnect.md, promis-conveyor-chain.md, memories.md, portfolio-chat.md
 public/                        # images, icons, avatar, fonts
 scripts/
   index-knowledge.ts           # embed docs → index.json + knowledge-map.json

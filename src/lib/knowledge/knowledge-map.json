@@ -91,6 +91,32 @@
       ]
     },
     {
+      "docId": "portfolio-chat",
+      "type": "project",
+      "title": "Portfolio RAG Chat",
+      "aliases": [
+        "portfolio chat",
+        "RAG chat",
+        "this chatbot",
+        "AI chat widget",
+        "how the chat works",
+        "作品集聊天",
+        "这个聊天"
+      ],
+      "sourceFile": "docs/portfolio-chat.md",
+      "sections": [
+        "introduction",
+        "at-a-glance",
+        "2-problem-purpose",
+        "3-features",
+        "4-tech-stack",
+        "5-architecture",
+        "6-notable-technical-decisions-trade-offs",
+        "7-interesting-hard-problems-solved",
+        "8-how-to-answer"
+      ]
+    },
+    {
       "docId": "projects-overview",
       "type": "catalog",
       "title": "Frederick's Projects",

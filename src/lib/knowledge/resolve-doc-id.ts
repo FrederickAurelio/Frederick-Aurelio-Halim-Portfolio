@@ -12,6 +12,11 @@ const FUZZY_DOC_HINTS: { pattern: RegExp; docId: string }[] = [
   { pattern: /memories|scrapbook|konva/i, docId: "memories" },
   { pattern: /cabin\s*pms|hospitality\s*pms|property\s*management/i, docId: "cabin-pms" },
   { pattern: /tech\s*stack|skill list|技术栈/i, docId: "tech-stack" },
+  {
+    pattern:
+      /portfolio\s*chat|rag(\s*chat)?|chat\s*widget|this\s+(ai\s+)?chat|how does (the |your )?(ai )?chat|聊天(功能|机器人|组件|是怎么)|这个聊天|作品集聊天|检索增强/i,
+    docId: "portfolio-chat",
+  },
 ];
 
 const ABOUT_CLAUSE_PATTERN = /\b(?:now|what)\s+about\s+([^?.!,\n]+)/i;

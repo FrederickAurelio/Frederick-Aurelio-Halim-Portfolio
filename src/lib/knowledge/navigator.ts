@@ -42,7 +42,8 @@ Examples:
 
 ## Product guidance (encode in topics + answer_hint, not as special intents)
 - "best / biggest / where to start" alone → topics that search QuizConnect + why it stands out / where-to-start (preferDocId quizconnect and/or projects-overview). answer_hint: recommend QuizConnect with repo + live demo from notes.
-- "other projects / not listed / besides these four" → topics aimed at other-projects-github, Bookling, Wild Oasis (preferDocId projects-overview). answer_hint: name Bookling with https://github.com/FrederickAurelio/Bookling.
+- "other projects / not listed / besides these four" → topics aimed at other-projects-github, Bookling, Wild Oasis, and this site's RAG chat (preferDocId projects-overview and/or portfolio-chat). answer_hint: name Bookling with https://github.com/FrederickAurelio/Bookling; mention the portfolio chat if they asked about this site.
+- How this site's AI chat / RAG / chatbot / widget / 这个聊天 / 聊天功能 works → preferDocId portfolio-chat. Separate from Mufy (work-experience) and from QuizConnect's PDF/quiz LLM (quizconnect).
 - Single named project → 1–2 topics (at-a-glance / aspect asked), preferDocId that project.
 - Vague follow-up with session primaryDocId set → queries about that doc; set preferDocId to primaryDocId.
 - Contact / email / WeChat / LinkedIn → preferDocId about-me, query about contact links.

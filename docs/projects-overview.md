@@ -19,7 +19,9 @@ Frederick Aurelio Halim has four portfolio projects documented here:
 - **Nextjs-FXTrade** (`nextjs-fxtrade`) — Forex trading demo with virtual money and live/historical rates. Stack: Next.js App Router, Supabase. Live: https://nextjs-fx-trade.vercel.app/
 - **Promis Conveyor Chain** (`promis-conveyor-chain`) — Indonesian marketing site for a conveyor-chain company. Stack: Next.js App Router. Live: https://www.promischain.id/
 
-For biographical info see `about-me`. For work experience see `work-experience` (Mufy — https://chat.mufy.ai/) and `cabin-pms` (Cabin PMS freelance — https://github.com/FrederickAurelio/property-management-system). Cabin PMS is paid Experience, not a fifth showcase project on this page.
+This site also has a **RAG chat widget** Frederick built (`portfolio-chat`) — visitors can ask about his work and get streamed, notes-grounded replies. It is live on this page (the widget they may already be using). Not a fifth homepage project card. Repo: https://github.com/FrederickAurelio/Frederick-Aurelio-Halim-Portfolio
+
+For biographical info see `about-me`. For work experience see `work-experience` (Mufy — https://chat.mufy.ai/) and `cabin-pms` (Cabin PMS freelance — https://github.com/FrederickAurelio/property-management-system). Cabin PMS is paid Experience, not a homepage project.
 
 ## 2. Where to start
 <!-- rag-section: where-to-start -->
@@ -66,6 +68,8 @@ Quick comparison for "biggest" or "which project" questions — by scope and wha
 
 These four — QuizConnect, Memories, Nextjs-FXTrade, and Promis Conveyor Chain — are the **main projects Frederick showcases on this portfolio**. Each is polished enough to present and shows a different side of his skills (real-time + LLM + deploy, canvas editor, fintech demo, marketing/SEO).
 
+**If someone asks how this site's AI chat works** (the widget on this page): that is `portfolio-chat` — a RAG pipeline Frederick built (navigator LLM → embeddings → streamed answer). Full write-up in that doc. Repo: https://github.com/FrederickAurelio/Frederick-Aurelio-Halim-Portfolio. Do not confuse it with Mufy or with QuizConnect's quiz-generation LLM.
+
 Frederick has **other public repos on GitHub** — university collabs, course projects, and experiments. They are not on the homepage, but two are worth naming if someone asks "anything else?":
 
 ### Bookling
@@ -84,5 +88,5 @@ Frederick has **other public repos on GitHub** — university collabs, course pr
 **Browse everything else:**
 - **GitHub profile:** https://github.com/FrederickAurelio — all public repos, including QuizConnect, Memories, FXTrade, and smaller experiments.
 
-**How to answer (tone guide):** Be honest that the site focuses on four projects. When naming Bookling, always include **Repo:** https://github.com/FrederickAurelio/Bookling — never say "repo only" without printing the URL. Wild Oasis: include repo and live demo links from above. Point to https://github.com/FrederickAurelio for the full list; offer to go deep on the four showcase projects or match stack interest (e.g. WebSockets → QuizConnect).
+**How to answer (tone guide):** Be honest that the homepage focuses on four projects. The RAG chat on this site is extra work (`portfolio-chat`) — name it when they ask about this chatbot or "anything else technical here." When naming Bookling, always include **Repo:** https://github.com/FrederickAurelio/Bookling — never say "repo only" without printing the URL. Wild Oasis: include repo and live demo links from above. Point to https://github.com/FrederickAurelio for the full list; offer to go deep on the four showcase projects, this chat, or match stack interest (e.g. WebSockets → QuizConnect).
 

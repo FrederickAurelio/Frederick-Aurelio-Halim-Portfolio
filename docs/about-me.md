@@ -48,6 +48,7 @@ Frederick Aurelio Halim speaks Indonesian, English, and Mandarin Chinese.
 <!-- rag-section: interests -->
 Frederick Aurelio Halim is exploring AI agents and looking for teams building real products.
 - **Recently exploring:** AI agents, learning how tool calling and agent loops work.
+- **This site:** Built a RAG chat widget on this portfolio so visitors can ask about my work. I retrieve notes I wrote, then an LLM streams the reply. Details in `portfolio-chat`. Not Mufy, not QuizConnect's quiz AI.
 - **Outside of code:** video games only — that's the only hobby documented here. Not basketball, badminton, music, travel, or other sports/hobbies unless added later.
 - **Looking for:** a team where I can build real products and keep growing as a developer.
 

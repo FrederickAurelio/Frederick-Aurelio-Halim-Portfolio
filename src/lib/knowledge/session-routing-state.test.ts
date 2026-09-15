@@ -26,6 +26,7 @@ describe("session-routing-state helpers", () => {
     assert.equal(isVagueFollowUp("how does auth work?"), true);
     assert.equal(isVagueFollowUp("QuizConnect stack"), false);
     assert.equal(isVagueFollowUp("What's your tech stack?"), false);
+    assert.equal(isVagueFollowUp("how does the chat work?"), false);
   });
 
   it("isResumeTopicPhrase matches back to main topic", () => {
@@ -155,6 +156,17 @@ describe("computeNextRoutingState", () => {
       "What's your tech stack?",
     );
     assert.equal(next.primaryDocId, "tech-stack");
+  });
+
+  it("sets sticky from this-site chat phrasing", () => {
+    const next = computeNextRoutingState(
+      { primaryDocId: "quizconnect", updatedAt: 0 },
+      defaultRetrievalPlan({
+        topics: [{ label: "general", query: "how the chat works" }],
+      }),
+      "how does the chat work?",
+    );
+    assert.equal(next.primaryDocId, "portfolio-chat");
   });
 });
 
